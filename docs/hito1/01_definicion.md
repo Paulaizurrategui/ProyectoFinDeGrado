@@ -15,4 +15,3 @@ sus viajes para que otros los usen como ejemplo y pueden comentar publicaciones.
 - Generación de propuesta inicialmente con datos locales; posible ampliación con APIs externas.
 
 ## Motivación / Justificación
-(Explica por qué es útil y para quién)

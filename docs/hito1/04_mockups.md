@@ -9,5 +9,5 @@
 6. Detalle de post + comentarios
 
 ## Enlace o ubicación
-- Figma: (pegar enlace)
-- O imágenes en: docs/hito1/mockups/
+- Figma: cuando lo haga si me deja pongo enlacce y si no meto las fotos abajo
+- Imágenes en: docs/hito1/mockups/
