@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "578088931208",
+    "project_id": "urtriply",
+    "storage_bucket": "urtriply.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:578088931208:android:89c439d9668185a459b43d",
+        "android_client_info": {
+          "package_name": "com.paulaizurrategui.urtriply"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGbxfab2AcoppezlKXy8YChsflcsedQT4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
