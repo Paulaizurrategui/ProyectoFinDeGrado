@@ -1,3 +1,48 @@
 <resources>
     <string name="app_name">UrTriply</string>
+
+    <!-- Login -->
+    <string name="login_title">UrTriply</string>
+    <string name="email_label">Correo</string>
+    <string name="password_label">Contraseña</string>
+    <string name="login_button">Iniciar sesión</string>
+    <string name="login_loading">Accediendo…</string>
+    <string name="create_account">Crear cuenta</string>
+    <string name="forgot_password">¿Olvidaste la contraseña?</string>
+
+    <!-- Register -->
+    <string name="register_title">Crear cuenta</string>
+    <string name="repeat_password_label">Repetir contraseña</string>
+    <string name="register_button">Registrarse</string>
+    <string name="register_loading">Creando…</string>
+    <string name="already_have_account">Ya tengo cuenta</string>
+
+    <!-- Home -->
+    <string name="home_welcome">Bienvenid@ a UrTriply</string>
+    <string name="home_logged_as">Sesión iniciada como: %1$s</string>
+    <string name="home_next_trip">¿Lista para tu próximo viaje?</string>
+
+    <string name="logout_button">Cerrar sesión</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_ok">Aceptar</string>
+    <string name="dialog_error_title">Error</string>
+    <string name="dialog_success_title">Aviso</string>
+
+    <!-- Validation -->
+    <string name="error_passwords_not_match">Las contraseñas no coinciden.</string>
+    <string name="error_password_min">La contraseña debe tener al menos 6 caracteres.</string>
+    <string name="error_enter_email_reset">Introduce tu correo para recuperar la contraseña.</string>
+
+    <!-- Auth success messages -->
+    <string name="reset_email_sent">Te hemos enviado un correo para restablecer la contraseña.</string>
+
+    <!-- Auth error messages (Firebase mapped) -->
+    <string name="error_network">Error de red. Revisa tu conexión a Internet e inténtalo de nuevo.</string>
+    <string name="error_invalid_user">No existe ninguna cuenta con ese correo.</string>
+    <string name="error_invalid_credentials">Correo o contraseña incorrectos.</string>
+    <string name="error_user_collision">Ya existe una cuenta registrada con ese correo.</string>
+    <string name="error_weak_password">La contraseña es demasiado débil. Usa al menos 6 caracteres.</string>
+    <string name="error_generic">Ha ocurrido un error. Inténtalo de nuevo.</string>
+    <string name="cerrarSesion">Utl</string>
 </resources>
