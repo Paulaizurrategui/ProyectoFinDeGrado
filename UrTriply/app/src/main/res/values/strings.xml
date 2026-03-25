@@ -16,11 +16,21 @@
     <string name="register_button">Registrarse</string>
     <string name="register_loading">Creando…</string>
     <string name="already_have_account">Ya tengo cuenta</string>
+    <string name="register_subtitle">Crea tu cuenta y empieza a planificar.</string>
+    <string name="already_have_account_question">¿Ya tienes cuenta?</string>
+    <string name="already_have_account_action">Inicia sesión</string>
 
     <!-- Home -->
     <string name="home_welcome">Bienvenid@ a UrTriply</string>
     <string name="home_logged_as">Sesión iniciada como: %1$s</string>
     <string name="home_next_trip">¿Lista para tu próximo viaje?</string>
+    <string name="home_subtitle">¿Lista para tu próxima aventura?</string>
+    <string name="home_plan_trip">Planificar viaje</string>
+    <string name="home_drafts">Mis borradores</string>
+    <string name="home_community">Comunidad</string>
+
+    <string name="soon_title">Próximamente</string>
+    <string name="soon_body">Esta funcionalidad se añadirá en los próximos pasos del proyecto.</string>
 
     <string name="logout_button">Cerrar sesión</string>
 
@@ -45,4 +55,40 @@
     <string name="error_weak_password">La contraseña es demasiado débil. Usa al menos 6 caracteres.</string>
     <string name="error_generic">Ha ocurrido un error. Inténtalo de nuevo.</string>
     <string name="cerrarSesion">Utl</string>
+    <string name="slogan">Tu próxima aventura europea empieza aquí, sin salirte del presupuesto.</string>
+
+    <string name="welcome_login">Iniciar sesión</string>
+    <string name="welcome_register">Crear cuenta</string>
+    <string name="welcome_guest">Continuar sin cuenta</string>
+    <string name="welcome_go_home">Entrar</string>
+    <string name="welcome_guest_note">Puedes generar propuestas sin cuenta, pero para guardar borradores o usar la comunidad tendrás que iniciar sesión.</string>
+
+    <string name="guest_title">Modo invitado</string>
+    <string name="guest_subtitle">Puedes explorar y generar propuestas. Para guardar, publicar o ver la comunidad necesitas iniciar sesión.</string>
+    <string name="guest_login_cta">Iniciar sesión para desbloquear todo</string>
+
+    <string name="back">Volver</string>
+
+    <string name="tab_home">Inicio</string>
+    <string name="tab_plan">Planificar</string>
+    <string name="tab_community">Comunidad</string>
+    <string name="tab_profile">Perfil</string>
+
+    <string name="guest_hint_title">Estás en modo invitado</string>
+    <string name="guest_hint_body">Puedes generar propuestas sin cuenta, pero para guardar borradores o usar la comunidad tendrás que iniciar sesión.</string>
+    <string name="home_logged_in_ok">Sesión iniciada. Ya puedes usar todas las funciones.</string>
+
+    <string name="plan_title">Planificar viaje</string>
+    <string name="plan_placeholder_body">Aquí irá el formulario: destino, presupuesto total (EUR), nº viajeros, rango de fechas y preferencias.</string>
+    <string name="plan_guest_note">En modo invitado podrás generar propuestas, pero no podrás guardarlas.</string>
+    <string name="plan_auth_note">Al iniciar sesión podrás guardar borradores y publicar viajes.</string>
+
+    <string name="community_title">Comunidad</string>
+    <string name="community_placeholder_body">Aquí verás publicaciones de otros viajeros (solo usuarios registrados).</string>
+
+    <string name="profile_title">Perfil</string>
+    <string name="profile_email">Email: %1$s</string>
+
+    <string name="login_required_title">Necesitas iniciar sesión</string>
+    <string name="login_required_body">Para acceder a esta sección tienes que iniciar sesión o crear una cuenta.</string>
 </resources>
