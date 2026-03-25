@@ -12,7 +12,7 @@
 **UrTriply** es una aplicación Android (Kotlin + Jetpack Compose) orientada a la planificación de viajes desde un origen fijo (**Aeropuerto de Madrid – MAD**) hacia **capitales europeas**, generando una propuesta de viaje ajustada a:
 - **presupuesto total**
 - **número de viajeros**
-- **rango de fechas aproximado**
+- **rango de fechas** (el usuario elige un intervalo y la app busca la opción más conveniente dentro de ese rango)
 - **preferencias del usuario** (cultura, ocio nocturno, naturaleza, gastronomía)
 
 La app devuelve una **propuesta completa** con:
@@ -24,8 +24,12 @@ La app devuelve una **propuesta completa** con:
 
 Además, UrTriply incorpora una dimensión social: los usuarios registrados pueden **publicar sus viajes**, **comentar**, **dar like**, **guardar en favoritos** y **reportar contenido**, creando una comunidad de ejemplos y recomendaciones.
 
+> Actualización según lo trabajado hoy (alineación con la app):  
+> Al abrir la aplicación se muestra una **pantalla de bienvenida/ acceso** con opción de **Iniciar sesión**, **Crear cuenta** o **Continuar sin cuenta (modo invitado)**.  
+> En modo invitado se permite generar propuestas, pero para **guardar/publicar/comentar/ver comunidad** se solicitará iniciar sesión.
+
 ### 1.4. Objetivo principal (1 frase)
-**Planificar viajes a capitales europeas desde Madrid basándose en el presupuesto total, número de viajeros y fechas aproximadas, ofreciendo propuestas realistas y ajustadas al dinero disponible.**
+**Planificar viajes a capitales europeas desde Madrid basándose en el presupuesto total, número de viajeros y un rango de fechas, ofreciendo propuestas realistas y ajustadas al dinero disponible.**
 
 ### 1.5. Público objetivo
 - **Público general** (estudiantes, parejas, familias, mochileros, etc.)
@@ -84,7 +88,7 @@ Lista propuesta (muy conocidas y visitadas), incluyendo las imprescindibles indi
 Formulario base para generar propuesta:
 - Presupuesto total (**EUR**)
 - Número de viajeros
-- **Rango de fechas aproximado** (ej. “del 10 al 15 de mayo”)
+- **Rango de fechas** (ej. “del 10 al 15 de mayo”)
 - Preferencias (multi-selección):
   - Cultura
   - Ocio nocturno
@@ -129,7 +133,7 @@ Objetivo: precios “como si el usuario los consultase en el proveedor”.
 ### 2.5. Comunidad (funcionalidades del MVP)
 Para usuarios registrados:
 - Publicar viaje generado (sí)
-- Publicar viaje manual (sí)
+- Publicar un viaje manual (sí)
 - Ver feed/lista de viajes de otros (sí)
 - Comentar publicaciones (sí)
 - Dar like (sí)
@@ -138,9 +142,10 @@ Para usuarios registrados:
 
 Los viajes publicados solo serán visibles para **usuarios registrados**.
 
-### 2.6. Modo sin cuenta
+### 2.6. Modo sin cuenta (actualizado con lo implementado hoy)
 - Al abrir la app, se mostrará una pantalla inicial con:
-  - **Entrar/Registrarse**
+  - **Iniciar sesión**
+  - **Crear cuenta**
   - **Continuar sin cuenta**
 - Sin cuenta, el usuario puede:
   - generar propuestas
@@ -170,44 +175,45 @@ Se definirá un usuario “admin” (por ejemplo, identificado por email) con pe
 - **RF-02**: El sistema debe permitir inicio de sesión con email y contraseña.
 - **RF-03**: El sistema debe permitir recuperación de contraseña por correo.
 - **RF-04**: El sistema debe permitir cerrar sesión.
-- **RF-05**: El sistema debe permitir continuar sin cuenta para generar propuestas.
-- **RF-06**: El sistema debe solicitar login/registro al intentar publicar, comentar, dar like, guardar favoritos o ver el feed.
+- **RF-05**: El sistema debe mostrar una pantalla de bienvenida con opciones: **Iniciar sesión**, **Crear cuenta** y **Continuar sin cuenta**.
+- **RF-06**: El sistema debe permitir generar propuestas en modo invitado.
+- **RF-07**: El sistema debe solicitar login/registro al intentar publicar, comentar, dar like, guardar favoritos, guardar borradores o ver el feed.
 
 ### 3.2. Planificación de viaje
-- **RF-07**: El sistema debe permitir seleccionar un destino (capital europea del catálogo).
-- **RF-08**: El sistema debe permitir introducir presupuesto total en EUR.
-- **RF-09**: El sistema debe permitir introducir número de viajeros.
-- **RF-10**: El sistema debe permitir introducir un rango de fechas aproximado.
-- **RF-11**: El sistema debe permitir seleccionar múltiples preferencias (cultura/ocio nocturno/naturaleza/gastronomía).
-- **RF-12**: El sistema debe generar una propuesta de viaje con:
+- **RF-08**: El sistema debe permitir seleccionar un destino (capital europea del catálogo).
+- **RF-09**: El sistema debe permitir introducir presupuesto total en EUR.
+- **RF-10**: El sistema debe permitir introducir número de viajeros.
+- **RF-11**: El sistema debe permitir introducir un **rango de fechas**.
+- **RF-12**: El sistema debe permitir seleccionar múltiples preferencias (cultura/ocio nocturno/naturaleza/gastronomía).
+- **RF-13**: El sistema debe generar una propuesta de viaje con:
   - presupuesto por categorías
   - itinerario por días
   - lista de actividades sugeridas
   - separación de actividades gratis/de pago
-- **RF-13**: El sistema debe estimar el número de días recomendados en función del presupuesto y costes obtenidos.
-- **RF-14**: El sistema debe obtener precios reales de vuelos dentro del rango y mostrar el mejor precio encontrado.
-- **RF-15**: El sistema debe mostrar un enlace externo para compra/reserva (WebView).
-- **RF-16**: El sistema debe obtener datos reales de alojamiento en las fechas indicadas.
-- **RF-17**: El sistema debe obtener actividades reales con precio y enlace, filtradas por preferencias.
-- **RF-18**: Si una API falla, el sistema debe usar datos estimados de respaldo e informar al usuario.
+- **RF-14**: El sistema debe estimar el número de días recomendados en función del presupuesto y costes obtenidos.
+- **RF-15**: El sistema debe obtener precios reales de vuelos dentro del rango y mostrar el mejor precio encontrado.
+- **RF-16**: El sistema debe mostrar un enlace externo para compra/reserva (WebView).
+- **RF-17**: El sistema debe obtener datos reales de alojamiento en las fechas indicadas.
+- **RF-18**: El sistema debe obtener actividades reales con precio y enlace, filtradas por preferencias.
+- **RF-19**: Si una API falla, el sistema debe usar datos estimados de respaldo e informar al usuario.
 
 ### 3.3. Guardado y publicación
-- **RF-19**: El sistema debe permitir a usuarios registrados guardar propuestas como **borrador**.
-- **RF-20**: El sistema debe permitir editar un viaje generado antes de publicarlo.
-- **RF-21**: El sistema debe permitir publicar un viaje (generado o manual).
-- **RF-22**: El sistema debe permitir ver el detalle de un viaje publicado.
+- **RF-20**: El sistema debe permitir a usuarios registrados guardar propuestas como **borrador**.
+- **RF-21**: El sistema debe permitir editar un viaje generado antes de publicarlo.
+- **RF-22**: El sistema debe permitir publicar un viaje (generado o manual).
+- **RF-23**: El sistema debe permitir ver el detalle de un viaje publicado.
 
 ### 3.4. Comunidad
-- **RF-23**: El sistema debe permitir ver un feed de publicaciones (solo usuarios registrados).
-- **RF-24**: El sistema debe permitir comentar publicaciones.
-- **RF-25**: El sistema debe permitir dar like a publicaciones.
-- **RF-26**: El sistema debe permitir guardar publicaciones en favoritos.
-- **RF-27**: El sistema debe permitir reportar publicaciones y comentarios.
-- **RF-28**: El sistema debe permitir que un admin gestione reportes y oculte contenido.
+- **RF-24**: El sistema debe permitir ver un feed de publicaciones (solo usuarios registrados).
+- **RF-25**: El sistema debe permitir comentar publicaciones.
+- **RF-26**: El sistema debe permitir dar like a publicaciones.
+- **RF-27**: El sistema debe permitir guardar publicaciones en favoritos.
+- **RF-28**: El sistema debe permitir reportar publicaciones y comentarios.
+- **RF-29**: El sistema debe permitir que un admin gestione reportes y oculte contenido.
 
 ### 3.5. Perfil y usuario
-- **RF-29**: El sistema debe permitir a los usuarios tener un perfil con nombre visible y foto.
-- **RF-30**: El sistema debe restringir el acceso a la comunidad a mayores de **13 años** (confirmación en registro o aviso).
+- **RF-30**: El sistema debe permitir a los usuarios tener un perfil con nombre visible y foto.
+- **RF-31**: El sistema debe restringir el acceso a la comunidad a mayores de **13 años** (confirmación en registro o aviso).
 
 ---
 
