@@ -16,28 +16,28 @@ import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
 
 @Composable
 fun InicioTabScreen(
-    isGuest: Boolean,
-    onRequireLogin: () -> Unit
+    isGuest: Boolean, // true si el usuario entró con "Continuar sin cuenta" (modo invitado)
+    onRequireLogin: () -> Unit // Callback para enviar al usuario a Login cuando quiera desbloquear funciones
 ) {
-    UrTriplyGradientScaffold(title = stringResource(R.string.tab_home)) {
-        Text(text = stringResource(R.string.home_subtitle))
-        Spacer(modifier = Modifier.height(16.dp))
+    UrTriplyGradientScaffold(title = stringResource(R.string.tab_home)) { // Scaffold común con el estilo UrTriply y título del tab
+        Text(text = stringResource(R.string.home_subtitle)) // Texto introductorio del home
+        Spacer(modifier = Modifier.height(16.dp)) // Separación visual
 
-        if (isGuest) {
+        if (isGuest) { // Si es invitado, mostramos un "mensaje" de que hay funciones bloqueadas
             Card {
                 androidx.compose.foundation.layout.Column(
-                    modifier = Modifier.padding(14.dp)
+                    modifier = Modifier.padding(14.dp) // Padding interior de la card para que respire el contenido
                 ) {
-                    Text(text = stringResource(R.string.guest_hint_title), fontWeight = FontWeight.Bold)
+                    Text(text = stringResource(R.string.guest_hint_title), fontWeight = FontWeight.Bold) // Título: modo invitado
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = stringResource(R.string.guest_hint_body))
+                    Text(text = stringResource(R.string.guest_hint_body)) // Explicación: comunidad/guardado requieren login
                     Spacer(modifier = Modifier.height(10.dp))
-                    Button(onClick = onRequireLogin) {
+                    Button(onClick = onRequireLogin) { // CTA para ir a login (decidido por el NavHost)
                         Text(stringResource(R.string.welcome_login))
                     }
                 }
             }
-        } else {
+        } else { // Si está autenticado, mostramos mensaje de estado OK (y en el futuro botones: Planificar, Borradores, Comunidad)
             Text(text = stringResource(R.string.home_logged_in_ok))
         }
     }

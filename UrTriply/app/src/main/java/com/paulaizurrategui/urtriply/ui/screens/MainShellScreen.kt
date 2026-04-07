@@ -24,25 +24,27 @@ import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
 import com.paulaizurrategui.urtriply.ui.navigation.MainTabs
 
+// Modelo simple para definir cada item del BottomNavigation (ruta + texto + icono)
 data class BottomTab(
-    val route: String,
-    val labelRes: Int,
-    val icon: @Composable () -> Unit
+    val route: String, // Ruta interna del NavHost de tabs (ej. "tab_home")
+    val labelRes: Int, // Texto del tab en strings.xml (multi-idioma)
+    val icon: @Composable () -> Unit // Icono del tab como composable (Icon(...))
 )
 
 @Composable
 fun MainShellScreen(
-    mode: String, // "auth" | "guest"
-    authViewModel: AuthViewModel,
-    onRequireLogin: () -> Unit,
-    onLoggedOut: () -> Unit
+    mode: String, // Modo de ejecución: "auth" (logueado) o "guest" (invitado)
+    authViewModel: AuthViewModel, // ViewModel de auth para poder hacer logout desde Perfil
+    onRequireLogin: () -> Unit, // Callback: se usa cuando un invitado intenta acceder a algo restringido
+    onLoggedOut: () -> Unit // Callback: se usa cuando el usuario hace logout (volver a Welcome y limpiar backstack)
 ) {
-    val navController = rememberNavController()
-    val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = currentBackStackEntry?.destination?.route ?: MainTabs.HOME
+    val navController = rememberNavController() // NavController interno para navegar ENTRE tabs (no confundir con el de AppNavHost)
+    val currentBackStackEntry by navController.currentBackStackEntryAsState() // Observa la ruta actual para marcar el tab seleccionado
+    val currentRoute = currentBackStackEntry?.destination?.route ?: MainTabs.HOME // Si no hay ruta aún, asumimos HOME
 
-    val isGuest = mode.lowercase() == "guest"
+    val isGuest = mode.lowercase() == "guest" // Si es invitado, aplicamos restricciones en COMMUNITY y PROFILE
 
+    // Definición de tabs del bottom bar (rutas + etiquetas + iconos)
     val tabs = listOf(
         BottomTab(MainTabs.HOME, R.string.tab_home) { Icon(Icons.Default.Home, contentDescription = null) },
         BottomTab(MainTabs.PLAN, R.string.tab_plan) { Icon(Icons.Default.Place, contentDescription = null) },
@@ -54,40 +56,41 @@ fun MainShellScreen(
         bottomBar = {
             NavigationBar {
                 tabs.forEach { tab ->
-                    val selected = currentRoute == tab.route
+                    val selected = currentRoute == tab.route // Marca visualmente el tab activo
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
-                            navController.navigate(tab.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+                            navController.navigate(tab.route) { // Navega a la ruta del tab
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true } // Mantiene estado de tabs previas
+                                launchSingleTop = true // Evita duplicar la misma pantalla si vuelves a pulsar el tab
+                                restoreState = true // Restaura estado guardado (scroll, etc.) al volver a un tab
                             }
                         },
                         icon = tab.icon,
-                        label = { Text(stringResource(tab.labelRes)) }
+                        label = { Text(stringResource(tab.labelRes)) } // Etiqueta traducible (ES/EN)
                     )
                 }
             }
         }
     ) { innerPadding ->
         NavHost(
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier.padding(innerPadding), // Respeta padding del Scaffold para no tapar contenido con el bottom bar
             navController = navController,
-            startDestination = MainTabs.HOME
+            startDestination = MainTabs.HOME // Tab por defecto al entrar en MainShell
         ) {
             composable(MainTabs.HOME) {
-                InicioTabScreen(isGuest = isGuest, onRequireLogin = onRequireLogin)        }
+                InicioTabScreen(isGuest = isGuest, onRequireLogin = onRequireLogin) // Home puede diferenciar UI si es invitado
+            }
             composable(MainTabs.PLAN) {
-                PlanTabScreen(isGuest = isGuest)
+                PlanTabScreen(isGuest = isGuest) // Planificar está permitido en guest (según Hito 1), pero con límites en guardar
             }
             composable(MainTabs.COMMUNITY) {
-                if (isGuest) RequireLoginScreen(onRequireLogin = onRequireLogin)
-                else CommunityTabScreen()
+                if (isGuest) RequireLoginScreen(onRequireLogin = onRequireLogin) // Invitado: bloquea comunidad y pide login
+                else CommunityTabScreen() // Autenticado: entra a comunidad
             }
             composable(MainTabs.PROFILE) {
-                if (isGuest) RequireLoginScreen(onRequireLogin = onRequireLogin)
-                else ProfileTabScreen(authViewModel = authViewModel, onLoggedOut = onLoggedOut)
+                if (isGuest) RequireLoginScreen(onRequireLogin = onRequireLogin) // Invitado: perfil restringido (pide login)
+                else ProfileTabScreen(authViewModel = authViewModel, onLoggedOut = onLoggedOut) // Auth: perfil con logout
             }
         }
     }

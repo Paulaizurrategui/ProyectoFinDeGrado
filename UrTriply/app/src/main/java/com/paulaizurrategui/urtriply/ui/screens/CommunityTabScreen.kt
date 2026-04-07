@@ -8,7 +8,7 @@ import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
 
 @Composable
 fun CommunityTabScreen() {
-    UrTriplyGradientScaffold(title = stringResource(R.string.tab_community)) {
-        Text(text = stringResource(R.string.community_placeholder_body))
+    UrTriplyGradientScaffold(title = stringResource(R.string.tab_community)) { // Tab "Comunidad" (solo modo auth; en guest se bloquea en MainShell)
+        Text(text = stringResource(R.string.community_placeholder_body)) // Placeholder: aquí irá el feed de viajes publicados
     }
 }

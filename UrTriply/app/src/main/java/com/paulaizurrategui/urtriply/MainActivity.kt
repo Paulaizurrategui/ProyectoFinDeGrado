@@ -14,15 +14,16 @@ import com.paulaizurrategui.urtriply.ui.theme.UrTriplyTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
+        enableEdgeToEdge() // Permite dibujar bajo status/navigation bar (look moderno); Compose lo gestiona con paddings/insets
+
         setContent {
-            UrTriplyTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    // Esto es lo que debe verse al ejecutar la app
+            UrTriplyTheme { // Aplica el theme Material3 de la app (colores, tipografías, etc.)
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding -> // Scaffold raíz para manejar insets/padding de edge-to-edge
                     androidx.compose.foundation.layout.Box(
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier.padding(innerPadding) // Respeta espacio de barras del sistema para que la UI no quede “tapada”
                     ) {
-                        AppNavHost()
+                        AppNavHost() // Punto de entrada real: navegación (Welcome/Login/Register/Main)
                     }
                 }
             }

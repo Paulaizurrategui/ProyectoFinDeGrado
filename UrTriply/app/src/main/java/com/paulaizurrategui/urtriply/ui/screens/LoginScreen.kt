@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
@@ -49,39 +48,37 @@ import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
 
 @Composable
 fun LoginScreen(
-    authViewModel: AuthViewModel,
-    onGoToRegister: () -> Unit,
-    onLoginSuccess: () -> Unit
+    authViewModel: AuthViewModel, // ViewModel que ejecuta login/reset password y expone uiState (loading/errores)
+    onGoToRegister: () -> Unit, // Navegación a Registro
+    onLoginSuccess: () -> Unit // Callback de navegación cuando Firebase confirma login correcto
 ) {
-    val uiState by authViewModel.uiState.collectAsState()
+    val uiState by authViewModel.uiState.collectAsState() // Observa StateFlow y recompone la UI cuando cambia
 
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var showPassword by remember { mutableStateOf(false) }
+    var email by remember { mutableStateOf("") } // Estado local del input email (solo UI)
+    var password by remember { mutableStateOf("") } // Estado local del input password (solo UI)
+    var showPassword by remember { mutableStateOf(false) } // Controla si la contraseña se ve o se oculta
 
-    // Dialog (prioriza error sobre éxito)
-    val dialogResId = uiState.errorResId ?: uiState.successResId
-    val dialogTitleResId = when {
+    val dialogResId = uiState.errorResId ?: uiState.successResId // Si hay error o éxito, mostramos un AlertDialog
+    val dialogTitleResId = when { // Decide el título del dialog según sea error o éxito
         uiState.errorResId != null -> R.string.dialog_error_title
         uiState.successResId != null -> R.string.dialog_success_title
         else -> null
     }
 
-    if (dialogResId != null && dialogTitleResId != null) {
+    if (dialogResId != null && dialogTitleResId != null) { // Solo pinta el diálogo si hay mensaje y título válidos
         AlertDialog(
-            onDismissRequest = { authViewModel.clearMessages() },
+            onDismissRequest = { authViewModel.clearMessages() }, // Al cerrar el diálogo, limpiamos el mensaje del estado
             title = { Text(stringResource(dialogTitleResId)) },
             text = { Text(stringResource(dialogResId)) },
             confirmButton = {
-                TextButton(onClick = { authViewModel.clearMessages() }) {
+                TextButton(onClick = { authViewModel.clearMessages() }) { // Botón OK que también limpia el mensaje
                     Text(stringResource(R.string.dialog_ok))
                 }
             }
         )
     }
 
-    // Fondo con degradado “viajes”
-    val bg = Brush.verticalGradient(
+    val bg = Brush.verticalGradient( // Fondo degradado (misma identidad visual que Welcome/Home)
         0f to Color(0xFF4FC3F7),
         0.55f to Color(0xFFB3E5FC),
         1f to Color(0xFFE3F2FD)
@@ -90,24 +87,23 @@ fun LoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(bg)
+            .background(bg) // Fondo completo con degradado
             .padding(20.dp),
         contentAlignment = Alignment.Center
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp)),
+                .clip(RoundedCornerShape(24.dp)), // Esquinas redondeadas “look & feel” UrTriply
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = Color.White), // Card blanca para contraste sobre el fondo
             elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // “Logo” simple (puedes reemplazarlo por Image(painterResource(...)) si tienes)
-                Box(
+                Box( // “Logo” textual simple (en el futuro se puede sustituir por Image con logo real)
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(18.dp))
@@ -116,7 +112,7 @@ fun LoginScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = stringResource(R.string.app_name), // "UrTriply"
+                        text = stringResource(R.string.app_name),
                         fontWeight = FontWeight.ExtraBold,
                         color = Color(0xFFEF6C00),
                         style = MaterialTheme.typography.titleLarge
@@ -125,12 +121,12 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = stringResource(R.string.login_button), // “Iniciar sesión”
+                Text( // Título principal de la pantalla
+                    text = stringResource(R.string.login_button),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
-                Text(
+                Text( // Subtítulo (ojo: este texto está hardcoded; si quieres multi-idioma, pásalo a strings.xml)
                     text = "¡Bienvenid@ de vuelta!",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color(0xFF6B7280)
@@ -141,14 +137,12 @@ fun LoginScreen(
                 OutlinedTextField(
                     value = email,
                     onValueChange = {
-                        email = it
-                        authViewModel.clearMessages()
+                        email = it // Actualiza el estado local del input
+                        authViewModel.clearMessages() // Si el usuario edita, limpiamos errores previos para no confundir
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.email_label)) },
-                    leadingIcon = {
-                        Icon(imageVector = Icons.Default.Email, contentDescription = null)
-                    },
+                    leadingIcon = { Icon(imageVector = Icons.Default.Email, contentDescription = null) },
                     singleLine = true
                 )
 
@@ -162,11 +156,9 @@ fun LoginScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.password_label)) },
-                    leadingIcon = {
-                        Icon(imageVector = Icons.Default.Lock, contentDescription = null)
-                    },
+                    leadingIcon = { Icon(imageVector = Icons.Default.Lock, contentDescription = null) },
                     trailingIcon = {
-                        IconButton(onClick = { showPassword = !showPassword }) {
+                        IconButton(onClick = { showPassword = !showPassword }) { // Alterna mostrar/ocultar contraseña
                             Icon(
                                 imageVector = if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                 contentDescription = null
@@ -174,7 +166,7 @@ fun LoginScreen(
                         }
                     },
                     singleLine = true,
-                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation()
+                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation() // Oculta password por defecto
                 )
 
                 Row(
@@ -182,8 +174,8 @@ fun LoginScreen(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(
-                        onClick = { authViewModel.sendPasswordReset(email) },
-                        enabled = !uiState.isLoading
+                        onClick = { authViewModel.sendPasswordReset(email) }, // Usa el email escrito para mandar reset (si está vacío, el VM muestra error)
+                        enabled = !uiState.isLoading // Evita clicks mientras hay operación en curso
                     ) {
                         Text(stringResource(R.string.forgot_password))
                     }
@@ -191,11 +183,11 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                val orange = Color(0xFFFF8A00)
+                val orange = Color(0xFFFF8A00) // Color del CTA de login
 
                 Button(
-                    onClick = { authViewModel.login(email, password, onLoginSuccess) },
-                    enabled = !uiState.isLoading,
+                    onClick = { authViewModel.login(email, password, onLoginSuccess) }, // Llama al VM; si OK navega vía callback
+                    enabled = !uiState.isLoading, // Deshabilita botón mientras loading
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
@@ -203,8 +195,7 @@ fun LoginScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = orange)
                 ) {
                     Text(
-                        text = if (uiState.isLoading) stringResource(R.string.login_loading)
-                        else stringResource(R.string.login_button),
+                        text = if (uiState.isLoading) stringResource(R.string.login_loading) else stringResource(R.string.login_button), // Cambia texto si está cargando
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -212,14 +203,9 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "¿No tienes cuenta?",
-                        color = Color(0xFF6B7280)
-                    )
-                    TextButton(onClick = onGoToRegister) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "¿No tienes cuenta?", color = Color(0xFF6B7280)) // Hardcoded (si quieres ES/EN -> strings.xml)
+                    TextButton(onClick = onGoToRegister) { // Link a registro
                         Text(stringResource(R.string.create_account), fontWeight = FontWeight.Bold)
                     }
                 }

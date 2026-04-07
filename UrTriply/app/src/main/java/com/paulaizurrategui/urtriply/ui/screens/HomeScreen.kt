@@ -19,47 +19,47 @@ import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
 
 @Composable
 fun HomeScreen(
-    authViewModel: AuthViewModel,
-    onLogout: () -> Unit
+    authViewModel: AuthViewModel, // ViewModel de auth para poder hacer logout desde esta pantalla
+    onLogout: () -> Unit // Callback de navegación cuando se cierra sesión (volver a Welcome, etc.)
 ) {
-    val email = FirebaseAuth.getInstance().currentUser?.email ?: "usuario"
+    val email = FirebaseAuth.getInstance().currentUser?.email ?: "usuario" // Lee el email del usuario logueado (fallback "usuario")
 
-    val bg = Brush.verticalGradient(
+    val bg = Brush.verticalGradient( // Fondo degradado consistente con el resto de pantallas
         0f to Color(0xFF4FC3F7),
         0.55f to Color(0xFFB3E5FC),
         1f to Color(0xFFE3F2FD)
     )
-    val orange = Color(0xFFFF8A00)
+    val orange = Color(0xFFFF8A00) // Color principal de botones
 
-    var showSoonDialog by remember { mutableStateOf(false) }
+    var showSoonDialog by remember { mutableStateOf(false) } // Controla si se muestra el diálogo "Próximamente"
 
-    if (showSoonDialog) {
+    if (showSoonDialog) { // Dialog placeholder para botones que aún no tienen funcionalidad
         AlertDialog(
-            onDismissRequest = { showSoonDialog = false },
-            title = { Text(stringResource(R.string.soon_title)) },
-            text = { Text(stringResource(R.string.soon_body)) },
+            onDismissRequest = { showSoonDialog = false }, // Cierra dialog tocando fuera o con back
+            title = { Text(stringResource(R.string.soon_title)) }, // Título del dialog
+            text = { Text(stringResource(R.string.soon_body)) }, // Body "próximamente"
             confirmButton = {
-                TextButton(onClick = { showSoonDialog = false }) {
+                TextButton(onClick = { showSoonDialog = false }) { // Botón OK para cerrar
                     Text(stringResource(R.string.dialog_ok))
                 }
             }
         )
     }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) { // Surface pantalla completa
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(bg)
+                .background(bg) // Fondo degradado
                 .padding(20.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center // Centra la Card
         ) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp)),
+                    .clip(RoundedCornerShape(24.dp)), // Bordes redondeados
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = Color.White), // Fondo blanco para legibilidad
                 elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
             ) {
                 Column(
@@ -67,8 +67,7 @@ fun HomeScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // Cabecera
-                    Box(
+                    Box( // Cabecera con nombre de la app (look consistente)
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(18.dp))
@@ -86,7 +85,7 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(
+                    Text( // Título "Bienvenida"
                         text = stringResource(R.string.home_welcome),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
@@ -94,7 +93,7 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    Text(
+                    Text( // Subtítulo (descripción corta)
                         text = stringResource(R.string.home_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color(0xFF6B7280)
@@ -102,7 +101,7 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    Text(
+                    Text( // Muestra el usuario con el que estás logueado
                         text = stringResource(R.string.home_logged_as, email),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color(0xFF6B7280)
@@ -110,8 +109,7 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(22.dp))
 
-                    // Botones principales (placeholder por ahora)
-                    Button(
+                    Button( // Placeholder: planificar viaje (por ahora abre "Próximamente")
                         onClick = { showSoonDialog = true },
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(14.dp),
@@ -126,7 +124,7 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    OutlinedButton(
+                    OutlinedButton( // Placeholder: borradores
                         onClick = { showSoonDialog = true },
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(14.dp)
@@ -136,7 +134,7 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    OutlinedButton(
+                    OutlinedButton( // Placeholder: comunidad
                         onClick = { showSoonDialog = true },
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(14.dp)
@@ -146,15 +144,14 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    // Logout
-                    Button(
+                    Button( // Logout: cierra sesión y vuelve a Welcome
                         onClick = {
-                            authViewModel.logout()
-                            onLogout()
+                            authViewModel.logout() // SignOut + actualiza uiState
+                            onLogout() // Navega fuera del Home
                         },
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)) // Rojo para acción destructiva
                     ) {
                         Text(
                             text = stringResource(R.string.logout_button),

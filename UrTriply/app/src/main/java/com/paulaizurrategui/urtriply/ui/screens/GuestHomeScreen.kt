@@ -17,35 +17,35 @@ import com.paulaizurrategui.urtriply.R
 
 @Composable
 fun GuestHomeScreen(
-    onGoLogin: () -> Unit,
-    onBack: () -> Unit
+    onGoLogin: () -> Unit, // Acción principal: llevar al usuario a Login para desbloquear funciones (modo auth)
+    onBack: () -> Unit // Acción secundaria: volver atrás (normalmente a Welcome)
 ) {
-    val bg = Brush.verticalGradient(
+    val bg = Brush.verticalGradient( // Fondo degradado consistente con el resto de pantallas (Welcome/Login/Register)
         0f to Color(0xFF4FC3F7),
         0.55f to Color(0xFFB3E5FC),
         1f to Color(0xFFE3F2FD)
     )
-    val orange = Color(0xFFFF8A00)
+    val orange = Color(0xFFFF8A00) // Color para el botón CTA principal
 
-    Surface(modifier = Modifier.fillMaxSize()) {
+    Surface(modifier = Modifier.fillMaxSize()) { // Surface ocupa toda la pantalla
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(bg)
+                .background(bg) // Aplica degradado de fondo
                 .padding(20.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center // Centra la Card principal
         ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(24.dp), // Bordes redondeados (misma estética)
+                colors = CardDefaults.cardColors(containerColor = Color.White), // Card blanca sobre el fondo
                 elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
+                    Box( // Cabecera con nombre de la app (misma “capsula” que en otras pantallas)
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(18.dp))
@@ -64,7 +64,7 @@ fun GuestHomeScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = stringResource(R.string.guest_title),
+                        text = stringResource(R.string.guest_title), // Título explicando que estás en modo invitado
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -72,7 +72,7 @@ fun GuestHomeScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = stringResource(R.string.guest_subtitle),
+                        text = stringResource(R.string.guest_subtitle), // Subtítulo: qué se puede / qué no se puede sin cuenta
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color(0xFF6B7280)
                     )
@@ -80,13 +80,13 @@ fun GuestHomeScreen(
                     Spacer(modifier = Modifier.height(18.dp))
 
                     Button(
-                        onClick = onGoLogin,
+                        onClick = onGoLogin, // CTA: ir a Login
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = orange)
                     ) {
                         Text(
-                            text = stringResource(R.string.guest_login_cta),
+                            text = stringResource(R.string.guest_login_cta), // Texto del CTA (ej. "Inicia sesión para guardar...")
                             color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
@@ -95,11 +95,11 @@ fun GuestHomeScreen(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     OutlinedButton(
-                        onClick = onBack,
+                        onClick = onBack, // Botón secundario: volver atrás (ej. a Welcome)
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(14.dp)
                     ) {
-                        Text(stringResource(R.string.back), fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.back), fontWeight = FontWeight.Bold) // Texto "Volver"
                     }
                 }
             }

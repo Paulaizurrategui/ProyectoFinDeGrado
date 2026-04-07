@@ -13,11 +13,11 @@ import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
 
 @Composable
 fun RequireLoginScreen(onRequireLogin: () -> Unit) {
-    UrTriplyGradientScaffold(title = stringResource(R.string.login_required_title)) {
-        Text(text = stringResource(R.string.login_required_body))
-        Spacer(modifier = Modifier.height(14.dp))
-        Button(onClick = onRequireLogin) {
-            Text(stringResource(R.string.welcome_login))
+    UrTriplyGradientScaffold(title = stringResource(R.string.login_required_title)) { // Scaffold común con el look&feel (degradado + título)
+        Text(text = stringResource(R.string.login_required_body)) // Explica que esa sección es solo para usuarios registrados
+        Spacer(modifier = Modifier.height(14.dp)) // Separación visual entre texto y botón
+        Button(onClick = onRequireLogin) { // Acción principal: llevar a Login (callback lo decide el NavHost)
+            Text(stringResource(R.string.welcome_login)) // Reutiliza el mismo string de "Iniciar sesión"
         }
     }
 }

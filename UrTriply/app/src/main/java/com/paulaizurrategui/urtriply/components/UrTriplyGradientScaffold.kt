@@ -25,35 +25,34 @@ import com.paulaizurrategui.urtriply.R
 
 @Composable
 fun UrTriplyGradientScaffold(
-    title: String,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    title: String, // Título de pantalla/tab (ej. "Perfil", "Comunidad", "Planificar"...)
+    modifier: Modifier = Modifier, // Permite que la pantalla que lo use añada modificadores si lo necesita
+    content: @Composable () -> Unit // Slot: contenido específico de cada pantalla
 ) {
-    val bg = Brush.verticalGradient(
+    val bg = Brush.verticalGradient( // Fondo degradado común a toda la app (identidad visual consistente)
         0f to Color(0xFF4FC3F7),
         0.55f to Color(0xFFB3E5FC),
         1f to Color(0xFFE3F2FD)
     )
 
-    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) { // Surface base que ocupa toda la pantalla
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(bg)
+                .background(bg) // Aplica el degradado al fondo
                 .padding(20.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center // Centra la tarjeta principal
         ) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp)),
+                    .clip(RoundedCornerShape(24.dp)), // Estilo común: bordes redondeados
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = Color.White), // Tarjeta blanca para legibilidad
                 elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    // Cabecera naranja (mismo estilo que Login/Home)
-                    Box(
+                Column(modifier = Modifier.padding(20.dp)) { // Padding interno de la tarjeta
+                    Box( // Cabecera con el nombre de la app (reutiliza look de Login/Register/Welcome)
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(18.dp))
@@ -62,25 +61,25 @@ fun UrTriplyGradientScaffold(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = stringResource(R.string.app_name),
+                            text = stringResource(R.string.app_name), // "UrTriply"
                             fontWeight = FontWeight.ExtraBold,
                             color = Color(0xFFEF6C00),
                             style = MaterialTheme.typography.titleLarge
                         )
                     }
 
-                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(top = 12.dp))
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(top = 12.dp)) // Espacio entre cabecera y título
 
                     Text(
-                        text = title,
+                        text = title, // Título de la pantalla actual (lo pasa cada pantalla)
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF111827)
                     )
 
-                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(top = 14.dp))
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(top = 14.dp)) // Espacio antes del contenido
 
-                    content()
+                    content() // Aquí se inserta el contenido real de cada pantalla/tab
                 }
             }
         }
