@@ -1,5 +1,3 @@
-## README (propuesta para UrTriply)
-
 ### Descripción
 **UrTriply** es una app Android (Kotlin + Jetpack Compose) para planificar viajes desde el **Aeropuerto de Madrid (MAD)** a capitales europeas, generando una propuesta ajustada al **presupuesto total**, **número de viajeros**, **rango de fechas** y **preferencias** (cultura, ocio nocturno, naturaleza, gastronomía).
 
