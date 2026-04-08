@@ -3,6 +3,7 @@ package com.paulaizurrategui.urtriply.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -68,7 +69,7 @@ fun UrTriplyGradientScaffold(
                         )
                     }
 
-                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(top = 12.dp)) // Espacio entre cabecera y título
+                    Spacer(modifier = Modifier.padding(top = 12.dp)) // Espacio entre cabecera y título
 
                     Text(
                         text = title, // Título de la pantalla actual (lo pasa cada pantalla)
@@ -77,7 +78,7 @@ fun UrTriplyGradientScaffold(
                         color = Color(0xFF111827)
                     )
 
-                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(top = 14.dp)) // Espacio antes del contenido
+                    Spacer(modifier = Modifier.padding(top = 14.dp)) // Espacio antes del contenido
 
                     content() // Aquí se inserta el contenido real de cada pantalla/tab
                 }

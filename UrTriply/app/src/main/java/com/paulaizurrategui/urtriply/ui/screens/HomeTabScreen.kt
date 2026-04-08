@@ -1,5 +1,6 @@
 package com.paulaizurrategui.urtriply.ui.screens
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -25,7 +26,7 @@ fun InicioTabScreen(
 
         if (isGuest) { // Si es invitado, mostramos un "mensaje" de que hay funciones bloqueadas
             Card {
-                androidx.compose.foundation.layout.Column(
+                Column(
                     modifier = Modifier.padding(14.dp) // Padding interior de la card para que respire el contenido
                 ) {
                     Text(text = stringResource(R.string.guest_hint_title), fontWeight = FontWeight.Bold) // Título: modo invitado
