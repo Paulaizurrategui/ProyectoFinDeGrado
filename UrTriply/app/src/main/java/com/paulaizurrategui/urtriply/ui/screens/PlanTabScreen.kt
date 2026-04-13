@@ -1,7 +1,5 @@
 package com.paulaizurrategui.urtriply.ui.screens
 
-// ---------- IMPORTS ----------
-// Layout / UI base
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,15 +15,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-
-// Para lista de destinos dentro del diálogo
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-
-// Material3
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.Divider
@@ -36,31 +32,27 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
-
-// State / Compose runtime
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-
-// Utilidades UI
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-
-// Scaffold propio con degradado y tarjeta
 import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
-
-// Fechas
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
-// Enum con las preferencias del usuario para el viaje (multi-selección con chips)
 private enum class Preference(val label: String) {
     CULTURA("Cultura"),
     OCIO("Ocio nocturno"),
@@ -68,13 +60,14 @@ private enum class Preference(val label: String) {
     GASTRONOMIA("Gastronomía")
 }
 
-@OptIn(ExperimentalMaterial3Api::class) // Necesario por DatePicker / DatePickerDialog (APIs experimentales)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlanTabScreen(isGuest: Boolean) {
-    // Scaffold con el estilo común de la app (degradado + tarjeta centrada + header)
+fun PlanTabScreen(
+    isGuest: Boolean,
+    onNavigateToResult: () -> Unit
+) {
     UrTriplyGradientScaffold(title = "Planificar") {
 
-        // Catálogo MVP de destinos (10 capitales europeas)
         val destinos = listOf(
             "París (Francia)",
             "Londres (Reino Unido)",
@@ -88,56 +81,32 @@ fun PlanTabScreen(isGuest: Boolean) {
             "Dublín (Irlanda)"
         )
 
-        // ---------------------------
-        // ESTADO DEL FORMULARIO (inputs)
-        // ---------------------------
-
-        // Destino seleccionado (por defecto el primero del catálogo)
+        // --- Estado formulario ---
         var destino by remember { mutableStateOf(destinos.first()) }
-
-        // Presupuesto total (texto para poder escribir) -> luego lo parsearemos a Double cuando generemos
         var presupuestoText by remember { mutableStateOf("") }
-
-        // Nº viajeros como texto (más fácil validar/limitar)
         var viajerosText by remember { mutableStateOf("1") }
-
-        // Fechas en milisegundos (null si no se ha elegido)
         var fechaInicioMillis by remember { mutableStateOf<Long?>(null) }
         var fechaFinMillis by remember { mutableStateOf<Long?>(null) }
-
-        // Preferencias seleccionadas (multi-select)
         var prefs by remember { mutableStateOf(setOf<Preference>()) }
 
-        // ---------------------------
-        // ESTADO UI auxiliar
-        // ---------------------------
-
-        // Controla si se muestran los diálogos de fecha
+        // --- UI state ---
         var showStartPicker by remember { mutableStateOf(false) }
         var showEndPicker by remember { mutableStateOf(false) }
+        var isLoading by remember { mutableStateOf(false) }
+        var localError by remember { mutableStateOf<String?>(null) }
 
-        // Formateo de fechas (dd/MM/yyyy) para mostrar en el UI
         val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
         fun formatDate(ms: Long?): String = ms?.let { dateFormat.format(Date(it)) } ?: "-"
 
-        // Scroll: permite bajar/subir dentro de la tarjeta (y nos sirve para pintar la barra a la derecha)
         val scrollState = rememberScrollState()
 
-        // Caja principal para:
-        // - pintar el contenido scrollable
-        // - superponer la “barra de scroll” a la derecha
         Box(modifier = Modifier.fillMaxWidth()) {
-
-            // ---------------------------
-            // CONTENIDO SCROLLABLE
-            // ---------------------------
             Column(
                 modifier = Modifier
-                    .verticalScroll(scrollState) // habilita scroll vertical
+                    .verticalScroll(scrollState)
                     .fillMaxWidth()
-                    .padding(end = 14.dp) // deja espacio para que el scrollbar no pise el contenido
+                    .padding(end = 14.dp)
             ) {
-                // Texto informativo distinto según modo guest/auth
                 Text(
                     text = if (isGuest)
                         "Modo invitado: puedes generar propuestas, pero para guardar/publicar necesitarás iniciar sesión."
@@ -148,7 +117,6 @@ fun PlanTabScreen(isGuest: Boolean) {
 
                 Spacer(Modifier.height(14.dp))
 
-                // Selector de destino (en diálogo para evitar problemas de DropdownMenu dentro del Scaffold/Card)
                 DestinationDropdown(
                     destinos = destinos,
                     selected = destino,
@@ -157,10 +125,9 @@ fun PlanTabScreen(isGuest: Boolean) {
 
                 Spacer(Modifier.height(14.dp))
 
-                // Presupuesto total
                 OutlinedTextField(
                     value = presupuestoText,
-                    onValueChange = { presupuestoText = it.replace(",", ".") }, // permite coma o punto decimal
+                    onValueChange = { presupuestoText = it.replace(",", ".") },
                     label = { Text("Presupuesto total (EUR)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
@@ -168,7 +135,6 @@ fun PlanTabScreen(isGuest: Boolean) {
 
                 Spacer(Modifier.height(12.dp))
 
-                // Número de viajeros (solo dígitos)
                 OutlinedTextField(
                     value = viajerosText,
                     onValueChange = { viajerosText = it.filter(Char::isDigit) },
@@ -179,7 +145,6 @@ fun PlanTabScreen(isGuest: Boolean) {
 
                 Spacer(Modifier.height(12.dp))
 
-                // Tarjeta del rango de fechas
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFF3F4F6))
@@ -189,14 +154,12 @@ fun PlanTabScreen(isGuest: Boolean) {
 
                         Spacer(Modifier.height(8.dp))
 
-                        // Fila: inicio + botón elegir
                         RowLine(
                             left = "Inicio: ${formatDate(fechaInicioMillis)}",
                             actionText = "Elegir",
                             onAction = { showStartPicker = true }
                         )
 
-                        // Fila: fin + botón elegir
                         RowLine(
                             left = "Fin: ${formatDate(fechaFinMillis)}",
                             actionText = "Elegir",
@@ -207,18 +170,15 @@ fun PlanTabScreen(isGuest: Boolean) {
 
                 Spacer(Modifier.height(16.dp))
 
-                // Preferencias (chips)
                 Text("Preferencias", style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(8.dp))
 
-                // Chips en 2 filas para que no se “aplasten”
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Preference.entries.take(2).forEach { pref ->
                             FilterChip(
                                 selected = prefs.contains(pref),
                                 onClick = {
-                                    // toggle (si estaba, lo quita; si no estaba, lo añade)
                                     prefs = if (prefs.contains(pref)) prefs - pref else prefs + pref
                                 },
                                 label = { Text(pref.label) }
@@ -238,23 +198,78 @@ fun PlanTabScreen(isGuest: Boolean) {
                     }
                 }
 
-                Spacer(Modifier.height(26.dp))
+                Spacer(Modifier.height(16.dp))
 
-                // Placeholder (luego aquí irá el botón “Generar propuesta” y el resultado)
-                Text(
-                    text = "Siguiente: botón “Generar propuesta” + resultado (Pantalla 5).",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF6B7280)
-                )
+                // Error local de validación
+                localError?.let {
+                    Text(text = it, color = MaterialTheme.colorScheme.error)
+                    Spacer(Modifier.height(10.dp))
+                }
+
+                // Botón generar
+                Button(
+                    onClick = {
+                        localError = null
+
+                        val presupuesto = presupuestoText.toDoubleOrNull()
+                        val viajeros = viajerosText.toIntOrNull()
+
+                        if (presupuesto == null || presupuesto <= 0) {
+                            localError = "Introduce un presupuesto válido (> 0)."
+                            return@Button
+                        }
+                        if (viajeros == null || viajeros <= 0) {
+                            localError = "Introduce un número de viajeros válido (> 0)."
+                            return@Button
+                        }
+                        if (fechaInicioMillis == null || fechaFinMillis == null) {
+                            localError = "Selecciona fecha de inicio y fin."
+                            return@Button
+                        }
+                        if (fechaFinMillis!! < fechaInicioMillis!!) {
+                            localError = "La fecha fin no puede ser anterior a la fecha inicio."
+                            return@Button
+                        }
+                        if (prefs.isEmpty()) {
+                            localError = "Selecciona al menos una preferencia."
+                            return@Button
+                        }
+
+                        isLoading = true
+
+                        // Simulamos llamada a APIs (MVP)
+                        CoroutineScope(Dispatchers.Main).launch {
+                            delay(900)
+
+                            val generated = generateLocalProposal(
+                                destino = destino,
+                                presupuestoTotal = presupuesto,
+                                viajeros = viajeros,
+                                fechaInicioMillis = fechaInicioMillis,
+                                fechaFinMillis = fechaFinMillis,
+                                prefs = prefs
+                            )
+
+                            PlanResultStore.lastResult = generated
+
+                            isLoading = false
+                            onNavigateToResult()
+                        }
+                    },
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth().height(52.dp)
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(end = 12.dp))
+                        Text("Generando...")
+                    } else {
+                        Text("Generar propuesta", fontWeight = FontWeight.Bold)
+                    }
+                }
 
                 Spacer(Modifier.height(10.dp))
             }
 
-            // ---------------------------
-            // SCROLLBAR VISUAL (derecha)
-            // ---------------------------
-            // Compose por defecto NO muestra scrollbar en Column + verticalScroll,
-            // así que lo dibujamos manualmente para que se vea que se puede bajar/subir.
             VerticalScrollbar(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
@@ -264,27 +279,19 @@ fun PlanTabScreen(isGuest: Boolean) {
             )
         }
 
-        // ---------------------------
-        // DATE PICKERS (DIALOGS)
-        // ---------------------------
-        // Se abren al pulsar “Elegir” en inicio/fin.
-
+        // Date pickers
         if (showStartPicker) {
             val state = rememberDatePickerState(initialSelectedDateMillis = fechaInicioMillis)
             DatePickerDialog(
                 onDismissRequest = { showStartPicker = false },
                 confirmButton = {
                     TextButton(onClick = {
-                        fechaInicioMillis = state.selectedDateMillis // guarda fecha elegida
+                        fechaInicioMillis = state.selectedDateMillis
                         showStartPicker = false
                     }) { Text("OK") }
                 },
-                dismissButton = {
-                    TextButton(onClick = { showStartPicker = false }) { Text("Cancelar") }
-                }
-            ) {
-                DatePicker(state = state)
-            }
+                dismissButton = { TextButton(onClick = { showStartPicker = false }) { Text("Cancelar") } }
+            ) { DatePicker(state = state) }
         }
 
         if (showEndPicker) {
@@ -297,12 +304,8 @@ fun PlanTabScreen(isGuest: Boolean) {
                         showEndPicker = false
                     }) { Text("OK") }
                 },
-                dismissButton = {
-                    TextButton(onClick = { showEndPicker = false }) { Text("Cancelar") }
-                }
-            ) {
-                DatePicker(state = state)
-            }
+                dismissButton = { TextButton(onClick = { showEndPicker = false }) { Text("Cancelar") } }
+            ) { DatePicker(state = state) }
         }
     }
 }
@@ -313,13 +316,9 @@ private fun DestinationDropdown(
     selected: String,
     onSelected: (String) -> Unit
 ) {
-    // Controla si el diálogo de destinos está visible
     var showDialog by remember { mutableStateOf(false) }
 
-    // Campo tipo “dropdown” (pero no usamos DropdownMenu porque a veces falla dentro de Cards/Scaffold)
     Box(modifier = Modifier.fillMaxWidth()) {
-
-        // Campo visible (solo lectura) que muestra el destino actual
         OutlinedTextField(
             value = selected,
             onValueChange = {},
@@ -330,8 +329,6 @@ private fun DestinationDropdown(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Capa transparente encima del campo:
-        // así capturamos el click en TODO el área del TextField (siempre funciona)
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -339,7 +336,6 @@ private fun DestinationDropdown(
         )
     }
 
-    // Diálogo con la lista completa de destinos (scrollable)
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
@@ -352,7 +348,6 @@ private fun DestinationDropdown(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    // cuando el usuario elige una opción:
                                     onSelected(option)
                                     showDialog = false
                                 }
@@ -375,7 +370,6 @@ private fun DestinationDropdown(
 
 @Composable
 private fun RowLine(left: String, actionText: String, onAction: () -> Unit) {
-    // Fila genérica: texto a la izquierda + botón a la derecha (para Inicio/Fin)
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -386,41 +380,28 @@ private fun RowLine(left: String, actionText: String, onAction: () -> Unit) {
     }
 }
 
-/**
- * Scrollbar vertical simple (VISUAL). No es arrastrable.
- * Objetivo: que se vea “una barra” a la derecha indicando que hay scroll.
- */
 @Composable
 private fun VerticalScrollbar(
     modifier: Modifier,
     scrollState: androidx.compose.foundation.ScrollState
 ) {
-    // maxValue: cuanto “scroll total” hay.
-    // Si es 0, significa que el contenido no excede la pantalla => no hace falta scrollbar.
     val max = scrollState.maxValue
     if (max <= 0) return
 
-    // progress (0..1): posición actual del scroll dentro del total
     val progress = scrollState.value.toFloat() / max.toFloat()
 
-    // Colores semitransparentes para track (fondo) y thumb (la pieza que se mueve)
     val trackColor = Color(0x33000000)
     val thumbColor = Color(0x99000000)
 
-    // Tamaño del thumb (fijo para MVP visual)
     val thumbHeight = 72.dp
-
-    // Posición aproximada vertical del thumb según el progreso del scroll
     val topPadding = (progress * 140).dp
 
-    // Track (barra de fondo)
     Box(
         modifier = modifier
             .width(6.dp)
             .clip(RoundedCornerShape(3.dp))
             .background(trackColor)
     ) {
-        // Thumb (la parte “oscura” que indica dónde estás)
         Box(
             modifier = Modifier
                 .padding(top = topPadding)
@@ -430,4 +411,72 @@ private fun VerticalScrollbar(
                 .background(thumbColor)
         )
     }
+}
+
+/**
+ * Generación local (MVP). Todavía no usamos APIs reales, por eso usedFallback=true.
+ * Cumple RF-13 / RF-14 de forma estimada.
+ */
+private fun generateLocalProposal(
+    destino: String,
+    presupuestoTotal: Double,
+    viajeros: Int,
+    fechaInicioMillis: Long?,
+    fechaFinMillis: Long?,
+    prefs: Set<Preference>
+): PlanResult {
+    val transporte = presupuestoTotal * 0.35
+    val alojamiento = presupuestoTotal * 0.35
+    val comidas = presupuestoTotal * 0.20
+    val actividades = presupuestoTotal * 0.10
+
+    // Estimación simple de días recomendados (MVP)
+    val costeDiarioEstimado = (alojamiento + comidas + actividades) / 3.0
+    val diasRecomendados = (presupuestoTotal / maxOf(1.0, costeDiarioEstimado))
+        .toInt()
+        .coerceIn(2, 7)
+
+    val itinerario = (1..diasRecomendados).map { day ->
+        val focus = when {
+            prefs.contains(Preference.CULTURA) && day % 2 == 1 -> "museos y casco histórico"
+            prefs.contains(Preference.NATURALEZA) && day % 3 == 0 -> "parques y miradores"
+            prefs.contains(Preference.GASTRONOMIA) -> "ruta gastronómica"
+            prefs.contains(Preference.OCIO) -> "zona de ocio nocturno"
+            else -> "paseo libre"
+        }
+        "Día $day: $focus en $destino"
+    }
+
+    val actividadesGratis = buildList {
+        if (prefs.contains(Preference.CULTURA)) add("Free walking tour (propina) + plazas principales")
+        if (prefs.contains(Preference.NATURALEZA)) add("Parque urbano principal + miradores")
+        if (prefs.contains(Preference.GASTRONOMIA)) add("Mercado local (ambiente y degustación barata)")
+        if (prefs.contains(Preference.OCIO)) add("Barrio con ambiente nocturno")
+    }.distinct()
+
+    val actividadesPago = buildList {
+        if (prefs.contains(Preference.CULTURA)) add("Entrada a museo emblemático")
+        if (prefs.contains(Preference.NATURALEZA)) add("Excursión de medio día fuera de la ciudad")
+        if (prefs.contains(Preference.GASTRONOMIA)) add("Tour gastronómico o cena típica")
+        if (prefs.contains(Preference.OCIO)) add("Club / espectáculo local")
+    }.distinct()
+
+    return PlanResult(
+        destino = destino,
+        presupuestoTotal = presupuestoTotal,
+        viajeros = viajeros,
+        fechaInicioMillis = fechaInicioMillis,
+        fechaFinMillis = fechaFinMillis,
+        diasRecomendados = diasRecomendados,
+        presupuestoCategorias = linkedMapOf(
+            "Transporte (vuelos MAD)" to transporte,
+            "Alojamiento" to alojamiento,
+            "Comidas" to comidas,
+            "Actividades" to actividades
+        ),
+        itinerario = itinerario,
+        actividadesGratis = actividadesGratis,
+        actividadesPago = actividadesPago,
+        usedFallback = true
+    )
 }
