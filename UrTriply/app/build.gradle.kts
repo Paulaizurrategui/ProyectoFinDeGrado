@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-
     id("com.google.gms.google-services")
 }
 
@@ -40,15 +39,17 @@ android {
 }
 
 dependencies {
-    // Firebase BOM (gestionará las versiones de las librerías de Firebase por ti)
+    // Firebase BOM (NO pongas versiones a las librerías de Firebase si usas BOM)
     implementation(platform("com.google.firebase:firebase-bom:33.10.0"))
-    
-    // Usamos las librerías del catálogo (libs.versions.toml)
-    implementation(libs.firebase.auth)
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
 
     // Navigation Compose
     implementation("androidx.navigation:navigation-compose:2.8.8")
+
+    // Material icons
     implementation("androidx.compose.material:material-icons-extended")
+
     // AndroidX + Compose
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -60,6 +61,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
 
+    // Tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
