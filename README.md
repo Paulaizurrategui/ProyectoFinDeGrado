@@ -45,9 +45,5 @@ Incluye **modo invitado** para generar propuestas sin registrarse y una **comuni
 ### Destinos iniciales (MVP)
 París, Londres, Roma, Ámsterdam, Atenas, Lisboa, Berlín, Praga, Viena y Dublín.
 
-### Estado del proyecto
-- Implementado: pantallas de acceso (Welcome, Login, Register) + Home básico.
-- En desarrollo: planificador, resultado de propuesta, comunidad, borradores y perfil.
-
 ### Aviso legal
 UrTriply no vende billetes ni realiza reservas. Los precios se obtienen mediante APIs externas y se redirige al proveedor para finalizar la compra/reserva (WebView). Los precios pueden variar según disponibilidad.
