@@ -16,10 +16,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
 import com.paulaizurrategui.urtriply.ui.navigation.MainTabs
@@ -117,7 +119,29 @@ fun MainShellScreen(
             // TAB: PROFILE
             composable(MainTabs.PROFILE) {
                 if (isGuest) RequireLoginScreen(onRequireLogin = onRequireLogin)
-                else ProfileTabScreen(authViewModel = authViewModel, onLoggedOut = onLoggedOut)
+                else ProfileTabScreen(
+                    authViewModel = authViewModel,
+                    onLoggedOut = onLoggedOut,
+                    onEditProfile = { navController.navigate("profile/edit") },
+                    onEditTrip = { tripId -> navController.navigate("trip/edit/$tripId") }
+                )
+            }
+
+            // PANTALLA: EDITAR PERFIL
+            composable("profile/edit") {
+                EditProfileScreen(onBack = { navController.popBackStack() })
+            }
+
+            // PANTALLA: EDITAR VIAJE
+            composable(
+                route = "trip/edit/{tripId}",
+                arguments = listOf(navArgument("tripId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val tripId = backStackEntry.arguments?.getString("tripId") ?: return@composable
+                EditTripScreen(
+                    tripId = tripId,
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }

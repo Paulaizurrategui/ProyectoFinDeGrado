@@ -11,7 +11,8 @@ data class PlanResultUiState(
     val isSaving: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null,
-    val lastSavedTripId: String? = null
+    val lastSavedTripId: String? = null,
+    val currentStatus: TripStatus = TripStatus.DRAFT
 )
 
 class PlanResultViewModel(
@@ -26,10 +27,15 @@ class PlanResultViewModel(
         _uiState.value = _uiState.value.copy(errorMessage = null, successMessage = null)
     }
 
-    fun save(plan: PlanResult, status: TripStatus) {
-        val user = auth.currentUser
-        if (user == null) {
+    fun saveDraft(plan: PlanResult) {
+        val user = auth.currentUser ?: run {
             _uiState.value = _uiState.value.copy(errorMessage = "Necesitas iniciar sesión.")
+            return
+        }
+
+        // Si ya está publicado, no guardamos como borrador
+        if (_uiState.value.currentStatus == TripStatus.PUBLISHED) {
+            _uiState.value = _uiState.value.copy(successMessage = "Este viaje ya está publicado.")
             return
         }
 
@@ -39,20 +45,79 @@ class PlanResultViewModel(
             plan = plan,
             authorUid = user.uid,
             authorEmail = user.email,
-            status = status,
+            status = TripStatus.DRAFT,
             onSuccess = { id ->
                 _uiState.value = _uiState.value.copy(
                     isSaving = false,
-                    successMessage = if (status == TripStatus.DRAFT) "Borrador guardado." else "Viaje publicado.",
-                    lastSavedTripId = id
+                    successMessage = "Borrador guardado.",
+                    lastSavedTripId = id,
+                    currentStatus = TripStatus.DRAFT
                 )
             },
             onError = { e ->
                 _uiState.value = _uiState.value.copy(
                     isSaving = false,
-                    errorMessage = e.message ?: "Error al guardar en Firestore."
+                    errorMessage = e.message ?: "Error al guardar borrador."
                 )
             }
         )
+    }
+
+    fun publish(plan: PlanResult) {
+        val user = auth.currentUser ?: run {
+            _uiState.value = _uiState.value.copy(errorMessage = "Necesitas iniciar sesión.")
+            return
+        }
+
+        // B1: si ya está publicado, bloqueamos
+        if (_uiState.value.currentStatus == TripStatus.PUBLISHED) {
+            _uiState.value = _uiState.value.copy(successMessage = "Ya está publicado.")
+            return
+        }
+
+        _uiState.value = _uiState.value.copy(isSaving = true, errorMessage = null, successMessage = null)
+
+        val existingId = _uiState.value.lastSavedTripId
+        if (!existingId.isNullOrBlank()) {
+            // B: si ya hay borrador, lo actualizamos a PUBLISHED
+            repo.publishExistingTrip(
+                tripId = existingId,
+                onSuccess = {
+                    _uiState.value = _uiState.value.copy(
+                        isSaving = false,
+                        successMessage = "Viaje publicado.",
+                        currentStatus = TripStatus.PUBLISHED
+                    )
+                },
+                onError = { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isSaving = false,
+                        errorMessage = e.message ?: "Error al publicar."
+                    )
+                }
+            )
+        } else {
+            // Si no hay borrador previo, creamos directamente publicado
+            repo.saveTripFromPlan(
+                plan = plan,
+                authorUid = user.uid,
+                authorEmail = user.email,
+                status = TripStatus.PUBLISHED,
+                onSuccess = { id ->
+                    _uiState.value = _uiState.value.copy(
+                        isSaving = false,
+                        successMessage = "Viaje publicado.",
+                        lastSavedTripId = id,
+                        currentStatus = TripStatus.PUBLISHED
+                    )
+                },
+                onError = { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isSaving = false,
+                        errorMessage = e.message ?: "Error al publicar."
+                    )
+                }
+            )
+        }
     }
 }

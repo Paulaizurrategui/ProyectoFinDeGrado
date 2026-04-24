@@ -38,6 +38,8 @@ fun PlanResultScreen(
     val vm = remember { PlanResultViewModel() }
     val uiState by vm.uiState.collectAsState()
 
+    val isPublished = uiState.currentStatus == TripStatus.PUBLISHED
+
     // Dialog de mensajes (éxito/error)
     val dialogText = uiState.errorMessage ?: uiState.successMessage
     if (dialogText != null) {
@@ -112,23 +114,35 @@ fun PlanResultScreen(
                 OutlinedButton(
                     onClick = {
                         if (isGuest) onRequireLogin()
-                        else vm.save(r, TripStatus.DRAFT)
+                        else vm.saveDraft(r)
                     },
-                    enabled = !uiState.isSaving,
+                    enabled = !uiState.isSaving && !isPublished,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(if (uiState.isSaving) "Guardando..." else "Guardar borrador")
+                    Text(
+                        when {
+                            uiState.isSaving -> "Guardando..."
+                            isPublished -> "Guardado"
+                            else -> "Guardar borrador"
+                        }
+                    )
                 }
 
                 Button(
                     onClick = {
                         if (isGuest) onRequireLogin()
-                        else vm.save(r, TripStatus.PUBLISHED)
+                        else vm.publish(r)
                     },
-                    enabled = !uiState.isSaving,
+                    enabled = !uiState.isSaving && !isPublished,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(if (uiState.isSaving) "Publicando..." else "Publicar")
+                    Text(
+                        when {
+                            uiState.isSaving -> "Publicando..."
+                            isPublished -> "Ya publicado"
+                            else -> "Publicar"
+                        }
+                    )
                 }
             }
 

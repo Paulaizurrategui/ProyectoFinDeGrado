@@ -49,4 +49,19 @@ class TripsRepository(
                 onError(e)
             }
     }
+    fun publishExistingTrip(
+        tripId: String,
+        onSuccess: () -> Unit,
+        onError: (Throwable) -> Unit
+    ) {
+        trips.document(tripId)
+            .update(
+                mapOf(
+                    "status" to TripStatus.PUBLISHED.name,
+                    "publishedAt" to Timestamp.now()
+                )
+            )
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e -> onError(e) }
+    }
 }
