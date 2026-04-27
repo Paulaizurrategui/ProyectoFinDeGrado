@@ -3,57 +3,76 @@ package com.paulaizurrategui.urtriply.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.paulaizurrategui.urtriply.ui.auth.UserViewModel
+import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
 
 @Composable
-fun FindFriendsScreen(viewModel: UserViewModel = viewModel(),onBack: () -> Unit) {
+fun FindFriendsScreen(onBack: () -> Unit) {
+    val vm: FindFriendsViewModel = viewModel()
+    val state by vm.uiState.collectAsState()
+    var query by remember { mutableStateOf("") }
 
-    var searchText by remember { mutableStateOf("") }
-    var users by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
-
-    Column(modifier = Modifier.padding(16.dp)) {
-        Button(
-            onClick = onBack,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("← Volver al perfil")
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-        OutlinedTextField(
-            value = searchText,
-            onValueChange = {
-                searchText = it
-                viewModel.searchUsers(it) { result ->
-                    users = result
+    UrTriplyGradientScaffold(title = "Encontrar Amigos") {
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Nombre de usuario exacto...") },
+                shape = RoundedCornerShape(16.dp),
+                trailingIcon = {
+                    IconButton(onClick = { vm.searchUsers(query) }) {
+                        Icon(Icons.Default.Search, contentDescription = "Buscar")
+                    }
                 }
-            },
-            label = { Text("Buscar usuarios") },
-            modifier = Modifier.fillMaxWidth()
-        )
+            )
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-        LazyColumn {
-            items(users) { (uid, name) ->
+            if (state.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            } else if (state.users.isEmpty() && query.isNotEmpty()) {
+                Text("No se han encontrado aventureros.", modifier = Modifier.align(Alignment.CenterHorizontally))
+            }
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(name)
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(state.users) { user ->
+                    val isFollowing = state.followingIds.contains(user.uid)
 
-                    Button(onClick = {
-                        viewModel.followUser(uid)
-                    }) {
-                        Text("Seguir")
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(user.displayName, fontWeight = FontWeight.Bold)
+                                Text(user.email, style = MaterialTheme.typography.bodySmall)
+                            }
+
+                            Button(
+                                onClick = { vm.toggleFollow(user) },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isFollowing) Color.Gray else MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Text(if (isFollowing) "Siguiendo" else "Seguir")
+                            }
+                        }
                     }
                 }
             }

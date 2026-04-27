@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class CommunityViewModel : ViewModel() {
 
     private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
 
     private val _posts = MutableStateFlow<List<TravelPost>>(emptyList())
     val posts: StateFlow<List<TravelPost>> = _posts.asStateFlow()
@@ -33,22 +34,24 @@ class CommunityViewModel : ViewModel() {
     }
 
     fun loadFeed() {
-        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val currentUserId = auth.currentUser?.uid ?: return
 
         _isLoading.value = true
 
-        db.collection("users").document(currentUserId).get()
-            .addOnSuccessListener { userDoc ->
+        // Buscamos en la subcolección 'following' los IDs de la gente a la que sigues
+        db.collection("users").document(currentUserId).collection("following")
+            .get()
+            .addOnSuccessListener { followingSnap ->
+                val followingIds = followingSnap.documents.map { it.id }
 
-                val following = userDoc.get("following") as? List<String> ?: emptyList()
-
-                if (following.isEmpty()) {
+                if (followingIds.isEmpty()) {
                     _posts.value = emptyList()
                     _isLoading.value = false
                     return@addOnSuccessListener
                 }
 
-                loadPostsFromFollowing(following)
+                // Usamos la función que ya tenías para cargar posts por trozos (chunks)
+                loadPostsFromFollowing(followingIds)
             }
             .addOnFailureListener {
                 _isLoading.value = false
@@ -56,22 +59,17 @@ class CommunityViewModel : ViewModel() {
     }
 
     private fun loadPostsFromFollowing(following: List<String>) {
-
         val allPosts = mutableListOf<TravelPost>()
         var completed = 0
-
-        val chunks = following.chunked(10)
+        val chunks = following.chunked(10) // Firestore permite max 10/30 en 'whereIn'
 
         for (chunk in chunks) {
-
             db.collection("trips")
                 .whereIn("authorUid", chunk)
                 .whereEqualTo("status", TripStatus.PUBLISHED.name)
                 .get()
                 .addOnSuccessListener { result ->
-
                     val posts = result.documents.map { doc ->
-
                         TravelPost(
                             id = doc.id,
                             destination = doc.getString("destino") ?: "",
@@ -88,7 +86,6 @@ class CommunityViewModel : ViewModel() {
                     }
 
                     allPosts.addAll(posts)
-
                     completed++
 
                     if (completed == chunks.size) {
@@ -121,7 +118,6 @@ class CommunityViewModel : ViewModel() {
 
     private fun applyFilters(list: List<TravelPost>): List<TravelPost> {
         val f = _filters.value
-
         return list.filter {
             val matchDest = f.destination.isEmpty() ||
                     it.destination.contains(f.destination, true)
