@@ -369,7 +369,7 @@ private fun ActivitiesBlock(
 
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "Nota: en el MVP estas actividades no incluyen enlaces ni precios reales.",
+                text = "No incluyen enlaces ni precios reales.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

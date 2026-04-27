@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.paulaizurrategui.urtriply.data.trips.TripStatus
 import com.paulaizurrategui.urtriply.data.trips.TripsRepository
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -23,19 +24,44 @@ class PlanResultViewModel(
     private val _uiState = MutableStateFlow(PlanResultUiState())
     val uiState: StateFlow<PlanResultUiState> = _uiState
 
+    /**
+     * Lock extra a prueba de recomposiciones/doble tap.
+     * Evita que entren 2 llamadas a saveDraft() antes de que isSaving se propague a la UI.
+     */
+    private val draftLock = AtomicBoolean(false)
+
     fun clearMessages() {
         _uiState.value = _uiState.value.copy(errorMessage = null, successMessage = null)
     }
 
     fun saveDraft(plan: PlanResult) {
-        val user = auth.currentUser ?: run {
-            _uiState.value = _uiState.value.copy(errorMessage = "Necesitas iniciar sesión.")
+        // 0) Lock duro: evita doble ejecución aunque el usuario pulse 2 veces muy rápido
+        if (!draftLock.compareAndSet(false, true)) return
+
+        // 1) También bloqueamos si ya está guardando por estado
+        if (_uiState.value.isSaving) {
+            draftLock.set(false)
             return
         }
 
-        // Si ya está publicado, no guardamos como borrador
+        val user = auth.currentUser ?: run {
+            _uiState.value = _uiState.value.copy(errorMessage = "Necesitas iniciar sesión.")
+            draftLock.set(false)
+            return
+        }
+
+        // 2) Si ya está publicado, no guardamos como borrador
         if (_uiState.value.currentStatus == TripStatus.PUBLISHED) {
             _uiState.value = _uiState.value.copy(successMessage = "Este viaje ya está publicado.")
+            draftLock.set(false)
+            return
+        }
+
+        // 3) Si ya hay un borrador guardado, NO creamos otro (evita duplicados)
+        val existingId = _uiState.value.lastSavedTripId
+        if (!existingId.isNullOrBlank()) {
+            _uiState.value = _uiState.value.copy(successMessage = "Borrador ya guardado.")
+            draftLock.set(false)
             return
         }
 
@@ -53,23 +79,28 @@ class PlanResultViewModel(
                     lastSavedTripId = id,
                     currentStatus = TripStatus.DRAFT
                 )
+                draftLock.set(false)
             },
             onError = { e ->
                 _uiState.value = _uiState.value.copy(
                     isSaving = false,
                     errorMessage = e.message ?: "Error al guardar borrador."
                 )
+                draftLock.set(false)
             }
         )
     }
 
     fun publish(plan: PlanResult) {
+        // Evitar doble click / doble request
+        if (_uiState.value.isSaving) return
+
         val user = auth.currentUser ?: run {
             _uiState.value = _uiState.value.copy(errorMessage = "Necesitas iniciar sesión.")
             return
         }
 
-        // B1: si ya está publicado, bloqueamos
+        // Si ya está publicado, bloqueamos
         if (_uiState.value.currentStatus == TripStatus.PUBLISHED) {
             _uiState.value = _uiState.value.copy(successMessage = "Ya está publicado.")
             return
@@ -79,7 +110,7 @@ class PlanResultViewModel(
 
         val existingId = _uiState.value.lastSavedTripId
         if (!existingId.isNullOrBlank()) {
-            // B: si ya hay borrador, lo actualizamos a PUBLISHED
+            // Si ya hay borrador, lo actualizamos a PUBLISHED
             repo.publishExistingTrip(
                 tripId = existingId,
                 onSuccess = {

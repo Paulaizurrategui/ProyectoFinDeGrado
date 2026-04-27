@@ -1,5 +1,6 @@
 package com.paulaizurrategui.urtriply.data.trips
 
+import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.paulaizurrategui.urtriply.ui.screens.PlanResult
@@ -36,19 +37,18 @@ class TripsRepository(
             publishedAt = if (status == TripStatus.PUBLISHED) Timestamp.now() else null
         )
 
-        trips.add(doc)
-            .addOnSuccessListener { ref -> onSuccess(ref.id) }
-            .addOnFailureListener { e -> onError(e) }
+        // IMPORTANTE: solo UNA escritura (antes lo tenías duplicado)
         trips.add(doc)
             .addOnSuccessListener { ref ->
-                android.util.Log.d("TripsRepository", "Saved trip id=${ref.id} status=${doc.status}")
+                Log.d("TripsRepository", "Saved trip id=${ref.id} status=${doc.status}")
                 onSuccess(ref.id)
             }
             .addOnFailureListener { e ->
-                android.util.Log.e("TripsRepository", "Save failed", e)
+                Log.e("TripsRepository", "Save failed", e)
                 onError(e)
             }
     }
+
     fun publishExistingTrip(
         tripId: String,
         onSuccess: () -> Unit,
