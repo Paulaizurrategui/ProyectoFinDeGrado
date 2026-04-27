@@ -8,42 +8,80 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-// Esquema de colores para modo oscuro (ahora mismo: colores del template morado)
+// Esquema de colores para modo oscuro (adaptado a UrTriply)
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80, // Color principal (botones, highlights) en dark
-    secondary = PurpleGrey80, // Color secundario en dark
-    tertiary = Pink80 // Color terciario (acentos) en dark
+    primary = UrOrange,
+    onPrimary = Color.White,
+
+    secondary = UrSky,
+    onSecondary = UrText,
+
+    tertiary = UrCream,
+    onTertiary = UrText,
+
+    background = Color(0xFF0B1220),
+    onBackground = Color.White,
+
+    surface = Color(0xFF101827),
+    onSurface = Color.White,
+
+    surfaceVariant = Color(0xFF1F2937),
+    onSurfaceVariant = Color.White.copy(alpha = 0.75f),
+
+    outline = Color(0xFF334155),
+
+    error = UrError,
+    onError = Color.White
 )
 
-// Esquema de colores para modo claro (ahora mismo: colores del template morado)
+// Esquema de colores para modo claro (UrTriply)
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40, // Color principal en light
-    secondary = PurpleGrey40, // Color secundario en light
-    tertiary = Pink40 // Color terciario en light
+    primary = UrOrange,
+    onPrimary = Color.White,
 
+    secondary = UrSky,
+    onSecondary = UrText,
+
+    tertiary = UrCream,
+    onTertiary = UrText,
+
+    background = UrSkySoft,
+    onBackground = UrText,
+
+    surface = UrSurface,
+    onSurface = UrText,
+
+    surfaceVariant = UrSurface2,
+    onSurfaceVariant = UrTextMuted,
+
+    outline = UrOutline,
+
+    error = UrError,
+    onError = Color.White
 )
 
 @Composable
 fun UrTriplyTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(), // Usa el tema del sistema (dark/light) por defecto
-    dynamicColor: Boolean = true, // Si es true y Android 12+, usa colores dinámicos (Material You)
-    content: @Composable () -> Unit // UI de tu app que se renderiza con este theme
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    dynamicColor: Boolean = false, // IMPORTANTE: false para que no te cambie los colores en Android 12+
+    content: @Composable () -> Unit
 ) {
     val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> { // Android 12+ puede usar Material You
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context) // Colores dinámicos según wallpaper
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
 
-        darkTheme -> DarkColorScheme // Si no hay dynamicColor o no soporta, usa esquema dark fijo
-        else -> LightColorScheme // Si no, usa esquema light fijo
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
     }
 
     MaterialTheme(
-        colorScheme = colorScheme, // Colores de la app (usados por Material components)
-        typography = Typography, // Tipografía definida en Type.kt
-        content = content // Contenido de la app
+        colorScheme = colorScheme,
+        typography = Typography,
+        content = content
     )
 }

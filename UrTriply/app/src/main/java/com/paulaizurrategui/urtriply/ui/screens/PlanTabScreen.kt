@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -67,7 +69,6 @@ fun PlanTabScreen(
     onNavigateToResult: () -> Unit
 ) {
     UrTriplyGradientScaffold(title = "Planificar") {
-
         val destinos = listOf(
             "París (Francia)",
             "Londres (Reino Unido)",
@@ -105,18 +106,41 @@ fun PlanTabScreen(
                 modifier = Modifier
                     .verticalScroll(scrollState)
                     .fillMaxWidth()
-                    .padding(end = 14.dp)
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 12.dp, bottom = 18.dp)
             ) {
-                Text(
-                    text = if (isGuest)
-                        "Modo invitado: puedes generar propuestas, pero para guardar/publicar necesitarás iniciar sesión."
-                    else
-                        "Completa el formulario para generar una propuesta ajustada a tu presupuesto.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                // Intro “más bonito”
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                ) {
+                    Column(Modifier.padding(14.dp)) {
+                        Text(
+                            text = "Planifica tu viaje",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = if (isGuest)
+                                "Modo invitado: puedes generar propuestas, pero para guardar/publicar necesitarás iniciar sesión."
+                            else
+                                "Completa el formulario para generar una propuesta ajustada a tu presupuesto.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
 
                 Spacer(Modifier.height(14.dp))
 
+                // Sección: Destino
+                SectionTitle(title = "Destino", subtitle = "Elige la capital europea que quieres visitar")
+                Spacer(Modifier.height(8.dp))
                 DestinationDropdown(
                     destinos = destinos,
                     selected = destino,
@@ -125,88 +149,133 @@ fun PlanTabScreen(
 
                 Spacer(Modifier.height(14.dp))
 
-                OutlinedTextField(
-                    value = presupuestoText,
-                    onValueChange = { presupuestoText = it.replace(",", ".") },
-                    label = { Text("Presupuesto total (EUR)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                OutlinedTextField(
-                    value = viajerosText,
-                    onValueChange = { viajerosText = it.filter(Char::isDigit) },
-                    label = { Text("Número de viajeros") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                Spacer(Modifier.height(12.dp))
+                // Sección: Presupuesto & viajeros
+                SectionTitle(title = "Presupuesto y viajeros", subtitle = "Ajusta la propuesta al tamaño del grupo")
+                Spacer(Modifier.height(8.dp))
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF3F4F6))
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Column(Modifier.padding(12.dp)) {
-                        Text("Rango de fechas", style = MaterialTheme.typography.titleSmall)
-
-                        Spacer(Modifier.height(8.dp))
-
-                        RowLine(
-                            left = "Inicio: ${formatDate(fechaInicioMillis)}",
-                            actionText = "Elegir",
-                            onAction = { showStartPicker = true }
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedTextField(
+                            value = presupuestoText,
+                            onValueChange = { presupuestoText = it.replace(",", ".") },
+                            label = { Text("Presupuesto total") },
+                            trailingIcon = { Text("EUR", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
                         )
 
-                        RowLine(
-                            left = "Fin: ${formatDate(fechaFinMillis)}",
-                            actionText = "Elegir",
-                            onAction = { showEndPicker = true }
+                        Text(
+                            text = "Presupuesto aproximado para todo el viaje",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        OutlinedTextField(
+                            value = viajerosText,
+                            onValueChange = { viajerosText = it.filter(Char::isDigit) },
+                            label = { Text("Número de viajeros") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
                         )
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(14.dp))
 
-                Text("Preferencias", style = MaterialTheme.typography.titleSmall)
+                // Sección: Fechas
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("Fechas", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+
+                        DateRowField(
+                            label = "Fecha de inicio",
+                            value = formatDate(fechaInicioMillis),
+                            onClick = { showStartPicker = true }
+                        )
+                        DateRowField(
+                            label = "Fecha de fin",
+                            value = formatDate(fechaFinMillis),
+                            onClick = { showEndPicker = true }
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+
+                // Sección: Preferencias
+                SectionTitle(title = "Preferencias", subtitle = "Selecciona al menos una")
                 Spacer(Modifier.height(8.dp))
 
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Preference.entries.take(2).forEach { pref ->
-                            FilterChip(
-                                selected = prefs.contains(pref),
-                                onClick = {
-                                    prefs = if (prefs.contains(pref)) prefs - pref else prefs + pref
-                                },
-                                label = { Text(pref.label) }
-                            )
-                        }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Preference.entries.drop(2).forEach { pref ->
-                            FilterChip(
-                                selected = prefs.contains(pref),
-                                onClick = {
-                                    prefs = if (prefs.contains(pref)) prefs - pref else prefs + pref
-                                },
-                                label = { Text(pref.label) }
-                            )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Preference.entries.take(2).forEach { pref ->
+                                    FilterChip(
+                                        selected = prefs.contains(pref),
+                                        onClick = {
+                                            prefs = if (prefs.contains(pref)) prefs - pref else prefs + pref
+                                        },
+                                        label = { Text(pref.label) }
+                                    )
+                                }
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Preference.entries.drop(2).forEach { pref ->
+                                    FilterChip(
+                                        selected = prefs.contains(pref),
+                                        onClick = {
+                                            prefs = if (prefs.contains(pref)) prefs - pref else prefs + pref
+                                        },
+                                        label = { Text(pref.label) }
+                                    )
+                                }
+                            }
                         }
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(14.dp))
 
                 // Error local de validación
                 localError?.let {
-                    Text(text = it, color = MaterialTheme.colorScheme.error)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                    ) {
+                        Text(
+                            text = it,
+                            modifier = Modifier.padding(12.dp),
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                     Spacer(Modifier.height(10.dp))
                 }
 
-                // Botón generar
+                // Botón generar (más chulo)
                 Button(
                     onClick = {
                         localError = null
@@ -237,7 +306,6 @@ fun PlanTabScreen(
 
                         isLoading = true
 
-                        // Simulamos llamada a APIs (MVP)
                         CoroutineScope(Dispatchers.Main).launch {
                             delay(900)
 
@@ -257,7 +325,11 @@ fun PlanTabScreen(
                         }
                     },
                     enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth().height(52.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                 ) {
                     if (isLoading) {
                         CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(end = 12.dp))
@@ -311,6 +383,51 @@ fun PlanTabScreen(
 }
 
 @Composable
+private fun SectionTitle(title: String, subtitle: String) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.ExtraBold
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun DateRowField(
+    label: String,
+    value: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(text = value, fontWeight = FontWeight.SemiBold)
+        }
+        TextButton(onClick = onClick) { Text("Seleccionar") }
+    }
+}
+
+@Composable
 private fun DestinationDropdown(
     destinos: List<String>,
     selected: String,
@@ -326,7 +443,8 @@ private fun DestinationDropdown(
             label = { Text("Destino (capital europea)") },
             trailingIcon = { Text("▼") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
         )
 
         Box(
@@ -360,23 +478,9 @@ private fun DestinationDropdown(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text("Cerrar")
-                }
+                TextButton(onClick = { showDialog = false }) { Text("Cerrar") }
             }
         )
-    }
-}
-
-@Composable
-private fun RowLine(left: String, actionText: String, onAction: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(left)
-        TextButton(onClick = onAction) { Text(actionText) }
     }
 }
 

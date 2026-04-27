@@ -1,16 +1,25 @@
 package com.paulaizurrategui.urtriply.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -29,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
+import com.paulaizurrategui.urtriply.ui.theme.UrCream
 
 @Composable
 fun EditProfileScreen(
@@ -50,7 +61,7 @@ fun EditProfileScreen(
 
     val scroll = rememberScrollState()
 
-    // Cargar datos extra desde Firestore: users/{uid}
+    // Cargar datos desde Firestore: users/{uid}
     LaunchedEffect(user?.uid) {
         val uid = user?.uid
         if (uid == null) {
@@ -70,149 +81,238 @@ fun EditProfileScreen(
                 loading = false
             }
             .addOnFailureListener { e ->
-                // No bloqueamos la pantalla si falla cargar; solo mostramos error
+                // Mostramos el error pero dejamos editar igualmente
                 error = e.message ?: "No se pudo cargar el perfil."
                 loading = false
             }
     }
 
-    Scaffold { inner ->
-        Column(
-            modifier = Modifier
-                .padding(inner)
-                .padding(16.dp)
-                .verticalScroll(scroll),
-            verticalArrangement = Arrangement.Top
-        ) {
-            // Header custom (compatible con cualquier versión de Material3)
-            Row(
+    Scaffold(
+        bottomBar = {
+            // CTA sticky (queda bien con el nuevo theme naranja)
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                TextButton(onClick = onBack) { Text("← Volver") }
-                Spacer(Modifier.size(8.dp))
-                Text(
-                    text = "Editar perfil",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+                Button(
+                    onClick = {
+                        val u = auth.currentUser
+                        if (u == null) {
+                            error = "No hay sesión."
+                            return@Button
+                        }
 
-            if (loading) {
-                Text("Cargando...", style = MaterialTheme.typography.bodyMedium)
+                        val trimmedName = name.trim()
+                        if (trimmedName.isBlank()) {
+                            error = "El nombre no puede estar vacío."
+                            return@Button
+                        }
+
+                        saving = true
+                        error = null
+
+                        // 1) Guardar nombre en FirebaseAuth
+                        u.updateProfile(
+                            UserProfileChangeRequest.Builder()
+                                .setDisplayName(trimmedName)
+                                .build()
+                        ).addOnFailureListener { e ->
+                            saving = false
+                            error = e.message ?: "No se pudo guardar el nombre."
+                        }.addOnSuccessListener {
+                            // 2) Guardar extras en Firestore (merge)
+                            val uid = u.uid
+                            val data = mapOf(
+                                "displayName" to trimmedName,
+                                "bio" to bio.trim(),
+                                "city" to city.trim(),
+                                "instagram" to instagram.trim()
+                            )
+
+                            db.collection("users").document(uid)
+                                .set(data, SetOptions.merge())
+                                .addOnSuccessListener {
+                                    saving = false
+                                    onBack()
+                                }
+                                .addOnFailureListener { e ->
+                                    saving = false
+                                    error = e.message ?: "No se pudo guardar el perfil."
+                                }
+                        }
+                    },
+                    enabled = !saving,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp)
+                ) {
+                    if (saving) {
+                        CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.size(12.dp))
+                        Text("Guardando…", fontWeight = FontWeight.Bold)
+                    } else {
+                        Text("Guardar", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    ) { inner ->
+        Box(
+            modifier = Modifier
+                .padding(inner)
+                .fillMaxSize()
+        ) {
+            Column(
+                modifier = Modifier
+                    .verticalScroll(scroll)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 18.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 480.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(
+                        onClick = onBack,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text("← Volver")
+                    }
+                    Spacer(Modifier.size(8.dp))
+                    Text(
+                        text = "Editar perfil",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
+
                 Spacer(Modifier.height(12.dp))
-            }
 
-            Text("Nombre", style = MaterialTheme.typography.titleSmall)
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                enabled = !saving
-            )
-
-            Spacer(Modifier.height(12.dp))
-
-            Text("Bio", style = MaterialTheme.typography.titleSmall)
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = bio,
-                onValueChange = { bio = it },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 3,
-                enabled = !saving
-            )
-
-            Spacer(Modifier.height(12.dp))
-
-            Text("Ciudad", style = MaterialTheme.typography.titleSmall)
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = city,
-                onValueChange = { city = it },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                enabled = !saving
-            )
-
-            Spacer(Modifier.height(12.dp))
-
-            Text("Instagram (opcional)", style = MaterialTheme.typography.titleSmall)
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = instagram,
-                onValueChange = { instagram = it },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                enabled = !saving,
-                placeholder = { Text("@usuario o url") }
-            )
-
-            if (error != null) {
-                Spacer(Modifier.height(10.dp))
-                Text(text = error!!, color = MaterialTheme.colorScheme.error)
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    val u = auth.currentUser
-                    if (u == null) {
-                        error = "No hay sesión."
-                        return@Button
+                // “Tip” / cabecera suave
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 480.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = UrCream),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                ) {
+                    Column(Modifier.padding(14.dp)) {
+                        Text(
+                            text = "Personaliza tu perfil",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Estos datos se usarán para mostrar tu perfil en la app.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
+                }
 
-                    val uid = u.uid
-                    val trimmedName = name.trim()
+                Spacer(Modifier.height(14.dp))
 
-                    if (trimmedName.isBlank()) {
-                        error = "El nombre no puede estar vacío."
-                        return@Button
-                    }
+                // Form container
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 480.dp),
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        if (loading) {
+                            Text("Cargando...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
 
-                    saving = true
-                    error = null
-
-                    // 1) Guardar nombre en FirebaseAuth
-                    u.updateProfile(
-                        UserProfileChangeRequest.Builder()
-                            .setDisplayName(trimmedName)
-                            .build()
-                    ).addOnFailureListener { e ->
-                        // Si falla, paramos aquí
-                        saving = false
-                        error = e.message ?: "No se pudo guardar el nombre."
-                    }.addOnSuccessListener {
-                        // 2) Guardar campos extra en Firestore (merge para no machacar)
-                        val data = mapOf(
-                            "displayName" to trimmedName,
-                            "bio" to bio.trim(),
-                            "city" to city.trim(),
-                            "instagram" to instagram.trim()
+                        FieldLabel("Nombre")
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = !saving,
+                            shape = RoundedCornerShape(12.dp)
                         )
 
-                        db.collection("users").document(uid)
-                            .set(data, com.google.firebase.firestore.SetOptions.merge())
-                            .addOnSuccessListener {
-                                saving = false
-                                onBack()
+                        FieldLabel("Bio")
+                        OutlinedTextField(
+                            value = bio,
+                            onValueChange = { bio = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 3,
+                            enabled = !saving,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        FieldLabel("Ciudad")
+                        OutlinedTextField(
+                            value = city,
+                            onValueChange = { city = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = !saving,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        FieldLabel("Instagram (opcional)")
+                        OutlinedTextField(
+                            value = instagram,
+                            onValueChange = { instagram = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = !saving,
+                            shape = RoundedCornerShape(12.dp),
+                            placeholder = { Text("@usuario o url") }
+                        )
+
+                        // Error (bonito)
+                        if (error != null) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                            ) {
+                                Text(
+                                    text = error!!,
+                                    modifier = Modifier.padding(12.dp),
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
                             }
-                            .addOnFailureListener { e ->
-                                saving = false
-                                error = e.message ?: "No se pudo guardar el perfil."
-                            }
+                        }
                     }
-                },
-                enabled = !saving,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (saving) "Guardando..." else "Guardar")
+                }
+
+                // espacio para el sticky CTA
+                Spacer(Modifier.height(90.dp))
             }
         }
     }
+}
+
+@Composable
+private fun FieldLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.SemiBold
+    )
 }
