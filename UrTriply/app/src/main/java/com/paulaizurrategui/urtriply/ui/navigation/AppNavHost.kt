@@ -9,6 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.google.firebase.auth.FirebaseAuth
 import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
+import com.paulaizurrategui.urtriply.ui.screens.FindFriendsScreen
 import com.paulaizurrategui.urtriply.ui.screens.LoginScreen
 import com.paulaizurrategui.urtriply.ui.screens.MainShellScreen
 import com.paulaizurrategui.urtriply.ui.screens.RegisterScreen
@@ -84,6 +85,11 @@ fun AppNavHost() {
                         popUpTo(0) { inclusive = true } // Reset total del backstack
                     }
                 }
+            )
+        }
+        composable("find_friends") {
+            FindFriendsScreen(
+                onBack = { navController.popBackStack() }
             )
         }
     }

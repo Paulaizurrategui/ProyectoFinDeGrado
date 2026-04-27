@@ -46,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
 import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.data.trips.TripStatus
@@ -57,7 +58,8 @@ fun ProfileTabScreen(
     authViewModel: AuthViewModel,
     onLoggedOut: () -> Unit,
     onEditProfile: () -> Unit,
-    onEditTrip: (tripId: String) -> Unit
+    onEditTrip: (tripId: String) -> Unit,
+    onNavigateToFindFriends: () -> Unit
 ) {
     val user = FirebaseAuth.getInstance().currentUser
     val email = user?.email ?: "-"
@@ -169,6 +171,16 @@ fun ProfileTabScreen(
                             }
                         }
                     }
+                }
+            }
+            item {
+                SectionTitle("Amigos", "Personas a las que sigues")
+
+                Button(
+                    onClick = onNavigateToFindFriends,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Gestionar amigos")
                 }
             }
 

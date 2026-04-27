@@ -113,7 +113,7 @@ fun MainShellScreen(
             // TAB: COMMUNITY
             composable(MainTabs.COMMUNITY) {
                 if (isGuest) RequireLoginScreen(onRequireLogin = onRequireLogin)
-                else CommunityTabScreen()
+                else CommunityScreen()
             }
 
             // TAB: PROFILE
@@ -123,7 +123,8 @@ fun MainShellScreen(
                     authViewModel = authViewModel,
                     onLoggedOut = onLoggedOut,
                     onEditProfile = { navController.navigate("profile/edit") },
-                    onEditTrip = { tripId -> navController.navigate("trip/edit/$tripId") }
+                    onEditTrip = { tripId -> navController.navigate("trip/edit/$tripId") },
+                            onNavigateToFindFriends = { navController.navigate("find_friends") }
                 )
             }
 
@@ -140,6 +141,11 @@ fun MainShellScreen(
                 val tripId = backStackEntry.arguments?.getString("tripId") ?: return@composable
                 EditTripScreen(
                     tripId = tripId,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("find_friends") {
+                FindFriendsScreen(
                     onBack = { navController.popBackStack() }
                 )
             }
