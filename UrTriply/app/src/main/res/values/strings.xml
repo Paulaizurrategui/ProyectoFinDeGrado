@@ -91,4 +91,5 @@
 
     <string name="login_required_title">Necesitas iniciar sesión</string>
     <string name="login_required_body">Para acceder a esta sección tienes que iniciar sesión o crear una cuenta.</string>
+    <string name="generic_error">Error</string>
 </resources>

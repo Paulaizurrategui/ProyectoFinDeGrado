@@ -11,23 +11,27 @@ import kotlinx.coroutines.flow.StateFlow
 data class FindFriendsUiState(
     val isLoading: Boolean = false,
     val users: List<UserDoc> = emptyList(),
-    val followingIds: Set<String> = emptySet(), // Para saber a quién seguimos ya
+    val followingIds: Set<String> = emptySet(),
     val errorMessage: String? = null
 )
 
 class FindFriendsViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+
     private val _uiState = MutableStateFlow(FindFriendsUiState())
     val uiState: StateFlow<FindFriendsUiState> = _uiState
 
     init {
-        loadFollowingList() // Cargamos a quién seguimos al empezar
+        loadFollowingList()
     }
 
     private fun loadFollowingList() {
         val currentUid = auth.currentUser?.uid ?: return
-        db.collection("users").document(currentUid).collection("following")
+
+        db.collection("users")
+            .document(currentUid)
+            .collection("following")
             .addSnapshotListener { snapshot, _ ->
                 val ids = snapshot?.documents?.map { it.id }?.toSet() ?: emptySet()
                 _uiState.value = _uiState.value.copy(followingIds = ids)
@@ -35,38 +39,89 @@ class FindFriendsViewModel : ViewModel() {
     }
 
     fun searchUsers(query: String) {
-        if (query.isBlank()) return
         val currentUid = auth.currentUser?.uid ?: return
+        val q = query.trim()
+
+        if (q.isBlank()) {
+            _uiState.value = _uiState.value.copy(isLoading = false, users = emptyList(), errorMessage = null)
+            return
+        }
 
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
         db.collection("users")
-            .whereEqualTo("displayName", query)
+            .limit(50)
             .get()
             .addOnSuccessListener { snap ->
-                val list = snap.documents.mapNotNull { it.toObject(UserDoc::class.java) }
-                    .filter { it.uid != currentUid } // No te buscas a ti mismo
+                val list = snap.documents.mapNotNull { doc ->
+                    val uid = doc.id
+                    if (uid == currentUid) return@mapNotNull null
+
+                    val displayName = doc.getString("displayName")?.trim().orEmpty()
+                    val email = doc.getString("email")?.trim().orEmpty()
+
+                    val matches = displayName.contains(q, ignoreCase = true) ||
+                            email.contains(q, ignoreCase = true)
+
+                    if (!matches) return@mapNotNull null
+
+                    UserDoc(
+                        uid = uid,
+                        email = email,
+                        displayName = displayName
+                    )
+                }
+
                 _uiState.value = _uiState.value.copy(users = list, isLoading = false)
             }
-            .addOnFailureListener {
-                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = "Error en la búsqueda")
+            .addOnFailureListener { e ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = e.message ?: "Error en la búsqueda"
+                )
             }
     }
 
     fun toggleFollow(targetUser: UserDoc) {
         val currentUid = auth.currentUser?.uid ?: return
         val isFollowing = _uiState.value.followingIds.contains(targetUser.uid)
-        val docRef = db.collection("users").document(currentUid)
-            .collection("following").document(targetUser.uid)
+
+        val docRef = db.collection("users")
+            .document(currentUid)
+            .collection("following")
+            .document(targetUser.uid)
+
+        // Update optimista para que el botón cambie al instante
+        val newFollowingIds =
+            if (isFollowing) _uiState.value.followingIds - targetUser.uid
+            else _uiState.value.followingIds + targetUser.uid
+
+        _uiState.value = _uiState.value.copy(followingIds = newFollowingIds)
 
         if (isFollowing) {
-            docRef.delete() // Dejar de seguir
+            docRef.delete()
+                .addOnFailureListener { e ->
+                    // revertir si falla
+                    _uiState.value = _uiState.value.copy(
+                        followingIds = _uiState.value.followingIds + targetUser.uid,
+                        errorMessage = e.message ?: "No se pudo dejar de seguir"
+                    )
+                }
         } else {
-            docRef.set(mapOf(
-                "uid" to targetUser.uid,
-                "displayName" to targetUser.displayName,
-                "followedAt" to Timestamp.now()
-            ))
+            docRef.set(
+                mapOf(
+                    "uid" to targetUser.uid,
+                    "displayName" to targetUser.displayName,
+                    "email" to targetUser.email,
+                    "followedAt" to Timestamp.now()
+                )
+            ).addOnFailureListener { e ->
+                // revertir si falla
+                _uiState.value = _uiState.value.copy(
+                    followingIds = _uiState.value.followingIds - targetUser.uid,
+                    errorMessage = e.message ?: "No se pudo seguir"
+                )
+            }
         }
     }
 }

@@ -99,11 +99,15 @@ class ProfileTripsViewModel(
     }
 
     fun publishTrip(tripId: String) {
-        // Solo para asegurarnos de que hay sesión (las reglas validan autor)
-        auth.currentUser?.uid ?: run {
+        val user = auth.currentUser ?: run {
             _uiState.value = _uiState.value.copy(errorMessage = "Necesitas iniciar sesión.")
             return
         }
+
+        val uid = user.uid
+        val authorName = user.displayName
+            ?: user.email?.substringBefore("@")
+            ?: "Usuario"
 
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
@@ -111,7 +115,9 @@ class ProfileTripsViewModel(
             .update(
                 mapOf(
                     "status" to TripStatus.PUBLISHED.name,
-                    "publishedAt" to Timestamp.now()
+                    "publishedAt" to Timestamp.now(),
+                    "authorUid" to uid,
+                    "authorName" to authorName
                 )
             )
             .addOnSuccessListener {

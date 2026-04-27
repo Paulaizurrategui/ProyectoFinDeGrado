@@ -1,149 +1,190 @@
 package com.paulaizurrategui.urtriply.ui.auth
 
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.State
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.paulaizurrategui.urtriply.data.trips.TripStatus
 import com.paulaizurrategui.urtriply.domain.model.CommunityFilters
 import com.paulaizurrategui.urtriply.domain.model.TravelPost
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 
 class CommunityViewModel : ViewModel() {
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
+    // Lo que tu UI ya espera:
     private val _posts = MutableStateFlow<List<TravelPost>>(emptyList())
-    val posts: StateFlow<List<TravelPost>> = _posts.asStateFlow()
+    val posts: StateFlow<List<TravelPost>> = _posts
 
-    private val _filters = mutableStateOf(CommunityFilters())
-    val filters: State<CommunityFilters> = _filters
+    val filters: MutableState<CommunityFilters> = mutableStateOf(CommunityFilters())
+    val isLoading: MutableState<Boolean> = mutableStateOf(false)
+    val showFilters: MutableState<Boolean> = mutableStateOf(false)
 
-    private val _isLoading = mutableStateOf(false)
-    val isLoading: State<Boolean> = _isLoading
-
-    private val _showFilters = mutableStateOf(false)
-    val showFilters: State<Boolean> = _showFilters
+    // Interno: posts sin filtrar (de amigos)
+    private var rawPosts: List<TravelPost> = emptyList()
 
     init {
-        loadFeed()
-    }
-
-    fun loadFeed() {
-        val currentUserId = auth.currentUser?.uid ?: return
-
-        _isLoading.value = true
-
-        // Buscamos en la subcolección 'following' los IDs de la gente a la que sigues
-        db.collection("users").document(currentUserId).collection("following")
-            .get()
-            .addOnSuccessListener { followingSnap ->
-                val followingIds = followingSnap.documents.map { it.id }
-
-                if (followingIds.isEmpty()) {
-                    _posts.value = emptyList()
-                    _isLoading.value = false
-                    return@addOnSuccessListener
-                }
-
-                // Usamos la función que ya tenías para cargar posts por trozos (chunks)
-                loadPostsFromFollowing(followingIds)
-            }
-            .addOnFailureListener {
-                _isLoading.value = false
-            }
-    }
-
-    private fun loadPostsFromFollowing(following: List<String>) {
-        val allPosts = mutableListOf<TravelPost>()
-        var completed = 0
-        val chunks = following.chunked(10) // Firestore permite max 10/30 en 'whereIn'
-
-        for (chunk in chunks) {
-            db.collection("trips")
-                .whereIn("authorUid", chunk)
-                .whereEqualTo("status", TripStatus.PUBLISHED.name)
-                .get()
-                .addOnSuccessListener { result ->
-                    val posts = result.documents.map { doc ->
-                        TravelPost(
-                            id = doc.id,
-                            destination = doc.getString("destino") ?: "",
-                            days = (doc.getLong("days") ?: 0).toInt(),
-                            budget = doc.getDouble("budget") ?: 0.0,
-                            authorName = doc.getString("authorName") ?: "Usuario",
-                            authorAvatar = doc.getString("authorAvatar"),
-                            date = "Reciente",
-                            description = doc.getString("description") ?: "",
-                            imageUrl = doc.getString("imageUrl"),
-                            likes = (doc.getLong("likes") ?: 0).toInt(),
-                            comments = (doc.getLong("comments") ?: 0).toInt()
-                        )
-                    }
-
-                    allPosts.addAll(posts)
-                    completed++
-
-                    if (completed == chunks.size) {
-                        _posts.value = applyFilters(allPosts)
-                        _isLoading.value = false
-                    }
-                }
-                .addOnFailureListener {
-                    completed++
-                    if (completed == chunks.size) {
-                        _isLoading.value = false
-                    }
-                }
-        }
+        observeFollowingAndLoadFeed()
     }
 
     fun toggleFilters() {
-        _showFilters.value = !_showFilters.value
+        showFilters.value = !showFilters.value
     }
 
     fun updateFilters(newFilters: CommunityFilters) {
-        _filters.value = newFilters
-        loadFeed()
+        filters.value = newFilters
+        applyFilters()
     }
 
     fun clearFilters() {
-        _filters.value = CommunityFilters()
-        loadFeed()
+        filters.value = CommunityFilters()
+        applyFilters()
     }
 
-    private fun applyFilters(list: List<TravelPost>): List<TravelPost> {
-        val f = _filters.value
-        return list.filter {
-            val matchDest = f.destination.isEmpty() ||
-                    it.destination.contains(f.destination, true)
-
-            val matchBudget = f.maxBudget == null ||
-                    it.budget <= f.maxBudget
-
-            matchDest && matchBudget
-        }
-    }
-
+    // Si todavía no tienes likes/favs en Firestore, al menos no rompe la UI
     fun toggleLike(postId: String) {
-        _posts.value = _posts.value.map {
-            if (it.id == postId) {
-                it.copy(
-                    isLiked = !it.isLiked,
-                    likes = if (it.isLiked) it.likes - 1 else it.likes + 1
-                )
-            } else it
+        val updated = _posts.value.map { p ->
+            if (p.id != postId) p
+            else p.copy(isLiked = !p.isLiked, likes = if (!p.isLiked) p.likes + 1 else maxOf(0, p.likes - 1))
         }
+        // Actualiza ambos para que al filtrar no se pierda el estado local
+        rawPosts = rawPosts.map { p ->
+            if (p.id != postId) p
+            else p.copy(isLiked = !p.isLiked, likes = if (!p.isLiked) p.likes + 1 else maxOf(0, p.likes - 1))
+        }
+        _posts.value = updated
     }
 
     fun toggleFavorite(postId: String) {
-        _posts.value = _posts.value.map {
-            if (it.id == postId) it.copy(isFavorite = !it.isFavorite)
-            else it
+        val updated = _posts.value.map { p ->
+            if (p.id != postId) p else p.copy(isFavorite = !p.isFavorite)
         }
+        rawPosts = rawPosts.map { p ->
+            if (p.id != postId) p else p.copy(isFavorite = !p.isFavorite)
+        }
+        _posts.value = updated
+    }
+
+    private fun observeFollowingAndLoadFeed() {
+        val myUid = auth.currentUser?.uid ?: run {
+            rawPosts = emptyList()
+            _posts.value = emptyList()
+            return
+        }
+
+        db.collection("users")
+            .document(myUid)
+            .collection("following")
+            .addSnapshotListener { snap, e ->
+                if (e != null) {
+                    rawPosts = emptyList()
+                    _posts.value = emptyList()
+                    return@addSnapshotListener
+                }
+
+                val followingIds = snap?.documents?.map { it.id } ?: emptyList()
+
+                // Si quieres incluir tus posts también:
+                // val authors = (followingIds + myUid).distinct()
+                val authors = followingIds.distinct()
+
+                loadPublishedTripsFromAuthors(authors)
+            }
+    }
+
+    private fun loadPublishedTripsFromAuthors(authorUids: List<String>) {
+        isLoading.value = true
+
+        if (authorUids.isEmpty()) {
+            rawPosts = emptyList()
+            _posts.value = emptyList()
+            isLoading.value = false
+            return
+        }
+
+        val chunks = authorUids.chunked(10) // whereIn max 10
+        val all = mutableListOf<TravelPost>()
+        var pending = chunks.size
+
+        chunks.forEach { chunk ->
+            db.collection("trips")
+                .whereEqualTo("status", "PUBLISHED")
+                .whereIn("authorUid", chunk)
+                .get()
+                .addOnSuccessListener { snap ->
+                    val mapped = snap.documents.mapNotNull { doc ->
+                        // Campos mínimos para tu TravelPost (según tu data class)
+                        val destination = doc.getString("destination")
+                            ?: doc.getString("destino")
+                            ?: return@mapNotNull null
+
+                        val days = (doc.getLong("days")
+                            ?: doc.getLong("diasRecomendados")
+                            ?: 0L).toInt()
+
+                        val budget = doc.getDouble("budget")
+                            ?: doc.getDouble("presupuestoTotal")
+                            ?: doc.getLong("budget")?.toDouble()
+                            ?: doc.getLong("presupuestoTotal")?.toDouble()
+                            ?: 0.0
+
+                        val currency = doc.getString("currency") ?: "€"
+                        val authorName = doc.getString("authorName") ?: "Usuario"
+                        val authorAvatar = doc.getString("authorAvatar")
+                        val date = doc.getString("date") ?: ""
+                        val description = doc.getString("description") ?: ""
+                        val imageUrl = doc.getString("imageUrl")
+
+                        TravelPost(
+                            id = doc.id,
+                            destination = destination,
+                            days = days,
+                            budget = budget,
+                            currency = currency,
+                            authorName = authorName,
+                            authorAvatar = authorAvatar,
+                            date = date,
+                            description = description,
+                            imageUrl = imageUrl,
+                            likes = (doc.getLong("likes") ?: 0L).toInt(),
+                            comments = (doc.getLong("comments") ?: 0L).toInt(),
+                            isLiked = doc.getBoolean("isLiked") ?: false,
+                            isFavorite = doc.getBoolean("isFavorite") ?: false
+                        )
+                    }
+
+                    all += mapped
+                }
+                .addOnFailureListener {
+                    // si falla una chunk, seguimos con las demás, pero al final puede quedar vacío
+                }
+                .addOnCompleteListener {
+                    pending--
+                    if (pending == 0) {
+                        rawPosts = all.distinctBy { it.id }
+                        applyFilters()
+                        isLoading.value = false
+                    }
+                }
+        }
+    }
+
+    private fun applyFilters() {
+        val f = filters.value
+
+        val filtered = rawPosts.filter { post ->
+            val okDestination =
+                f.destination.isBlank() || post.destination.contains(f.destination, ignoreCase = true)
+
+            val okBudget =
+                f.maxBudget == null || post.budget <= f.maxBudget!!.toDouble()
+
+            okDestination && okBudget
+        }
+
+        _posts.value = filtered
     }
 }

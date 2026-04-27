@@ -46,7 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.data.trips.TripStatus
@@ -69,11 +69,14 @@ fun ProfileTabScreen(
     val tripsVm = remember { ProfileTripsViewModel() }
     val tripsState by tripsVm.uiState.collectAsState()
 
+    // NUEVO: contador de amigos (siguiendo)
+    val friendsCountVm: ProfileFriendsCountViewModel = viewModel()
+    val friendsCount by friendsCountVm.followingCount.collectAsState()
+
     var confirmDeleteId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) { tripsVm.loadMyTrips() }
 
-    // Error dialog
     if (tripsState.errorMessage != null) {
         AlertDialog(
             onDismissRequest = { tripsVm.clearError() },
@@ -83,7 +86,6 @@ fun ProfileTabScreen(
         )
     }
 
-    // Delete confirm
     if (confirmDeleteId != null) {
         AlertDialog(
             onDismissRequest = { confirmDeleteId = null },
@@ -108,7 +110,6 @@ fun ProfileTabScreen(
                 .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // 1) User card - moderna
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -173,8 +174,19 @@ fun ProfileTabScreen(
                     }
                 }
             }
+
+            // SECCIÓN AMIGOS (con contador)
             item {
                 SectionTitle("Amigos", "Personas a las que sigues")
+
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = "Siguiendo: $friendsCount",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Spacer(Modifier.height(10.dp))
 
                 Button(
                     onClick = onNavigateToFindFriends,
@@ -184,7 +196,6 @@ fun ProfileTabScreen(
                 }
             }
 
-            // 2) Recargar - botón claro + icono
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     Button(
@@ -203,7 +214,6 @@ fun ProfileTabScreen(
                 }
             }
 
-            // 3) Borradores
             item { SectionTitle("Borradores", "Tus viajes guardados sin publicar") }
 
             if (tripsState.drafts.isEmpty()) {
@@ -221,7 +231,6 @@ fun ProfileTabScreen(
                 }
             }
 
-            // 4) Publicados
             item { SectionTitle("Publicaciones", "Tus viajes publicados en la comunidad") }
 
             if (tripsState.published.isEmpty()) {
@@ -239,7 +248,6 @@ fun ProfileTabScreen(
                 }
             }
 
-            // 5) Logout
             item {
                 Card(
                     modifier = Modifier

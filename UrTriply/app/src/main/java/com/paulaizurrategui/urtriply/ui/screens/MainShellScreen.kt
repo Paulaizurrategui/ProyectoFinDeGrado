@@ -27,31 +27,26 @@ import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
 import com.paulaizurrategui.urtriply.ui.navigation.MainTabs
 import com.paulaizurrategui.urtriply.ui.navigation.PlanRoutes
 
-// Modelo simple para definir cada item del BottomNavigation (ruta + texto + icono)
 data class BottomTab(
-    val route: String, // Ruta interna del NavHost de tabs (ej. "tab_home")
-    val labelRes: Int, // Texto del tab en strings.xml (multi-idioma)
-    val icon: @Composable () -> Unit // Icono del tab como composable (Icon(...))
+    val route: String,
+    val labelRes: Int,
+    val icon: @Composable () -> Unit
 )
 
 @Composable
 fun MainShellScreen(
-    mode: String, // Modo de ejecución: "auth" (logueado) o "guest" (invitado)
-    authViewModel: AuthViewModel, // ViewModel de auth para poder hacer logout desde Perfil
-    onRequireLogin: () -> Unit, // Callback: se usa cuando un invitado intenta acceder a algo restringido
-    onLoggedOut: () -> Unit // Callback: se usa cuando el usuario hace logout (volver a Welcome y limpiar backstack)
+    mode: String,
+    authViewModel: AuthViewModel,
+    onRequireLogin: () -> Unit,
+    onLoggedOut: () -> Unit
 ) {
-    // NavController interno para navegar ENTRE tabs (y pantallas internas como plan_result)
     val navController = rememberNavController()
 
-    // Observa la ruta actual para marcar el tab seleccionado
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route ?: MainTabs.HOME
 
-    // Si es invitado, aplicamos restricciones en COMMUNITY y PROFILE
     val isGuest = mode.lowercase() == "guest"
 
-    // Definición de tabs del bottom bar (rutas + etiquetas + iconos)
     val tabs = listOf(
         BottomTab(MainTabs.HOME, R.string.tab_home) { Icon(Icons.Default.Home, contentDescription = null) },
         BottomTab(MainTabs.PLAN, R.string.tab_plan) { Icon(Icons.Default.Place, contentDescription = null) },
@@ -68,11 +63,8 @@ fun MainShellScreen(
                         selected = selected,
                         onClick = {
                             navController.navigate(tab.route) {
-                                // Mantiene estado de tabs previas
                                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                // Evita duplicar la misma pantalla si vuelves a pulsar el tab
                                 launchSingleTop = true
-                                // Restaura estado guardado (scroll, etc.) al volver a un tab
                                 restoreState = true
                             }
                         },
@@ -84,16 +76,14 @@ fun MainShellScreen(
         }
     ) { innerPadding ->
         NavHost(
-            modifier = Modifier.padding(innerPadding), // Respeta padding del Scaffold para no tapar contenido con el bottom bar
+            modifier = Modifier.padding(innerPadding),
             navController = navController,
-            startDestination = MainTabs.HOME // Tab por defecto al entrar en MainShell
+            startDestination = MainTabs.HOME
         ) {
-            // TAB: HOME
             composable(MainTabs.HOME) {
                 InicioTabScreen(isGuest = isGuest, onRequireLogin = onRequireLogin)
             }
 
-            // TAB: PLAN (Pantalla 4)
             composable(MainTabs.PLAN) {
                 PlanTabScreen(
                     isGuest = isGuest,
@@ -101,7 +91,6 @@ fun MainShellScreen(
                 )
             }
 
-            // PANTALLA 5: RESULTADO DE PROPUESTA (se mantiene bottom bar visible)
             composable(PlanRoutes.RESULT) {
                 PlanResultScreen(
                     isGuest = isGuest,
@@ -110,30 +99,29 @@ fun MainShellScreen(
                 )
             }
 
-            // TAB: COMMUNITY
             composable(MainTabs.COMMUNITY) {
                 if (isGuest) RequireLoginScreen(onRequireLogin = onRequireLogin)
                 else CommunityScreen()
             }
 
-            // TAB: PROFILE
             composable(MainTabs.PROFILE) {
-                if (isGuest) RequireLoginScreen(onRequireLogin = onRequireLogin)
-                else ProfileTabScreen(
-                    authViewModel = authViewModel,
-                    onLoggedOut = onLoggedOut,
-                    onEditProfile = { navController.navigate("profile/edit") },
-                    onEditTrip = { tripId -> navController.navigate("trip/edit/$tripId") },
-                            onNavigateToFindFriends = { navController.navigate("find_friends") }
-                )
+                if (isGuest) {
+                    RequireLoginScreen(onRequireLogin = onRequireLogin)
+                } else {
+                    ProfileTabScreen(
+                        authViewModel = authViewModel,
+                        onLoggedOut = onLoggedOut,
+                        onEditProfile = { navController.navigate("profile/edit") },
+                        onEditTrip = { tripId -> navController.navigate("trip/edit/$tripId") },
+                        onNavigateToFindFriends = { navController.navigate("find_friends") }
+                    )
+                }
             }
 
-            // PANTALLA: EDITAR PERFIL
             composable("profile/edit") {
                 EditProfileScreen(onBack = { navController.popBackStack() })
             }
 
-            // PANTALLA: EDITAR VIAJE
             composable(
                 route = "trip/edit/{tripId}",
                 arguments = listOf(navArgument("tripId") { type = NavType.StringType })
@@ -144,10 +132,9 @@ fun MainShellScreen(
                     onBack = { navController.popBackStack() }
                 )
             }
+
             composable("find_friends") {
-                FindFriendsScreen(
-                    onBack = { navController.popBackStack() }
-                )
+                FindFriendsScreen(onBack = { navController.popBackStack() })
             }
         }
     }

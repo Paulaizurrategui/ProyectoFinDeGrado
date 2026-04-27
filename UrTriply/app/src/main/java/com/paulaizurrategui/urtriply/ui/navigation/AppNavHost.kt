@@ -9,7 +9,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.google.firebase.auth.FirebaseAuth
 import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
-import com.paulaizurrategui.urtriply.ui.screens.FindFriendsScreen
 import com.paulaizurrategui.urtriply.ui.screens.LoginScreen
 import com.paulaizurrategui.urtriply.ui.screens.MainShellScreen
 import com.paulaizurrategui.urtriply.ui.screens.RegisterScreen
@@ -17,28 +16,28 @@ import com.paulaizurrategui.urtriply.ui.screens.WelcomeScreen
 
 @Composable
 fun AppNavHost() {
-    val navController = rememberNavController() // Controla la navegación entre pantallas (NavHost)
-    val authViewModel = remember { AuthViewModel() } // ViewModel compartido para login/register/logout en toda la app
+    val navController = rememberNavController()
+    val authViewModel = remember { AuthViewModel() }
 
-    val start = Routes.WELCOME // Según Hito 1: siempre empezamos en la pantalla de bienvenida (Welcome)
+    val start = Routes.WELCOME
 
     NavHost(navController = navController, startDestination = start) {
 
         composable(Routes.WELCOME) {
-            val isLoggedIn = FirebaseAuth.getInstance().currentUser != null // true si hay sesión activa en Firebase
+            val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
 
             WelcomeScreen(
                 isLoggedIn = isLoggedIn,
                 onGoHome = {
-                    navController.navigate("main/auth") { // Entrar en "modo autenticado"
-                        popUpTo(Routes.WELCOME) { inclusive = true } // Quita Welcome del backstack (no vuelve atrás)
+                    navController.navigate("main/auth") {
+                        popUpTo(Routes.WELCOME) { inclusive = true }
                     }
                 },
-                onGoLogin = { navController.navigate(Routes.LOGIN) }, // Ir a Login
-                onGoRegister = { navController.navigate(Routes.REGISTER) }, // Ir a Registro
+                onGoLogin = { navController.navigate(Routes.LOGIN) },
+                onGoRegister = { navController.navigate(Routes.REGISTER) },
                 onContinueGuest = {
-                    navController.navigate("main/guest") { // Entrar en "modo invitado"
-                        popUpTo(Routes.WELCOME) { inclusive = true } // Quita Welcome del backstack
+                    navController.navigate("main/guest") {
+                        popUpTo(Routes.WELCOME) { inclusive = true }
                     }
                 }
             )
@@ -46,11 +45,11 @@ fun AppNavHost() {
 
         composable(Routes.LOGIN) {
             LoginScreen(
-                authViewModel = authViewModel, // Usa el mismo ViewModel para actualizar estado/loading/errores
-                onGoToRegister = { navController.navigate(Routes.REGISTER) }, // Desde login -> registro
+                authViewModel = authViewModel,
+                onGoToRegister = { navController.navigate(Routes.REGISTER) },
                 onLoginSuccess = {
-                    navController.navigate("main/auth") { // Si login OK -> Main autenticado
-                        popUpTo(Routes.WELCOME) { inclusive = true } // Limpia el flujo de acceso
+                    navController.navigate("main/auth") {
+                        popUpTo(Routes.WELCOME) { inclusive = true }
                     }
                 }
             )
@@ -59,9 +58,9 @@ fun AppNavHost() {
         composable(Routes.REGISTER) {
             RegisterScreen(
                 authViewModel = authViewModel,
-                onGoToLogin = { navController.popBackStack() }, // Volver a la pantalla anterior
+                onGoToLogin = { navController.popBackStack() },
                 onRegisterSuccess = {
-                    navController.navigate("main/auth") { // Si registro OK -> Main autenticado
+                    navController.navigate("main/auth") {
                         popUpTo(Routes.WELCOME) { inclusive = true }
                     }
                 }
@@ -69,27 +68,20 @@ fun AppNavHost() {
         }
 
         composable(
-            route = Routes.MAIN, // Ruta con argumento: "main/{mode}"
-            arguments = listOf(navArgument("mode") { type = NavType.StringType }) // mode = "guest" o "auth"
+            route = Routes.MAIN,
+            arguments = listOf(navArgument("mode") { type = NavType.StringType })
         ) { backStackEntry ->
-            val mode = backStackEntry.arguments?.getString("mode") ?: "guest" // Si no viene, asumimos invitado
+            val mode = backStackEntry.arguments?.getString("mode") ?: "guest"
 
             MainShellScreen(
-                mode = mode, // Define permisos (guest limitado / auth completo)
+                mode = mode,
                 authViewModel = authViewModel,
-                onRequireLogin = {
-                    navController.navigate(Routes.LOGIN) // Si invitado intenta algo restringido -> Login
-                },
+                onRequireLogin = { navController.navigate(Routes.LOGIN) },
                 onLoggedOut = {
-                    navController.navigate(Routes.WELCOME) { // Logout -> volver a Welcome
-                        popUpTo(0) { inclusive = true } // Reset total del backstack
+                    navController.navigate(Routes.WELCOME) {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
-            )
-        }
-        composable("find_friends") {
-            FindFriendsScreen(
-                onBack = { navController.popBackStack() }
             )
         }
     }

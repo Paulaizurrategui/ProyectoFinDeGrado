@@ -1,62 +1,71 @@
 package com.paulaizurrategui.urtriply.ui.auth
+
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.paulaizurrategui.urtriply.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-// ViewModel encargado de encapsular FirebaseAuth y exponer un StateFlow consumible por la UI
+
 class AuthViewModel(
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance() // Inyección simple; permite testear o mockear si hiciera falta
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) : ViewModel() {
 
-    // StateFlow interno mutable; solo el ViewModel puede modificarlo
     private val _uiState =
-        MutableStateFlow(AuthUiState(isLoggedIn = auth.currentUser != null)) // Inicializa según sesión actual
+        MutableStateFlow(AuthUiState(isLoggedIn = auth.currentUser != null))
 
-    // StateFlow público inmutable; las pantallas lo observan con collectAsState()
     val uiState: StateFlow<AuthUiState> = _uiState
 
-    // Limpia mensajes para que no se quede el AlertDialog abierto al recomponer o navegar
     fun clearMessages() {
         _uiState.value = _uiState.value.copy(errorResId = null, successResId = null)
     }
 
-    // Registro con email/contraseña; onSuccess se llama para navegar cuando Firebase confirma que se creó la cuenta
     fun register(email: String, password: String, onSuccess: () -> Unit) {
-        val cleaned = email.trim() // Evita errores típicos por espacios al copiar/pegar
+        val cleaned = email.trim()
+
         _uiState.value = _uiState.value.copy(
             isLoading = true,
             errorResId = null,
             successResId = null
-        ) // Arranca loading y limpia mensajes
+        )
 
-        auth.createUserWithEmailAndPassword(cleaned, password) // Llamada asíncrona a Firebase
+        auth.createUserWithEmailAndPassword(cleaned, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    _uiState.value =
-                        AuthUiState(isLoggedIn = true) // Estado “limpio” con sesión iniciada
-                    onSuccess() // Navegación a la pantalla principal
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false, // Se termina el loading
-                        errorResId = FirebaseAuthErrorMapper.toStringRes(task.exception), // Mapea la excepción a un string amigable
-                        successResId = null
+                    val user = auth.currentUser
+                    val uid = user?.uid
+
+                    if (uid == null) {
+                        _uiState.value = _uiState.value.copy(isLoading = false, errorResId = R.string.generic_error)
+                        return@addOnCompleteListener
+                    }
+
+                    // displayName inicial: parte antes de @ (si luego lo cambias en perfil, se actualizará allí)
+                    val defaultDisplayName = cleaned.substringBefore("@").ifBlank { "Usuario" }
+
+                    val userMap = mapOf(
+                        "uid" to uid,
+                        "email" to cleaned,
+                        "displayName" to defaultDisplayName,
+                        "displayNameLower" to defaultDisplayName.lowercase()
                     )
-                }
-            }
-    }
 
-    // Login con email/contraseña; onSuccess se llama para navegar cuando Firebase confirma el login
-    fun login(email: String, password: String, onSuccess: () -> Unit) {
-        val cleaned = email.trim()
-        _uiState.value =
-            _uiState.value.copy(isLoading = true, errorResId = null, successResId = null)
-
-        auth.signInWithEmailAndPassword(cleaned, password) // Llamada asíncrona a Firebase
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    _uiState.value = AuthUiState(isLoggedIn = true) // Marca sesión activa
-                    onSuccess()
+                    db.collection("users")
+                        .document(uid)
+                        .set(userMap, SetOptions.merge())
+                        .addOnSuccessListener {
+                            _uiState.value = AuthUiState(isLoggedIn = true)
+                            onSuccess()
+                        }
+                        .addOnFailureListener { e ->
+                            // La cuenta existe, pero no se pudo crear perfil en Firestore
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                errorResId = R.string.generic_error
+                            )
+                        }
                 } else {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -67,13 +76,57 @@ class AuthViewModel(
             }
     }
 
-    // Envía email de recuperación de contraseña; si el email está vacío se muestra un error local sin llamar a Firebase
+    fun login(email: String, password: String, onSuccess: () -> Unit) {
+        val cleaned = email.trim()
+
+        _uiState.value =
+            _uiState.value.copy(isLoading = true, errorResId = null, successResId = null)
+
+        auth.signInWithEmailAndPassword(cleaned, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val uid = auth.currentUser?.uid
+
+                    if (uid == null) {
+                        _uiState.value = _uiState.value.copy(isLoading = false, errorResId = R.string.generic_error)
+                        return@addOnCompleteListener
+                    }
+
+                    // Asegura que el doc existe y al menos tenga email.
+                    // No machaca displayName si ya lo has puesto desde perfil.
+                    val ensureMap = mapOf(
+                        "uid" to uid,
+                        "email" to cleaned
+                    )
+
+                    db.collection("users")
+                        .document(uid)
+                        .set(ensureMap, SetOptions.merge())
+                        .addOnSuccessListener {
+                            _uiState.value = AuthUiState(isLoggedIn = true)
+                            onSuccess()
+                        }
+                        .addOnFailureListener {
+                            // Aunque falle Firestore, el login existe. Te dejo entrar igualmente.
+                            _uiState.value = AuthUiState(isLoggedIn = true)
+                            onSuccess()
+                        }
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorResId = FirebaseAuthErrorMapper.toStringRes(task.exception),
+                        successResId = null
+                    )
+                }
+            }
+    }
+
     fun sendPasswordReset(email: String) {
         val cleaned = email.trim()
 
-        if (cleaned.isBlank()) { // Validación rápida en cliente
+        if (cleaned.isBlank()) {
             _uiState.value = _uiState.value.copy(
-                errorResId = R.string.error_enter_email_reset, // Mensaje de “introduce email”
+                errorResId = R.string.error_enter_email_reset,
                 successResId = null
             )
             return
@@ -82,12 +135,12 @@ class AuthViewModel(
         _uiState.value =
             _uiState.value.copy(isLoading = true, errorResId = null, successResId = null)
 
-        auth.sendPasswordResetEmail(cleaned) // Firebase envía un email al usuario si existe
+        auth.sendPasswordResetEmail(cleaned)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        successResId = R.string.reset_email_sent, // Mensaje de “email enviado”
+                        successResId = R.string.reset_email_sent,
                         errorResId = null
                     )
                 } else {
@@ -100,7 +153,6 @@ class AuthViewModel(
             }
     }
 
-    // Cierra sesión en Firebase y actualiza estado para que la UI y navegación vuelvan a modo no autenticado
     fun logout() {
         auth.signOut()
         _uiState.value = AuthUiState(isLoggedIn = false)
