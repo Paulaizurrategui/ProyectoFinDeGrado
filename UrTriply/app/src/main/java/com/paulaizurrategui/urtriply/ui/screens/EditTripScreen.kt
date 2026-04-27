@@ -1,5 +1,6 @@
 package com.paulaizurrategui.urtriply.ui.screens
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,11 +9,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -20,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -30,6 +34,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -47,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.paulaizurrategui.urtriply.ui.theme.UrCream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -140,207 +146,278 @@ fun EditTripScreen(
             }
     }
 
-    // 2) UI
-    androidx.compose.material3.Scaffold { inner ->
+    // 2) UI (misma estética que PlanResultScreen)
+    Scaffold { inner ->
         Box(
             modifier = Modifier
                 .padding(inner)
-                .fillMaxWidth()
+                .fillMaxSize()
         ) {
             Column(
                 modifier = Modifier
                     .verticalScroll(scrollState)
                     .fillMaxWidth()
-                    .padding(16.dp)
-                    .padding(end = 14.dp)
+                    .padding(horizontal = 16.dp, vertical = 18.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header custom (compatible con tu Material3)
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .widthIn(max = 520.dp)
                 ) {
-                    TextButton(onClick = onBack) { Text("← Volver") }
-                    Spacer(Modifier.size(8.dp))
+                    // Header
+                    TextButton(
+                        onClick = onBack,
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                    ) { Text("← Volver") }
+
                     Text(
                         text = "Editar viaje",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.ExtraBold
                     )
-                }
-
-                if (loading) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(strokeWidth = 2.dp)
-                        Spacer(Modifier.size(12.dp))
-                        Text("Cargando viaje...")
-                    }
-                    return@Column
-                }
-
-                // Error de carga
-                error?.let {
-                    Text(text = it, color = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.height(10.dp))
-                }
 
-                // --- Formulario (igual que PlanTabScreen) ---
-                DestinationDropdown(
-                    destinos = destinos,
-                    selected = destino,
-                    onSelected = { destino = it }
-                )
-
-                Spacer(Modifier.height(14.dp))
-
-                OutlinedTextField(
-                    value = presupuestoText,
-                    onValueChange = { presupuestoText = it.replace(",", ".") },
-                    label = { Text("Presupuesto total (EUR)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                OutlinedTextField(
-                    value = viajerosText,
-                    onValueChange = { viajerosText = it.filter(Char::isDigit) },
-                    label = { Text("Número de viajeros") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF3F4F6))
-                ) {
-                    Column(Modifier.padding(12.dp)) {
-                        Text("Rango de fechas", style = MaterialTheme.typography.titleSmall)
-
-                        Spacer(Modifier.height(8.dp))
-
-                        RowLine(
-                            left = "Inicio: ${formatDate(fechaInicioMillis)}",
-                            actionText = "Elegir",
-                            onAction = { showStartPicker = true }
-                        )
-
-                        RowLine(
-                            left = "Fin: ${formatDate(fechaFinMillis)}",
-                            actionText = "Elegir",
-                            onAction = { showEndPicker = true }
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                Text("Preferencias", style = MaterialTheme.typography.titleSmall)
-                Spacer(Modifier.height(8.dp))
-
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TripPreference.entries.take(2).forEach { pref ->
-                            FilterChip(
-                                selected = prefs.contains(pref),
-                                onClick = {
-                                    prefs = if (prefs.contains(pref)) prefs - pref else prefs + pref
-                                },
-                                label = { Text(pref.label) }
+                    // Card info
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = UrCream),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                    ) {
+                        Column(Modifier.padding(14.dp)) {
+                            Text(
+                                text = "Actualiza los datos del viaje",
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = "Puedes editar destino, presupuesto, fechas y preferencias.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TripPreference.entries.drop(2).forEach { pref ->
-                            FilterChip(
-                                selected = prefs.contains(pref),
-                                onClick = {
-                                    prefs = if (prefs.contains(pref)) prefs - pref else prefs + pref
-                                },
-                                label = { Text(pref.label) }
+
+                    Spacer(Modifier.height(14.dp))
+
+                    // Loader
+                    if (loading) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(18.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(strokeWidth = 2.dp)
+                                Spacer(Modifier.size(12.dp))
+                                Text("Cargando viaje...")
+                            }
+                        }
+                        Spacer(Modifier.height(90.dp))
+                        return@Column
+                    }
+
+                    // Error de carga
+                    error?.let {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                        ) {
+                            Text(
+                                text = it,
+                                modifier = Modifier.padding(12.dp),
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
+                        Spacer(Modifier.height(10.dp))
                     }
-                }
 
-                Spacer(Modifier.height(16.dp))
+                    // Form container
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(22.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            SectionLabel("Destino")
+                            DestinationDropdown(
+                                destinos = destinos,
+                                selected = destino,
+                                onSelected = { destino = it }
+                            )
 
-                // Error local de validación
-                localError?.let {
-                    Text(text = it, color = MaterialTheme.colorScheme.error)
-                    Spacer(Modifier.height(10.dp))
-                }
+                            SectionLabel("Presupuesto total")
+                            OutlinedTextField(
+                                value = presupuestoText,
+                                onValueChange = { presupuestoText = it.replace(",", ".") },
+                                label = { Text("EUR") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp)
+                            )
 
-                // Botón guardar cambios
-                Button(
-                    onClick = {
-                        localError = null
-                        error = null
+                            SectionLabel("Viajeros")
+                            OutlinedTextField(
+                                value = viajerosText,
+                                onValueChange = { viajerosText = it.filter(Char::isDigit) },
+                                label = { Text("Número de viajeros") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp)
+                            )
 
-                        val presupuesto = presupuestoText.toDoubleOrNull()
-                        val viajeros = viajerosText.toIntOrNull()
+                            // Fechas
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(18.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                            ) {
+                                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Text(
+                                        text = "Fechas",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
 
-                        if (presupuesto == null || presupuesto <= 0) {
-                            localError = "Introduce un presupuesto válido (> 0)."
-                            return@Button
-                        }
-                        if (viajeros == null || viajeros <= 0) {
-                            localError = "Introduce un número de viajeros válido (> 0)."
-                            return@Button
-                        }
-                        if (fechaInicioMillis == null || fechaFinMillis == null) {
-                            localError = "Selecciona fecha de inicio y fin."
-                            return@Button
-                        }
-                        if (fechaFinMillis!! < fechaInicioMillis!!) {
-                            localError = "La fecha fin no puede ser anterior a la fecha inicio."
-                            return@Button
-                        }
-                        if (prefs.isEmpty()) {
-                            localError = "Selecciona al menos una preferencia."
-                            return@Button
-                        }
-
-                        saving = true
-
-                        val updateMap = mapOf(
-                            "destino" to destino,
-                            "presupuestoTotal" to presupuesto,
-                            "viajeros" to viajeros,
-                            "fechaInicioMillis" to fechaInicioMillis,
-                            "fechaFinMillis" to fechaFinMillis,
-                            "prefs" to prefs.map { it.name } // List<String>
-                        )
-
-                        trips.document(tripId)
-                            .update(updateMap)
-                            .addOnSuccessListener {
-                                saving = false
-                                onBack()
+                                    DateRowField(
+                                        label = "Fecha de inicio",
+                                        value = formatDate(fechaInicioMillis),
+                                        onClick = { showStartPicker = true }
+                                    )
+                                    DateRowField(
+                                        label = "Fecha de fin",
+                                        value = formatDate(fechaFinMillis),
+                                        onClick = { showEndPicker = true }
+                                    )
+                                }
                             }
-                            .addOnFailureListener { e ->
-                                saving = false
-                                error = e.message ?: "No se pudieron guardar los cambios."
+
+                            // Preferencias
+                            SectionLabel("Preferencias")
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    TripPreference.entries.take(2).forEach { pref ->
+                                        FilterChip(
+                                            selected = prefs.contains(pref),
+                                            onClick = { prefs = if (prefs.contains(pref)) prefs - pref else prefs + pref },
+                                            label = { Text(pref.label) }
+                                        )
+                                    }
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    TripPreference.entries.drop(2).forEach { pref ->
+                                        FilterChip(
+                                            selected = prefs.contains(pref),
+                                            onClick = { prefs = if (prefs.contains(pref)) prefs - pref else prefs + pref },
+                                            label = { Text(pref.label) }
+                                        )
+                                    }
+                                }
                             }
-                    },
-                    enabled = !saving,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                ) {
-                    if (saving) {
-                        CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(end = 12.dp))
-                        Text("Guardando...")
-                    } else {
-                        Text("Guardar cambios", fontWeight = FontWeight.Bold)
+
+                            // Error local validación
+                            localError?.let {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                                ) {
+                                    Text(
+                                        text = it,
+                                        modifier = Modifier.padding(12.dp),
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
                     }
-                }
 
-                Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(14.dp))
+
+                    // Botón guardar cambios (estilo pro)
+                    Button(
+                        onClick = {
+                            localError = null
+                            error = null
+
+                            val presupuesto = presupuestoText.toDoubleOrNull()
+                            val viajeros = viajerosText.toIntOrNull()
+
+                            if (presupuesto == null || presupuesto <= 0) {
+                                localError = "Introduce un presupuesto válido (> 0)."
+                                return@Button
+                            }
+                            if (viajeros == null || viajeros <= 0) {
+                                localError = "Introduce un número de viajeros válido (> 0)."
+                                return@Button
+                            }
+                            if (fechaInicioMillis == null || fechaFinMillis == null) {
+                                localError = "Selecciona fecha de inicio y fin."
+                                return@Button
+                            }
+                            if (fechaFinMillis!! < fechaInicioMillis!!) {
+                                localError = "La fecha fin no puede ser anterior a la fecha inicio."
+                                return@Button
+                            }
+                            if (prefs.isEmpty()) {
+                                localError = "Selecciona al menos una preferencia."
+                                return@Button
+                            }
+
+                            saving = true
+
+                            val updateMap = mapOf(
+                                "destino" to destino,
+                                "presupuestoTotal" to presupuesto,
+                                "viajeros" to viajeros,
+                                "fechaInicioMillis" to fechaInicioMillis,
+                                "fechaFinMillis" to fechaFinMillis,
+                                "prefs" to prefs.map { it.name } // List<String>
+                            )
+
+                            trips.document(tripId)
+                                .update(updateMap)
+                                .addOnSuccessListener {
+                                    saving = false
+                                    onBack()
+                                }
+                                .addOnFailureListener { e ->
+                                    saving = false
+                                    error = e.message ?: "No se pudieron guardar los cambios."
+                                }
+                        },
+                        enabled = !saving,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp)
+                    ) {
+                        if (saving) {
+                            CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.size(12.dp))
+                            Text("Guardando…", fontWeight = FontWeight.Bold)
+                        } else {
+                            Text("Guardar cambios", fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(Modifier.height(90.dp)) // aire + por si hay bottom bar en el futuro
+                }
             }
 
             VerticalScrollbar(
@@ -384,6 +461,43 @@ fun EditTripScreen(
 }
 
 @Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.SemiBold
+    )
+}
+
+@Composable
+private fun DateRowField(
+    label: String,
+    value: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(text = value, fontWeight = FontWeight.SemiBold)
+        }
+        TextButton(onClick = onClick) { Text("Seleccionar") }
+    }
+}
+
+@Composable
 private fun DestinationDropdown(
     destinos: List<String>,
     selected: String,
@@ -399,7 +513,8 @@ private fun DestinationDropdown(
             label = { Text("Destino (capital europea)") },
             trailingIcon = { Text("▼") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
         )
 
         Box(
@@ -432,29 +547,15 @@ private fun DestinationDropdown(
                     }
                 }
             },
-            confirmButton = {
-                TextButton(onClick = { showDialog = false }) { Text("Cerrar") }
-            }
+            confirmButton = { TextButton(onClick = { showDialog = false }) { Text("Cerrar") } }
         )
-    }
-}
-
-@Composable
-private fun RowLine(left: String, actionText: String, onAction: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(left)
-        TextButton(onClick = onAction) { Text(actionText) }
     }
 }
 
 @Composable
 private fun VerticalScrollbar(
     modifier: Modifier,
-    scrollState: androidx.compose.foundation.ScrollState
+    scrollState: ScrollState
 ) {
     val max = scrollState.maxValue
     if (max <= 0) return

@@ -19,7 +19,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -61,9 +60,7 @@ fun PlanResultScreen(
             onDismissRequest = { vm.clearMessages() },
             title = { Text(if (uiState.errorMessage != null) "Error" else "Aviso") },
             text = { Text(dialogText) },
-            confirmButton = {
-                TextButton(onClick = { vm.clearMessages() }) { Text("OK") }
-            }
+            confirmButton = { TextButton(onClick = { vm.clearMessages() }) { Text("OK") } }
         )
     }
 
@@ -82,8 +79,27 @@ fun PlanResultScreen(
 
         val scroll = rememberScrollState()
 
-        // Layout centrado + CTA sticky para que se vea pro
+        // Layout centrado + CTA sticky
         androidx.compose.material3.Scaffold(
+            // --- VOLVER STICKY ARRIBA ---
+            topBar = {
+                // Se queda fijo arriba aunque hagas scroll
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(
+                        onClick = onBack,
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("← Volver", fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.weight(1f))
+                }
+            },
             bottomBar = {
                 Column(
                     modifier = Modifier
@@ -139,9 +155,7 @@ fun PlanResultScreen(
                     Spacer(Modifier.height(10.dp))
 
                     OutlinedButton(
-                        onClick = {
-                            // TODO: Compartir (opcional)
-                        },
+                        onClick = { /* TODO: Compartir */ },
                         enabled = !uiState.isSaving,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp)
@@ -168,12 +182,6 @@ fun PlanResultScreen(
                             .fillMaxWidth()
                             .widthIn(max = 520.dp)
                     ) {
-                        // Header
-                        TextButton(
-                            onClick = onBack,
-                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                        ) { Text("← Volver") }
-
                         Text(
                             text = "Viaje a ${r.destino}",
                             style = MaterialTheme.typography.titleLarge,
@@ -220,14 +228,14 @@ fun PlanResultScreen(
 
                         Spacer(Modifier.height(14.dp))
 
-                        // Sección: Itinerario (expandible simple por cards)
+                        // Sección: Itinerario
                         SectionTitle("Itinerario por días")
                         Spacer(Modifier.height(8.dp))
                         ItineraryCards(r.itinerario)
 
                         Spacer(Modifier.height(14.dp))
 
-                        // Sección: Actividades recomendadas
+                        // Sección: Actividades
                         SectionTitle("Actividades recomendadas")
                         Spacer(Modifier.height(8.dp))
                         ActivitiesBlock(
@@ -235,7 +243,7 @@ fun PlanResultScreen(
                             pago = r.actividadesPago
                         )
 
-                        Spacer(Modifier.height(90.dp)) // espacio para bottom bar
+                        Spacer(Modifier.height(90.dp))
                     }
                 }
             }
@@ -259,7 +267,7 @@ private fun BudgetCards(categorias: Map<String, Double>) {
         return
     }
 
-    // Locale observable de Compose (evita el warning de Android Studio)
+    // Locale observable de Compose (evita warning)
     val composeLocale = LocalLocale.current
     val javaLocale = rememberRuntime(composeLocale) {
         java.util.Locale.forLanguageTag(composeLocale.toLanguageTag())
