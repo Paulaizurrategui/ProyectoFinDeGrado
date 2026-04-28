@@ -28,10 +28,11 @@ import com.paulaizurrategui.urtriply.R
 fun UrTriplyGradientScaffold(
     title: String,
     modifier: Modifier = Modifier,
-    showHeader: Boolean = true,          // NUEVO: muestra/oculta "UrTriply"
-    showTitle: Boolean = title.isNotBlank(), // NUEVO: por defecto solo si hay título
+    showHeader: Boolean = true,                // si false, quito el bloque "urtriply"
+    showTitle: Boolean = title.isNotBlank(),   // si title viene vacio, no muestro titulo
     content: @Composable () -> Unit
 ) {
+    // degradado de fondo comun
     val bg = Brush.verticalGradient(
         0f to Color(0xFF4FC3F7),
         0.55f to Color(0xFFB3E5FC),
@@ -43,8 +44,8 @@ fun UrTriplyGradientScaffold(
             modifier = Modifier
                 .fillMaxSize()
                 .background(bg)
-                .padding(20.dp),
-            contentAlignment = Alignment.Center
+                .padding(20.dp), // padding exterior de la card
+            contentAlignment = Alignment.Center // por defecto centro la card
         ) {
             Card(
                 modifier = Modifier
@@ -56,7 +57,7 @@ fun UrTriplyGradientScaffold(
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
 
-                    // Header opcional
+                    // header opcional (bloque naranja con nombre app)
                     if (showHeader) {
                         Box(
                             modifier = Modifier
@@ -76,7 +77,7 @@ fun UrTriplyGradientScaffold(
                         Spacer(modifier = Modifier.padding(top = 12.dp))
                     }
 
-                    // Título opcional
+                    // titulo opcional de pantalla
                     if (showTitle) {
                         Text(
                             text = title,
@@ -87,6 +88,7 @@ fun UrTriplyGradientScaffold(
                         Spacer(modifier = Modifier.padding(top = 14.dp))
                     }
 
+                    // contenido de cada pantalla
                     content()
                 }
             }

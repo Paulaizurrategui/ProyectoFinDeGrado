@@ -35,13 +35,13 @@ import com.paulaizurrategui.urtriply.ui.auth.CommunityViewModel
 
 @Composable
 fun CommunityTabScreen() {
-    UrTriplyGradientScaffold(title = stringResource(R.string.tab_community)) { // Tab "Comunidad" (solo modo auth; en guest se bloquea en MainShell)
-        Text(text = stringResource(R.string.community_placeholder_body)) // Placeholder: aquí irá el feed de viajes publicados
+    // version placeholder de comunidad (antes del feed completo)
+    UrTriplyGradientScaffold(title = stringResource(R.string.tab_community)) {
+        Text(text = stringResource(R.string.community_placeholder_body))
     }
 }
 
-
-// Colores de la app
+// colores del feed
 val OrangeUrTriply = Color(0xFFFF8C00)
 val LightBlue = Color(0xFFE0F7FA)
 val SkyBlue = Color(0xFF87CEEB)
@@ -52,11 +52,13 @@ fun CommunityScreen(
     viewModel: CommunityViewModel = viewModel(),
     onPostClick: (String) -> Unit = {}
 ) {
+    // estado del viewmodel
     val posts by viewModel.posts.collectAsState()
     val filters by viewModel.filters
     val isLoading by viewModel.isLoading
     val showFilters by viewModel.showFilters
 
+    // fondo suave para comunidad
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -67,13 +69,13 @@ fun CommunityScreen(
             )
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header
+            // cabecera con logo + filtros
             CommunityHeader(
                 onFilterClick = { viewModel.toggleFilters() },
                 hasActiveFilters = filters.destination.isNotEmpty() || filters.maxBudget != null
             )
 
-            // Panel de filtros
+            // panel de filtros desplegable
             AnimatedVisibility(
                 visible = showFilters,
                 enter = expandVertically() + fadeIn(),
@@ -86,7 +88,7 @@ fun CommunityScreen(
                 )
             }
 
-            // Lista de posts
+            // contenido segun estado
             if (isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -97,6 +99,7 @@ fun CommunityScreen(
             } else if (posts.isEmpty()) {
                 EmptyState()
             } else {
+                // lista de posts
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
@@ -112,7 +115,7 @@ fun CommunityScreen(
                         )
                     }
 
-                    // Espaciado para el bottom nav
+                    // espacio para que no se tape con el bottom nav
                     item {
                         Spacer(modifier = Modifier.height(80.dp))
                     }
@@ -127,6 +130,7 @@ fun CommunityHeader(
     onFilterClick: () -> Unit,
     hasActiveFilters: Boolean
 ) {
+    // header tipo appbar
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White,
@@ -135,7 +139,7 @@ fun CommunityHeader(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // Logo
+            // logo
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -154,7 +158,7 @@ fun CommunityHeader(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Título y filtros
+            // titulo + boton filtros
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -173,7 +177,7 @@ fun CommunityHeader(
                     )
                 }
 
-                // Botón filtros
+                // boton filtros con badge si hay filtros activos
                 FilledTonalIconButton(
                     onClick = onFilterClick,
                     colors = IconButtonDefaults.filledTonalIconButtonColors(
@@ -206,6 +210,7 @@ fun FiltersPanel(
     onFiltersChange: (CommunityFilters) -> Unit,
     onClearFilters: () -> Unit
 ) {
+    // estado local para los inputs (mejor experiencia al escribir)
     var destinationText by remember(filters.destination) {
         mutableStateOf(filters.destination)
     }
@@ -230,7 +235,7 @@ fun FiltersPanel(
                 fontWeight = FontWeight.SemiBold
             )
 
-            // Filtro por destino
+            // filtro por destino
             OutlinedTextField(
                 value = destinationText,
                 onValueChange = { destinationText = it },
@@ -247,7 +252,7 @@ fun FiltersPanel(
                 )
             )
 
-            // Filtro por presupuesto
+            // filtro por presupuesto (solo digitos)
             OutlinedTextField(
                 value = budgetText,
                 onValueChange = { budgetText = it.filter { c -> c.isDigit() } },
@@ -265,7 +270,7 @@ fun FiltersPanel(
                 )
             )
 
-            // Botones
+            // botones de aplicar/limpiar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -322,12 +327,12 @@ fun TravelPostCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header: autor y fecha
+            // header: avatar + nombre + fecha + favorito
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Avatar
+                // avatar (inicial del autor)
                 Box(
                     modifier = Modifier
                         .size(40.dp)
@@ -357,7 +362,7 @@ fun TravelPostCard(
                     )
                 }
 
-                // Botón favorito
+                // boton favorito
                 IconButton(onClick = onFavoriteClick) {
                     Icon(
                         imageVector = if (post.isFavorite) Icons.Filled.Bookmark
@@ -370,12 +375,11 @@ fun TravelPostCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Info del viaje: chips
+            // chips del viaje (destino / dias / presupuesto)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Destino
                 AssistChip(
                     onClick = { },
                     label = { Text(post.destination) },
@@ -393,7 +397,6 @@ fun TravelPostCard(
                     )
                 )
 
-                // Días
                 AssistChip(
                     onClick = { },
                     label = { Text("${post.days} días") },
@@ -410,7 +413,6 @@ fun TravelPostCard(
                     )
                 )
 
-                // Presupuesto
                 AssistChip(
                     onClick = { },
                     label = { Text("${post.budget.toInt()}${post.currency}") },
@@ -430,7 +432,7 @@ fun TravelPostCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Descripción
+            // descripcion (limito lineas para que no crezca infinito)
             Text(
                 text = post.description,
                 style = MaterialTheme.typography.bodyMedium,
@@ -445,13 +447,12 @@ fun TravelPostCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Acciones: likes y comentarios
+            // acciones (likes / comentarios / ver detalle)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Likes
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable { onLikeClick() }
@@ -471,7 +472,6 @@ fun TravelPostCard(
                     )
                 }
 
-                // Comentarios
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable { onCommentClick() }
@@ -490,7 +490,6 @@ fun TravelPostCard(
                     )
                 }
 
-                // Ver detalle
                 TextButton(onClick = onCardClick) {
                     Text(
                         text = "Ver más",
@@ -511,6 +510,7 @@ fun TravelPostCard(
 
 @Composable
 fun EmptyState() {
+    // estado vacio cuando no hay posts
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center

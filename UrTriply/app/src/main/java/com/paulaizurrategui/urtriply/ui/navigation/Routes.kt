@@ -1,17 +1,19 @@
 package com.paulaizurrategui.urtriply.ui.navigation
 
+// rutas del nav principal (fuera de los tabs)
 object Routes {
-    const val WELCOME = "welcome" // Pantalla 0: Bienvenida/Acceso (login, registro o continuar sin cuenta)
-    const val LOGIN = "login" // Pantalla de iniciar sesión (Firebase Auth)
-    const val REGISTER = "register" // Pantalla de registro (Firebase Auth)
+    const val WELCOME = "welcome"   // pantalla 0: bienvenida
+    const val LOGIN = "login"       // pantalla login
+    const val REGISTER = "register" // pantalla registro
 
-    const val MAIN = "main/{mode}" // Contenedor principal; {mode} define permisos: "auth" (logueado) o "guest" (invitado)
-    // Nota: para navegar a MAIN se usa "main/auth" o "main/guest" (rellenando {mode})
+    // contenedor principal (recibe modo: auth o guest)
+    const val MAIN = "main/{mode}"  // navegar con "main/auth" o "main/guest"
 }
 
+// tabs dentro del mainshell (bottom nav)
 object MainTabs {
-    const val HOME = "tab_home" // Tab/pantalla de inicio dentro del MainShell
-    const val PLAN = "tab_plan" // Tab/pantalla de "Planificar viaje" (formulario + generación)
-    const val COMMUNITY = "tab_community" // Tab/pantalla comunidad (solo auth; en guest debe pedir login)
-    const val PROFILE = "tab_profile" // Tab/pantalla perfil (solo auth; en guest debe pedir login)
+    const val HOME = "tab_home"           // inicio
+    const val PLAN = "tab_plan"           // planificar
+    const val COMMUNITY = "tab_community" // comunidad
+    const val PROFILE = "tab_profile"     // perfil
 }

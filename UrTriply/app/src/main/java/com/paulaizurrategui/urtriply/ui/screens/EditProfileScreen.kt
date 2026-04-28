@@ -45,26 +45,32 @@ import com.paulaizurrategui.urtriply.ui.theme.UrCream
 fun EditProfileScreen(
     onBack: () -> Unit
 ) {
+    // instancias de firebase
     val auth = remember { FirebaseAuth.getInstance() }
     val db = remember { FirebaseFirestore.getInstance() }
 
+    // usuario actual
     val user = auth.currentUser
 
+    // estado local de campos
     var name by remember { mutableStateOf(user?.displayName ?: "") }
     var bio by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
     var instagram by remember { mutableStateOf("") }
 
+    // estado local de ui
     var loading by remember { mutableStateOf(true) }
     var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
+    // scroll para pantallas pequeñas
     val scroll = rememberScrollState()
 
-    // Cargar datos desde Firestore: users/{uid}
+    // cargo el doc de users/{uid} al abrir
     LaunchedEffect(user?.uid) {
         val uid = user?.uid
         if (uid == null) {
+            // si no hay sesion, no puedo editar
             error = "No hay sesión."
             loading = false
             return@LaunchedEffect
@@ -75,13 +81,14 @@ fun EditProfileScreen(
 
         db.collection("users").document(uid).get()
             .addOnSuccessListener { doc ->
+                // campos opcionales (si no existen, dejo vacio)
                 bio = doc.getString("bio") ?: ""
                 city = doc.getString("city") ?: ""
                 instagram = doc.getString("instagram") ?: ""
                 loading = false
             }
             .addOnFailureListener { e ->
-                // Mostramos el error pero dejamos editar igualmente
+                // si falla, dejo editar igualmente
                 error = e.message ?: "No se pudo cargar el perfil."
                 loading = false
             }
@@ -89,7 +96,7 @@ fun EditProfileScreen(
 
     Scaffold(
         bottomBar = {
-            // CTA sticky (queda bien con el nuevo theme naranja)
+            // barra inferior sticky con boton guardar
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -104,6 +111,7 @@ fun EditProfileScreen(
                             return@Button
                         }
 
+                        // validacion simple del nombre
                         val trimmedName = name.trim()
                         if (trimmedName.isBlank()) {
                             error = "El nombre no puede estar vacío."
@@ -113,7 +121,7 @@ fun EditProfileScreen(
                         saving = true
                         error = null
 
-                        // 1) Guardar nombre en FirebaseAuth
+                        // 1) guardo displayname en firebase auth
                         u.updateProfile(
                             UserProfileChangeRequest.Builder()
                                 .setDisplayName(trimmedName)
@@ -122,7 +130,7 @@ fun EditProfileScreen(
                             saving = false
                             error = e.message ?: "No se pudo guardar el nombre."
                         }.addOnSuccessListener {
-                            // 2) Guardar extras en Firestore (merge)
+                            // 2) guardo extras en firestore (merge para no pisar otros campos)
                             val uid = u.uid
                             val data = mapOf(
                                 "displayName" to trimmedName,
@@ -150,6 +158,7 @@ fun EditProfileScreen(
                     shape = RoundedCornerShape(18.dp),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp)
                 ) {
+                    // feedback visual mientras guardo
                     if (saving) {
                         CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.size(12.dp))
@@ -173,7 +182,7 @@ fun EditProfileScreen(
                     .padding(horizontal = 16.dp, vertical = 18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header
+                // cabecera: volver + titulo
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -198,7 +207,7 @@ fun EditProfileScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                // “Tip” / cabecera suave
+                // card de ayuda (tip)
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -224,7 +233,7 @@ fun EditProfileScreen(
 
                 Spacer(Modifier.height(14.dp))
 
-                // Form container
+                // contenedor del formulario
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -237,10 +246,12 @@ fun EditProfileScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        // texto mientras carga
                         if (loading) {
                             Text("Cargando...", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
 
+                        // campo nombre
                         FieldLabel("Nombre")
                         OutlinedTextField(
                             value = name,
@@ -251,6 +262,7 @@ fun EditProfileScreen(
                             shape = RoundedCornerShape(12.dp)
                         )
 
+                        // campo bio
                         FieldLabel("Bio")
                         OutlinedTextField(
                             value = bio,
@@ -261,6 +273,7 @@ fun EditProfileScreen(
                             shape = RoundedCornerShape(12.dp)
                         )
 
+                        // campo ciudad
                         FieldLabel("Ciudad")
                         OutlinedTextField(
                             value = city,
@@ -271,6 +284,7 @@ fun EditProfileScreen(
                             shape = RoundedCornerShape(12.dp)
                         )
 
+                        // campo instagram
                         FieldLabel("Instagram (opcional)")
                         OutlinedTextField(
                             value = instagram,
@@ -282,7 +296,7 @@ fun EditProfileScreen(
                             placeholder = { Text("@usuario o url") }
                         )
 
-                        // Error (bonito)
+                        // bloque de error
                         if (error != null) {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
@@ -301,7 +315,7 @@ fun EditProfileScreen(
                     }
                 }
 
-                // espacio para el sticky CTA
+                // espacio extra para que no se tape con la bottombar
                 Spacer(Modifier.height(90.dp))
             }
         }
@@ -310,6 +324,7 @@ fun EditProfileScreen(
 
 @Composable
 private fun FieldLabel(text: String) {
+    // label para separar visualmente los campos
     Text(
         text = text,
         style = MaterialTheme.typography.titleSmall,

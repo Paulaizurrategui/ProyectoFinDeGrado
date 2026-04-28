@@ -30,27 +30,27 @@ import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
 import com.paulaizurrategui.urtriply.ui.navigation.MainTabs
 import com.paulaizurrategui.urtriply.ui.navigation.PlanRoutes
 
-data class BottomTab(
-    val route: String,
-    val labelRes: Int,
-    val icon: @Composable () -> Unit
+data class BottomTab( // modelo de cada tab
+    val route: String, // ruta navegación
+    val labelRes: Int, // texto
+    val icon: @Composable () -> Unit // icono
 )
 
 @Composable
-fun MainShellScreen(
-    mode: String,
+fun MainShellScreen( // pantalla principal con navegación
+    mode: String, // modo usuario
     authViewModel: AuthViewModel,
-    onRequireLogin: () -> Unit,
-    onLoggedOut: () -> Unit
+    onRequireLogin: () -> Unit, // pedir login
+    onLoggedOut: () -> Unit // logout
 ) {
-    val navController = rememberNavController()
+    val navController = rememberNavController() // creo controlador
 
-    val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = currentBackStackEntry?.destination?.route ?: MainTabs.HOME
+    val currentBackStackEntry by navController.currentBackStackEntryAsState() // observo ruta
+    val currentRoute = currentBackStackEntry?.destination?.route ?: MainTabs.HOME // ruta actual o home
 
-    val isGuest = mode.lowercase() == "guest"
+    val isGuest = mode.lowercase() == "guest" // compruebo si es invitado
 
-    val tabs = listOf(
+    val tabs = listOf( // lista tabs abajo
         BottomTab(MainTabs.HOME, R.string.tab_home) { Icon(Icons.Default.Home, contentDescription = null) },
         BottomTab(MainTabs.PLAN, R.string.tab_plan) { Icon(Icons.Default.Place, contentDescription = null) },
         BottomTab(MainTabs.COMMUNITY, R.string.tab_community) { Icon(Icons.Default.People, contentDescription = null) },
@@ -59,91 +59,92 @@ fun MainShellScreen(
 
     Scaffold(
         // CLAVE: gestionamos insets una sola vez a nivel app
-        contentWindowInsets = WindowInsets.safeDrawing,
+        contentWindowInsets = WindowInsets.safeDrawing, // evita solaparse con sistema
         bottomBar = {
             // CLAVE: evitamos que NavigationBar meta padding extra "de más"
             NavigationBar(
-                windowInsets = WindowInsets(0, 0, 0, 0),
+                windowInsets = WindowInsets(0, 0, 0, 0), // quito padding extra
                 modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing)
             ) {
-                tabs.forEach { tab ->
-                    val selected = currentRoute == tab.route
+                tabs.forEach { tab -> // recorro tabs
+                    val selected = currentRoute == tab.route // si esta seleccionada
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
-                            navController.navigate(tab.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+                            navController.navigate(tab.route) { // navego a tab
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true } // vuelvo al inicio guardando estado
+                                launchSingleTop = true // evita duplicados
+                                restoreState = true // restaura estado
                             }
                         },
                         icon = tab.icon,
-                        label = { Text(stringResource(tab.labelRes)) }
+                        label = { Text(stringResource(tab.labelRes)) } // texto tab
                     )
                 }
             }
         }
-    ) { innerPadding ->
+    ) { innerPadding -> // padding interno del scaffold
         NavHost(
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier.padding(innerPadding), // aplico padding
             navController = navController,
-            startDestination = MainTabs.HOME
+            startDestination = MainTabs.HOME // inicio en home
         ) {
+
             composable(MainTabs.HOME) {
-                InicioTabScreen(isGuest = isGuest, onRequireLogin = onRequireLogin)
+                InicioTabScreen(isGuest = isGuest, onRequireLogin = onRequireLogin) // pantalla inicio
             }
 
             composable(MainTabs.PLAN) {
                 PlanTabScreen(
                     isGuest = isGuest,
-                    onNavigateToResult = { navController.navigate(PlanRoutes.RESULT) }
+                    onNavigateToResult = { navController.navigate(PlanRoutes.RESULT) } // ir a resultado
                 )
             }
 
             composable(PlanRoutes.RESULT) {
                 PlanResultScreen(
                     isGuest = isGuest,
-                    onBack = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() }, // volver atrás
                     onRequireLogin = onRequireLogin
                 )
             }
 
             composable(MainTabs.COMMUNITY) {
-                if (isGuest) RequireLoginScreen(onRequireLogin = onRequireLogin)
-                else CommunityScreen()
+                if (isGuest) RequireLoginScreen(onRequireLogin = onRequireLogin) // si invitado, bloqueo
+                else CommunityScreen() // si no, comunidad
             }
 
             composable(MainTabs.PROFILE) {
                 if (isGuest) {
-                    RequireLoginScreen(onRequireLogin = onRequireLogin)
+                    RequireLoginScreen(onRequireLogin = onRequireLogin) // perfil requiere login
                 } else {
                     ProfileTabScreen(
                         authViewModel = authViewModel,
                         onLoggedOut = onLoggedOut,
-                        onEditProfile = { navController.navigate("profile/edit") },
-                        onEditTrip = { tripId -> navController.navigate("trip/edit/$tripId") },
-                        onNavigateToFindFriends = { navController.navigate("find_friends") }
+                        onEditProfile = { navController.navigate("profile/edit") }, // editar perfil
+                        onEditTrip = { tripId -> navController.navigate("trip/edit/$tripId") }, // editar viaje
+                        onNavigateToFindFriends = { navController.navigate("find_friends") } // buscar amigos
                     )
                 }
             }
 
             composable("profile/edit") {
-                EditProfileScreen(onBack = { navController.popBackStack() })
+                EditProfileScreen(onBack = { navController.popBackStack() }) // pantalla editar perfil
             }
 
             composable(
-                route = "trip/edit/{tripId}",
+                route = "trip/edit/{tripId}", // ruta con parametro
                 arguments = listOf(navArgument("tripId") { type = NavType.StringType })
             ) { backStackEntry ->
-                val tripId = backStackEntry.arguments?.getString("tripId") ?: return@composable
+                val tripId = backStackEntry.arguments?.getString("tripId") ?: return@composable // saco id
                 EditTripScreen(
                     tripId = tripId,
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() } // volver atrás
                 )
             }
 
             composable("find_friends") {
-                FindFriendsScreen(onBack = { navController.popBackStack() })
+                FindFriendsScreen(onBack = { navController.popBackStack() }) // pantalla amigos
             }
         }
     }

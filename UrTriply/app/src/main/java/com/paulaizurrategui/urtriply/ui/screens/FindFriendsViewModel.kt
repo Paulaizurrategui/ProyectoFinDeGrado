@@ -8,6 +8,7 @@ import com.paulaizurrategui.urtriply.domain.model.UserDoc
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+// estado de la pantalla encontrar amigos
 data class FindFriendsUiState(
     val isLoading: Boolean = false,
     val users: List<UserDoc> = emptyList(),
@@ -16,19 +17,23 @@ data class FindFriendsUiState(
 )
 
 class FindFriendsViewModel : ViewModel() {
+    // firebase
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
+    // estado observable por compose
     private val _uiState = MutableStateFlow(FindFriendsUiState())
     val uiState: StateFlow<FindFriendsUiState> = _uiState
 
     init {
+        // cargo la lista de following al iniciar
         loadFollowingList()
     }
 
     private fun loadFollowingList() {
         val currentUid = auth.currentUser?.uid ?: return
 
+        // escucho en tiempo real los ids que sigo
         db.collection("users")
             .document(currentUid)
             .collection("following")
@@ -42,24 +47,33 @@ class FindFriendsViewModel : ViewModel() {
         val currentUid = auth.currentUser?.uid ?: return
         val q = query.trim()
 
+        // si esta vacio, limpio la lista
         if (q.isBlank()) {
-            _uiState.value = _uiState.value.copy(isLoading = false, users = emptyList(), errorMessage = null)
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                users = emptyList(),
+                errorMessage = null
+            )
             return
         }
 
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
+        // busqueda simple: traigo users y filtro en cliente
         db.collection("users")
             .limit(50)
             .get()
             .addOnSuccessListener { snap ->
                 val list = snap.documents.mapNotNull { doc ->
                     val uid = doc.id
+
+                    // no me incluyo a mi
                     if (uid == currentUid) return@mapNotNull null
 
                     val displayName = doc.getString("displayName")?.trim().orEmpty()
                     val email = doc.getString("email")?.trim().orEmpty()
 
+                    // match por nombre o email
                     val matches = displayName.contains(q, ignoreCase = true) ||
                             email.contains(q, ignoreCase = true)
 
@@ -84,6 +98,8 @@ class FindFriendsViewModel : ViewModel() {
 
     fun toggleFollow(targetUser: UserDoc) {
         val currentUid = auth.currentUser?.uid ?: return
+
+        // miro si ya sigo al usuario
         val isFollowing = _uiState.value.followingIds.contains(targetUser.uid)
 
         val docRef = db.collection("users")
@@ -91,7 +107,7 @@ class FindFriendsViewModel : ViewModel() {
             .collection("following")
             .document(targetUser.uid)
 
-        // Update optimista para que el botón cambie al instante
+        // update optimista para que cambie el boton al instante
         val newFollowingIds =
             if (isFollowing) _uiState.value.followingIds - targetUser.uid
             else _uiState.value.followingIds + targetUser.uid
@@ -99,6 +115,7 @@ class FindFriendsViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(followingIds = newFollowingIds)
 
         if (isFollowing) {
+            // dejar de seguir
             docRef.delete()
                 .addOnFailureListener { e ->
                     // revertir si falla
@@ -108,6 +125,7 @@ class FindFriendsViewModel : ViewModel() {
                     )
                 }
         } else {
+            // seguir (guardo algo de info + timestamp)
             docRef.set(
                 mapOf(
                     "uid" to targetUser.uid,

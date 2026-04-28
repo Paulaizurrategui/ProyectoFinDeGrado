@@ -41,16 +41,23 @@ import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
 
 @Composable
 fun FindFriendsScreen(onBack: () -> Unit) {
+    // vm de la pantalla (busqueda + follow)
     val vm: FindFriendsViewModel = viewModel()
+
+    // ui state observable
     val state by vm.uiState.collectAsState()
+
+    // texto de busqueda
     var query by remember { mutableStateOf("") }
 
+    // scaffold con estilo comun (card + degradado)
     UrTriplyGradientScaffold(title = "Encontrar Amigos") {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
+            // volver al perfil
             TextButton(onClick = onBack) {
                 Icon(Icons.Default.ArrowBack, contentDescription = null)
                 Spacer(Modifier.padding(horizontal = 2.dp))
@@ -59,6 +66,7 @@ fun FindFriendsScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // input de busqueda
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
@@ -67,6 +75,7 @@ fun FindFriendsScreen(onBack: () -> Unit) {
                 shape = RoundedCornerShape(16.dp),
                 singleLine = true,
                 trailingIcon = {
+                    // boton buscar
                     IconButton(onClick = { vm.searchUsers(query) }) {
                         Icon(Icons.Default.Search, contentDescription = "Buscar")
                     }
@@ -75,6 +84,7 @@ fun FindFriendsScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // estados: cargando / vacio
             if (state.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
             } else if (state.users.isEmpty() && query.isNotEmpty()) {
@@ -84,6 +94,7 @@ fun FindFriendsScreen(onBack: () -> Unit) {
                 )
             }
 
+            // lista de usuarios encontrados
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(state.users, key = { it.uid }) { user ->
                     val isFollowing = state.followingIds.contains(user.uid)
@@ -97,6 +108,7 @@ fun FindFriendsScreen(onBack: () -> Unit) {
                             modifier = Modifier.padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // nombre + email
                             Column(Modifier.weight(1f)) {
                                 Text(user.displayName.ifBlank { "Sin nombre" }, fontWeight = FontWeight.Bold)
                                 if (user.email.isNotBlank()) {
@@ -104,6 +116,7 @@ fun FindFriendsScreen(onBack: () -> Unit) {
                                 }
                             }
 
+                            // boton seguir / siguiendo
                             Button(
                                 onClick = { vm.toggleFollow(user) },
                                 colors = ButtonDefaults.buttonColors(
