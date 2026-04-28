@@ -26,61 +26,68 @@ import com.paulaizurrategui.urtriply.R
 
 @Composable
 fun UrTriplyGradientScaffold(
-    title: String, // Título de pantalla/tab (ej. "Perfil", "Comunidad", "Planificar"...)
-    modifier: Modifier = Modifier, // Permite que la pantalla que lo use añada modificadores si lo necesita
-    content: @Composable () -> Unit // Slot: contenido específico de cada pantalla
+    title: String,
+    modifier: Modifier = Modifier,
+    showHeader: Boolean = true,          // NUEVO: muestra/oculta "UrTriply"
+    showTitle: Boolean = title.isNotBlank(), // NUEVO: por defecto solo si hay título
+    content: @Composable () -> Unit
 ) {
-    val bg = Brush.verticalGradient( // Fondo degradado común a toda la app (identidad visual consistente)
+    val bg = Brush.verticalGradient(
         0f to Color(0xFF4FC3F7),
         0.55f to Color(0xFFB3E5FC),
         1f to Color(0xFFE3F2FD)
     )
 
-    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) { // Surface base que ocupa toda la pantalla
+    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(bg) // Aplica el degradado al fondo
+                .background(bg)
                 .padding(20.dp),
-            contentAlignment = Alignment.Center // Centra la tarjeta principal
+            contentAlignment = Alignment.Center
         ) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp)), // Estilo común: bordes redondeados
+                    .clip(RoundedCornerShape(24.dp)),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White), // Tarjeta blanca para legibilidad
+                colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
             ) {
-                Column(modifier = Modifier.padding(20.dp)) { // Padding interno de la tarjeta
-                    Box( // Cabecera con el nombre de la app (reutiliza look de Login/Register/Welcome)
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(Color(0xFFFFF3E0))
-                            .padding(vertical = 14.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = stringResource(R.string.app_name), // "UrTriply"
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFFEF6C00),
-                            style = MaterialTheme.typography.titleLarge
-                        )
+                Column(modifier = Modifier.padding(20.dp)) {
+
+                    // Header opcional
+                    if (showHeader) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(Color(0xFFFFF3E0))
+                                .padding(vertical = 14.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = stringResource(R.string.app_name),
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFFEF6C00),
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                        }
+                        Spacer(modifier = Modifier.padding(top = 12.dp))
                     }
 
-                    Spacer(modifier = Modifier.padding(top = 12.dp)) // Espacio entre cabecera y título
+                    // Título opcional
+                    if (showTitle) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF111827)
+                        )
+                        Spacer(modifier = Modifier.padding(top = 14.dp))
+                    }
 
-                    Text(
-                        text = title, // Título de la pantalla actual (lo pasa cada pantalla)
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF111827)
-                    )
-
-                    Spacer(modifier = Modifier.padding(top = 14.dp)) // Espacio antes del contenido
-
-                    content() // Aquí se inserta el contenido real de cada pantalla/tab
+                    content()
                 }
             }
         }

@@ -45,40 +45,57 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
+import com.paulaizurrategui.urtriply.ui.validation.EmailValidator
 
 @Composable
 fun LoginScreen(
-    authViewModel: AuthViewModel, // ViewModel que ejecuta login/reset password y expone uiState (loading/errores)
-    onGoToRegister: () -> Unit, // Navegación a Registro
-    onLoginSuccess: () -> Unit // Callback de navegación cuando Firebase confirma login correcto
+    authViewModel: AuthViewModel,
+    onGoToRegister: () -> Unit,
+    onLoginSuccess: () -> Unit
 ) {
-    val uiState by authViewModel.uiState.collectAsState() // Observa StateFlow y recompone la UI cuando cambia
+    val uiState by authViewModel.uiState.collectAsState()
 
-    var email by remember { mutableStateOf("") } // Estado local del input email (solo UI)
-    var password by remember { mutableStateOf("") } // Estado local del input password (solo UI)
-    var showPassword by remember { mutableStateOf(false) } // Controla si la contraseña se ve o se oculta
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var showPassword by remember { mutableStateOf(false) }
 
-    val dialogResId = uiState.errorResId ?: uiState.successResId // Si hay error o éxito, mostramos un AlertDialog
-    val dialogTitleResId = when { // Decide el título del dialog según sea error o éxito
-        uiState.errorResId != null -> R.string.dialog_error_title
-        uiState.successResId != null -> R.string.dialog_success_title
-        else -> null
-    }
+    // NUEVO: error local con texto (para no tocar strings.xml)
+    var localErrorText by remember { mutableStateOf<String?>(null) }
 
-    if (dialogResId != null && dialogTitleResId != null) { // Solo pinta el diálogo si hay mensaje y título válidos
+    if (localErrorText != null) {
         AlertDialog(
-            onDismissRequest = { authViewModel.clearMessages() }, // Al cerrar el diálogo, limpiamos el mensaje del estado
-            title = { Text(stringResource(dialogTitleResId)) },
-            text = { Text(stringResource(dialogResId)) },
+            onDismissRequest = { localErrorText = null },
+            title = { Text(stringResource(R.string.dialog_error_title)) },
+            text = { Text(localErrorText ?: "") },
             confirmButton = {
-                TextButton(onClick = { authViewModel.clearMessages() }) { // Botón OK que también limpia el mensaje
+                TextButton(onClick = { localErrorText = null }) {
                     Text(stringResource(R.string.dialog_ok))
                 }
             }
         )
     }
 
-    val bg = Brush.verticalGradient( // Fondo degradado (misma identidad visual que Welcome/Home)
+    val dialogResId = uiState.errorResId ?: uiState.successResId
+    val dialogTitleResId = when {
+        uiState.errorResId != null -> R.string.dialog_error_title
+        uiState.successResId != null -> R.string.dialog_success_title
+        else -> null
+    }
+
+    if (dialogResId != null && dialogTitleResId != null) {
+        AlertDialog(
+            onDismissRequest = { authViewModel.clearMessages() },
+            title = { Text(stringResource(dialogTitleResId)) },
+            text = { Text(stringResource(dialogResId)) },
+            confirmButton = {
+                TextButton(onClick = { authViewModel.clearMessages() }) {
+                    Text(stringResource(R.string.dialog_ok))
+                }
+            }
+        )
+    }
+
+    val bg = Brush.verticalGradient(
         0f to Color(0xFF4FC3F7),
         0.55f to Color(0xFFB3E5FC),
         1f to Color(0xFFE3F2FD)
@@ -87,23 +104,23 @@ fun LoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(bg) // Fondo completo con degradado
+            .background(bg)
             .padding(20.dp),
         contentAlignment = Alignment.Center
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp)), // Esquinas redondeadas “look & feel” UrTriply
+                .clip(RoundedCornerShape(24.dp)),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White), // Card blanca para contraste sobre el fondo
+            colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Box( // “Logo” textual simple (en el futuro se puede sustituir por Image con logo real)
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(18.dp))
@@ -121,12 +138,12 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text( // Título principal de la pantalla
+                Text(
                     text = stringResource(R.string.login_button),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
-                Text( // Subtítulo (ojo: este texto está hardcoded; si quieres multi-idioma, pásalo a strings.xml)
+                Text(
                     text = "¡Bienvenid@ de vuelta!",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color(0xFF6B7280)
@@ -137,8 +154,9 @@ fun LoginScreen(
                 OutlinedTextField(
                     value = email,
                     onValueChange = {
-                        email = it // Actualiza el estado local del input
-                        authViewModel.clearMessages() // Si el usuario edita, limpiamos errores previos para no confundir
+                        email = it
+                        localErrorText = null
+                        authViewModel.clearMessages()
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.email_label)) },
@@ -152,13 +170,14 @@ fun LoginScreen(
                     value = password,
                     onValueChange = {
                         password = it
+                        localErrorText = null
                         authViewModel.clearMessages()
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.password_label)) },
                     leadingIcon = { Icon(imageVector = Icons.Default.Lock, contentDescription = null) },
                     trailingIcon = {
-                        IconButton(onClick = { showPassword = !showPassword }) { // Alterna mostrar/ocultar contraseña
+                        IconButton(onClick = { showPassword = !showPassword }) {
                             Icon(
                                 imageVector = if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                 contentDescription = null
@@ -166,7 +185,7 @@ fun LoginScreen(
                         }
                     },
                     singleLine = true,
-                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation() // Oculta password por defecto
+                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation()
                 )
 
                 Row(
@@ -174,8 +193,16 @@ fun LoginScreen(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(
-                        onClick = { authViewModel.sendPasswordReset(email) }, // Usa el email escrito para mandar reset (si está vacío, el VM muestra error)
-                        enabled = !uiState.isLoading // Evita clicks mientras hay operación en curso
+                        onClick = {
+                            // NUEVO: validar dominio antes de reset también
+                            if (!EmailValidator.isAllowed(email)) {
+                                localErrorText =
+                                    "Introduce un correo válido (por ejemplo: @gmail.com, @hotmail.com, @outlook.com)."
+                                return@TextButton
+                            }
+                            authViewModel.sendPasswordReset(email.trim())
+                        },
+                        enabled = !uiState.isLoading
                     ) {
                         Text(stringResource(R.string.forgot_password))
                     }
@@ -183,11 +210,22 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                val orange = Color(0xFFFF8A00) // Color del CTA de login
+                val orange = Color(0xFFFF8A00)
 
                 Button(
-                    onClick = { authViewModel.login(email, password, onLoginSuccess) }, // Llama al VM; si OK navega vía callback
-                    enabled = !uiState.isLoading, // Deshabilita botón mientras loading
+                    onClick = {
+                        localErrorText = null
+
+                        // NUEVO: validar dominio permitido
+                        if (!EmailValidator.isAllowed(email)) {
+                            localErrorText =
+                                "El correo debe ser de un dominio válido (por ejemplo: @gmail.com, @hotmail.com, @outlook.com)."
+                            return@Button
+                        }
+
+                        authViewModel.login(email.trim(), password, onLoginSuccess)
+                    },
+                    enabled = !uiState.isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
@@ -195,7 +233,7 @@ fun LoginScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = orange)
                 ) {
                     Text(
-                        text = if (uiState.isLoading) stringResource(R.string.login_loading) else stringResource(R.string.login_button), // Cambia texto si está cargando
+                        text = if (uiState.isLoading) stringResource(R.string.login_loading) else stringResource(R.string.login_button),
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -204,8 +242,8 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "¿No tienes cuenta?", color = Color(0xFF6B7280)) // Hardcoded (si quieres ES/EN -> strings.xml)
-                    TextButton(onClick = onGoToRegister) { // Link a registro
+                    Text(text = "¿No tienes cuenta?", color = Color(0xFF6B7280))
+                    TextButton(onClick = onGoToRegister) {
                         Text(stringResource(R.string.create_account), fontWeight = FontWeight.Bold)
                     }
                 }

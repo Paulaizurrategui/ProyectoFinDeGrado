@@ -1,6 +1,9 @@
 package com.paulaizurrategui.urtriply.ui.screens
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.People
@@ -55,8 +58,14 @@ fun MainShellScreen(
     )
 
     Scaffold(
+        // CLAVE: gestionamos insets una sola vez a nivel app
+        contentWindowInsets = WindowInsets.safeDrawing,
         bottomBar = {
-            NavigationBar {
+            // CLAVE: evitamos que NavigationBar meta padding extra "de más"
+            NavigationBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
+                modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing)
+            ) {
                 tabs.forEach { tab ->
                     val selected = currentRoute == tab.route
                     NavigationBarItem(

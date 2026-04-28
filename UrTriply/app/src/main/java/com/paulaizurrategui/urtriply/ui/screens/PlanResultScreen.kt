@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,6 +21,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -53,7 +53,6 @@ fun PlanResultScreen(
 
     val isPublished = uiState.currentStatus == TripStatus.PUBLISHED
 
-    // Dialog de mensajes (éxito/error)
     val dialogText = uiState.errorMessage ?: uiState.successMessage
     if (dialogText != null) {
         AlertDialog(
@@ -64,7 +63,12 @@ fun PlanResultScreen(
         )
     }
 
-    UrTriplyGradientScaffold(title = "Propuesta") {
+    // CLAVE: ocultamos header y título para que no haya espacio extra arriba
+    UrTriplyGradientScaffold(
+        title = "",
+        showHeader = false,
+        showTitle = false
+    ) {
         if (r == null) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Text(
@@ -79,21 +83,20 @@ fun PlanResultScreen(
 
         val scroll = rememberScrollState()
 
-        // Layout centrado + CTA sticky
-        androidx.compose.material3.Scaffold(
-            // --- VOLVER STICKY ARRIBA ---
+        Scaffold(
             topBar = {
-                // Se queda fijo arriba aunque hagas scroll
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.surface)
-                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                        // menos padding para que quede más arriba/compacto
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(
                         onClick = onBack,
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                        contentPadding = ButtonDefaults.TextButtonContentPadding
                     ) {
                         Text("← Volver", fontWeight = FontWeight.SemiBold)
                     }
@@ -174,77 +177,87 @@ fun PlanResultScreen(
                     modifier = Modifier
                         .verticalScroll(scroll)
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 18.dp),
+                        // menos padding arriba para acercar el contenido al botón volver
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
+                    Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .widthIn(max = 520.dp)
+                            .widthIn(max = 680.dp),
+                        shape = RoundedCornerShape(22.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                     ) {
-                        Text(
-                            text = "Viaje a ${r.destino}",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        Spacer(Modifier.height(6.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 18.dp)
+                        ) {
+                            Text(
+                                text = "Viaje a ${r.destino}",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                            Spacer(Modifier.height(6.dp))
 
-                        Text(
-                            text = "Duración recomendada: ${r.diasRecomendados} días",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                            Text(
+                                text = "Duración recomendada: ${r.diasRecomendados} días",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
 
-                        Spacer(Modifier.height(12.dp))
-
-                        // Aviso fallback
-                        if (r.usedFallback) {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = UrCream),
-                                shape = RoundedCornerShape(18.dp),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-                            ) {
-                                Column(Modifier.padding(14.dp)) {
-                                    Text(
-                                        text = "Aviso: se han usado estimaciones (fallback).",
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(Modifier.height(4.dp))
-                                    Text(
-                                        text = "Cuando conecte las APIs, verás precios reales y enlaces.",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
                             Spacer(Modifier.height(12.dp))
+
+                            if (r.usedFallback) {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(containerColor = UrCream),
+                                    shape = RoundedCornerShape(18.dp),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                                ) {
+                                    Column(Modifier.padding(14.dp)) {
+                                        Text(
+                                            text = "Aviso: se han usado estimaciones (fallback).",
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(
+                                            text = "Cuando conecte las APIs, verás precios reales y enlaces.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                                Spacer(Modifier.height(12.dp))
+                            }
+
+                            SectionTitle("Presupuesto por categorías")
+                            Spacer(Modifier.height(8.dp))
+                            BudgetCards(r.presupuestoCategorias)
+
+                            Spacer(Modifier.height(14.dp))
+
+                            SectionTitle("Itinerario por días")
+                            Spacer(Modifier.height(8.dp))
+                            ItineraryCards(r.itinerario)
+
+                            Spacer(Modifier.height(14.dp))
+
+                            SectionTitle("Actividades recomendadas")
+                            Spacer(Modifier.height(8.dp))
+                            ActivitiesBlock(
+                                gratis = r.actividadesGratis,
+                                pago = r.actividadesPago
+                            )
+
+                            Spacer(Modifier.height(24.dp))
                         }
-
-                        // Sección: Presupuesto por categorías (cards)
-                        SectionTitle("Presupuesto por categorías")
-                        Spacer(Modifier.height(8.dp))
-                        BudgetCards(r.presupuestoCategorias)
-
-                        Spacer(Modifier.height(14.dp))
-
-                        // Sección: Itinerario
-                        SectionTitle("Itinerario por días")
-                        Spacer(Modifier.height(8.dp))
-                        ItineraryCards(r.itinerario)
-
-                        Spacer(Modifier.height(14.dp))
-
-                        // Sección: Actividades
-                        SectionTitle("Actividades recomendadas")
-                        Spacer(Modifier.height(8.dp))
-                        ActivitiesBlock(
-                            gratis = r.actividadesGratis,
-                            pago = r.actividadesPago
-                        )
-
-                        Spacer(Modifier.height(90.dp))
                     }
+
+                    Spacer(Modifier.height(90.dp))
                 }
             }
         }
@@ -267,7 +280,6 @@ private fun BudgetCards(categorias: Map<String, Double>) {
         return
     }
 
-    // Locale observable de Compose (evita warning)
     val composeLocale = LocalLocale.current
     val javaLocale = rememberRuntime(composeLocale) {
         java.util.Locale.forLanguageTag(composeLocale.toLanguageTag())

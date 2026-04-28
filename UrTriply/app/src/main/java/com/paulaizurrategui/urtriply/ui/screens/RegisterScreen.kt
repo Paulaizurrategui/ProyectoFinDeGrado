@@ -22,36 +22,58 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
+import com.paulaizurrategui.urtriply.ui.validation.EmailValidator
 
 @Composable
 fun RegisterScreen(
-    authViewModel: AuthViewModel, // ViewModel que ejecuta el registro en Firebase y expone uiState (loading/errores)
-    onGoToLogin: () -> Unit, // Navegación de vuelta a Login
-    onRegisterSuccess: () -> Unit // Callback de navegación cuando Firebase confirma registro correcto
+    authViewModel: AuthViewModel,
+    onGoToLogin: () -> Unit,
+    onRegisterSuccess: () -> Unit
 ) {
-    val uiState by authViewModel.uiState.collectAsState() // Observa el estado de auth (recompone al cambiar)
+    val uiState by authViewModel.uiState.collectAsState()
 
-    var email by remember { mutableStateOf("") } // Estado local del campo email
-    var password by remember { mutableStateOf("") } // Estado local del campo password
-    var repeatPassword by remember { mutableStateOf("") } // Estado local del campo repetir password
-    var showPassword by remember { mutableStateOf(false) } // Toggle de visibilidad password 1
-    var showRepeatPassword by remember { mutableStateOf(false) } // Toggle de visibilidad password 2
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var repeatPassword by remember { mutableStateOf("") }
+    var showPassword by remember { mutableStateOf(false) }
+    var showRepeatPassword by remember { mutableStateOf(false) }
 
-    var localErrorResId by remember { mutableStateOf<Int?>(null) } // Errores de validación local (antes de llamar a Firebase)
+    var localErrorResId by remember { mutableStateOf<Int?>(null) }
 
-    val dialogResId = localErrorResId ?: uiState.errorResId ?: uiState.successResId // Prioridad: error local > error Firebase > éxito
-    val dialogTitleResId = when { // Título del diálogo según el tipo de mensaje
+    // NUEVO: error local con texto (para no tocar strings.xml)
+    var localErrorText by remember { mutableStateOf<String?>(null) }
+
+    // Dialog con strings (los que ya tenías)
+    val dialogResId = localErrorResId ?: uiState.errorResId ?: uiState.successResId
+    val dialogTitleResId = when {
         localErrorResId != null -> R.string.dialog_error_title
         uiState.errorResId != null -> R.string.dialog_error_title
         uiState.successResId != null -> R.string.dialog_success_title
         else -> null
     }
 
-    if (dialogResId != null && dialogTitleResId != null) { // Mostrar dialog si hay mensaje
+    // NUEVO: Dialog para errores con texto
+    if (localErrorText != null) {
         AlertDialog(
             onDismissRequest = {
-                localErrorResId = null // Limpia el error local si existía
-                authViewModel.clearMessages() // Limpia error/éxito del ViewModel
+                localErrorText = null
+                authViewModel.clearMessages()
+            },
+            title = { Text(stringResource(R.string.dialog_error_title)) },
+            text = { Text(localErrorText ?: "") },
+            confirmButton = {
+                TextButton(onClick = { localErrorText = null }) {
+                    Text(stringResource(R.string.dialog_ok))
+                }
+            }
+        )
+    }
+
+    if (dialogResId != null && dialogTitleResId != null) {
+        AlertDialog(
+            onDismissRequest = {
+                localErrorResId = null
+                authViewModel.clearMessages()
             },
             title = { Text(stringResource(dialogTitleResId)) },
             text = { Text(stringResource(dialogResId)) },
@@ -61,24 +83,22 @@ fun RegisterScreen(
                         localErrorResId = null
                         authViewModel.clearMessages()
                     }
-                ) {
-                    Text(stringResource(R.string.dialog_ok))
-                }
+                ) { Text(stringResource(R.string.dialog_ok)) }
             }
         )
     }
 
-    val bg = Brush.verticalGradient( // Fondo degradado igual que Welcome/Login (consistencia visual)
+    val bg = Brush.verticalGradient(
         0f to Color(0xFF4FC3F7),
         0.55f to Color(0xFFB3E5FC),
         1f to Color(0xFFE3F2FD)
     )
-    val orange = Color(0xFFFF8A00) // Color CTA
+    val orange = Color(0xFFFF8A00)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(bg) // Degradado de fondo
+            .background(bg)
             .padding(20.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -94,7 +114,7 @@ fun RegisterScreen(
                 modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Box( // Cabecera con "logo" textual (igual que Login)
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(18.dp))
@@ -112,12 +132,12 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text( // Título "Crear cuenta"
+                Text(
                     text = stringResource(R.string.register_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
-                Text( // Subtítulo (explicación corta)
+                Text(
                     text = stringResource(R.string.register_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color(0xFF6B7280)
@@ -129,8 +149,9 @@ fun RegisterScreen(
                     value = email,
                     onValueChange = {
                         email = it
-                        localErrorResId = null // Si el usuario cambia campos, borramos errores de validación previos
-                        authViewModel.clearMessages() // También limpiamos errores de Firebase previos
+                        localErrorResId = null
+                        localErrorText = null
+                        authViewModel.clearMessages()
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.email_label)) },
@@ -145,13 +166,14 @@ fun RegisterScreen(
                     onValueChange = {
                         password = it
                         localErrorResId = null
+                        localErrorText = null
                         authViewModel.clearMessages()
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.password_label)) },
                     leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                     trailingIcon = {
-                        IconButton(onClick = { showPassword = !showPassword }) { // Toggle mostrar/ocultar contraseña
+                        IconButton(onClick = { showPassword = !showPassword }) {
                             Icon(
                                 imageVector = if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                 contentDescription = null
@@ -169,13 +191,14 @@ fun RegisterScreen(
                     onValueChange = {
                         repeatPassword = it
                         localErrorResId = null
+                        localErrorText = null
                         authViewModel.clearMessages()
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.repeat_password_label)) },
                     leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                     trailingIcon = {
-                        IconButton(onClick = { showRepeatPassword = !showRepeatPassword }) { // Toggle mostrar/ocultar repetir contraseña
+                        IconButton(onClick = { showRepeatPassword = !showRepeatPassword }) {
                             Icon(
                                 imageVector = if (showRepeatPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                 contentDescription = null
@@ -190,23 +213,31 @@ fun RegisterScreen(
 
                 Button(
                     onClick = {
-                        localErrorResId = null // Resetea error local antes de validar
+                        localErrorResId = null
+                        localErrorText = null
 
-                        if (password != repeatPassword) { // Validación 1: las contraseñas deben coincidir
+                        // NUEVO: validar dominio permitido
+                        if (!EmailValidator.isAllowed(email)) {
+                            localErrorText =
+                                "El correo debe ser de un dominio válido (por ejemplo: @gmail.com, @hotmail.com, @outlook.com)."
+                            return@Button
+                        }
+
+                        if (password != repeatPassword) {
                             localErrorResId = R.string.error_passwords_not_match
                             return@Button
                         }
-                        if (password.length < 6) { // Validación 2: mínimo 6 caracteres (Firebase también lo exige)
+                        if (password.length < 6) {
                             localErrorResId = R.string.error_password_min
                             return@Button
                         }
 
-                        authViewModel.register(email, password, onRegisterSuccess) // Si pasa validación, se llama a Firebase vía ViewModel
+                        authViewModel.register(email.trim(), password, onRegisterSuccess)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
-                    enabled = !uiState.isLoading, // Evita doble click mientras se registra
+                    enabled = !uiState.isLoading,
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = orange)
                 ) {
@@ -221,10 +252,10 @@ fun RegisterScreen(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = stringResource(R.string.already_have_account_question), // “¿Ya tienes cuenta?”
+                        text = stringResource(R.string.already_have_account_question),
                         color = Color(0xFF6B7280)
                     )
-                    TextButton(onClick = onGoToLogin) { // Vuelve a login
+                    TextButton(onClick = onGoToLogin) {
                         Text(stringResource(R.string.already_have_account_action), fontWeight = FontWeight.Bold)
                     }
                 }
