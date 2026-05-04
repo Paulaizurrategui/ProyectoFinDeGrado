@@ -28,13 +28,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Intent
+import android.net.Uri
 import com.paulaizurrategui.urtriply.data.trips.TripStatus
+import com.paulaizurrategui.urtriply.domain.model.Hotel
 import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
 import com.paulaizurrategui.urtriply.ui.theme.UrCream
 import com.paulaizurrategui.urtriply.ui.theme.UrOrange
@@ -63,7 +67,7 @@ fun PlanResultScreen(
         )
     }
 
-    // CLAVE: ocultamos header y título para que no haya espacio extra arriba
+    // clave: ocultamos header y titulo para que no haya espacio extra arriba
     UrTriplyGradientScaffold(
         title = "",
         showHeader = false,
@@ -89,7 +93,7 @@ fun PlanResultScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.surface)
-                        // menos padding para que quede más arriba/compacto
+                        // menos padding para que quede mas arriba/compacto
                         .padding(horizontal = 8.dp, vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -177,7 +181,7 @@ fun PlanResultScreen(
                     modifier = Modifier
                         .verticalScroll(scroll)
                         .fillMaxWidth()
-                        // menos padding arriba para acercar el contenido al botón volver
+                        // menos padding arriba para acercar el contenido al boton volver
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -202,6 +206,23 @@ fun PlanResultScreen(
                                 fontWeight = FontWeight.ExtraBold
                             )
                             Spacer(Modifier.height(6.dp))
+
+                            // debug para comprobar api (si no quieres esto luego, lo quitas)
+                            if (r.destinoDisplayName != null && r.lat != null && r.lon != null) {
+                                Text(
+                                    text = "api ok: ${r.destinoDisplayName} (${r.lat}, ${r.lon})",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(Modifier.height(6.dp))
+                            } else {
+                                Text(
+                                    text = "api: sin datos (fallback)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(Modifier.height(6.dp))
+                            }
 
                             Text(
                                 text = "Duración recomendada: ${r.diasRecomendados} días",
@@ -251,6 +272,15 @@ fun PlanResultScreen(
                             ActivitiesBlock(
                                 gratis = r.actividadesGratis,
                                 pago = r.actividadesPago
+                            )
+
+                            Spacer(Modifier.height(14.dp))
+
+                            SectionTitle("Alojamiento recomendado")
+                            Spacer(Modifier.height(8.dp))
+                            HotelsBlock(
+                                hoteles = r.hoteles,
+                                apiHotelesOk = r.apiHotelesOk
                             )
 
                             Spacer(Modifier.height(24.dp))
@@ -393,6 +423,109 @@ private fun ActivitiesBlock(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@Composable
+private fun HotelsBlock(
+    hoteles: List<Hotel>,
+    apiHotelesOk: Boolean
+) {
+    if (hoteles.isEmpty()) {
+        Text(
+            text = "No hay hoteles disponibles para este destino.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        return
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (!apiHotelesOk) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = UrCream),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Text(
+                    text = "Aviso: el alojamiento mostrado es fallback estimado.",
+                    modifier = Modifier.padding(12.dp),
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+
+        hoteles.forEach { hotel ->
+            HotelCard(hotel = hotel)
+        }
+    }
+}
+
+@Composable
+private fun HotelCard(hotel: Hotel) {
+    val context = LocalContext.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = hotel.name,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    if (hotel.stars != null) {
+                        Text(
+                            text = "${hotel.stars} estrellas",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Text(
+                    text = "€${String.format("%.0f", hotel.pricePerNight)}/noche",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Text(
+                text = if (hotel.isReal) "Datos reales de OpenStreetMap" else "Fallback estimado",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            if (hotel.totalPrice != null) {
+                Text(
+                    text = "Total estimado: €${String.format("%.0f", hotel.totalPrice)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (hotel.bookingUrl != null) {
+                TextButton(onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(hotel.bookingUrl))
+                    context.startActivity(intent)
+                }) {
+                    Text("Ver enlace de reserva")
+                }
+            }
         }
     }
 }

@@ -1,0 +1,14 @@
+package com.paulaizurrategui.urtriply.data.remote.nominatim
+
+import retrofit2.http.GET
+import retrofit2.http.Query
+
+interface NominatimApi {
+    @GET("search")
+    suspend fun search(
+        @Query("q") query: String,
+        @Query("format") format: String = "json",
+        @Query("limit") limit: Int = 1,
+        @Query("addressdetails") addressDetails: Int = 0
+    ): List<NominatimSearchItemDto>
+}

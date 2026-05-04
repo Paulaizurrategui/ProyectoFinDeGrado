@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,12 +47,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import android.util.Log
+import com.paulaizurrategui.urtriply.data.remote.overpass.HotelsRepository
+import com.paulaizurrategui.urtriply.data.remote.nominatim.GeocodingRepository
+import com.paulaizurrategui.urtriply.domain.model.Hotel
 import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -82,7 +85,7 @@ fun PlanTabScreen(
             "Dublín (Irlanda)"
         )
 
-        // --- Estado formulario ---
+        // --- estado formulario ---
         var destino by remember { mutableStateOf(destinos.first()) }
         var presupuestoText by remember { mutableStateOf("") }
         var viajerosText by remember { mutableStateOf("1") }
@@ -90,7 +93,7 @@ fun PlanTabScreen(
         var fechaFinMillis by remember { mutableStateOf<Long?>(null) }
         var prefs by remember { mutableStateOf(setOf<Preference>()) }
 
-        // --- UI state ---
+        // --- ui state ---
         var showStartPicker by remember { mutableStateOf(false) }
         var showEndPicker by remember { mutableStateOf(false) }
         var isLoading by remember { mutableStateOf(false) }
@@ -101,6 +104,13 @@ fun PlanTabScreen(
 
         val scrollState = rememberScrollState()
 
+        // coroutines (sin crear scope manual)
+        val scope = rememberCoroutineScope()
+
+        // repo geocoding (nominatim)
+        val geocodingRepo = remember { GeocodingRepository() }
+        val hotelsRepo = remember { HotelsRepository() }
+
         Box(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier
@@ -109,7 +119,7 @@ fun PlanTabScreen(
                     .padding(horizontal = 16.dp)
                     .padding(top = 12.dp, bottom = 18.dp)
             ) {
-                // Intro “más bonito”
+                // intro
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
@@ -138,7 +148,7 @@ fun PlanTabScreen(
 
                 Spacer(Modifier.height(14.dp))
 
-                // Sección: Destino
+                // destino
                 SectionTitle(title = "Destino", subtitle = "Elige la capital europea que quieres visitar")
                 Spacer(Modifier.height(8.dp))
                 DestinationDropdown(
@@ -149,7 +159,7 @@ fun PlanTabScreen(
 
                 Spacer(Modifier.height(14.dp))
 
-                // Sección: Presupuesto & viajeros
+                // presupuesto y viajeros
                 SectionTitle(title = "Presupuesto y viajeros", subtitle = "Ajusta la propuesta al tamaño del grupo")
                 Spacer(Modifier.height(8.dp))
 
@@ -189,11 +199,13 @@ fun PlanTabScreen(
 
                 Spacer(Modifier.height(14.dp))
 
-                // Sección: Fechas
+                // fechas
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                    ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -214,7 +226,7 @@ fun PlanTabScreen(
 
                 Spacer(Modifier.height(14.dp))
 
-                // Sección: Preferencias
+                // preferencias
                 SectionTitle(title = "Preferencias", subtitle = "Selecciona al menos una")
                 Spacer(Modifier.height(8.dp))
 
@@ -257,7 +269,7 @@ fun PlanTabScreen(
 
                 Spacer(Modifier.height(14.dp))
 
-                // Error local de validación
+                // error local validacion
                 localError?.let {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -275,7 +287,7 @@ fun PlanTabScreen(
                     Spacer(Modifier.height(10.dp))
                 }
 
-                // Botón generar (más chulo)
+                // boton generar
                 Button(
                     onClick = {
                         localError = null
@@ -306,10 +318,12 @@ fun PlanTabScreen(
 
                         isLoading = true
 
-                        CoroutineScope(Dispatchers.Main).launch {
+                        scope.launch {
+                            // delay solo para que se vea el loader
                             delay(900)
 
-                            val generated = generateLocalProposal(
+                            // 1) genero local (fallback)
+                            val base = generateLocalProposal(
                                 destino = destino,
                                 presupuestoTotal = presupuesto,
                                 viajeros = viajeros,
@@ -318,7 +332,41 @@ fun PlanTabScreen(
                                 prefs = prefs
                             )
 
-                            PlanResultStore.lastResult = generated
+                            // 2) geocoding real (b: solo parte antes del parentesis)
+                            val queryCity = destino.substringBefore("(").trim()
+                            val geo = geocodingRepo.geocode(queryCity)
+
+                            val hoteles: List<Hotel> = if (geo != null) {
+                                try {
+                                    hotelsRepo.searchHotels(
+                                        lat = geo.lat,
+                                        lon = geo.lon,
+                                        checkInDate = fechaInicioMillis,
+                                        checkOutDate = fechaFinMillis
+                                    )
+                                } catch (e: Throwable) {
+                                    Log.e("PlanTabScreen", "Error loading hotels for $queryCity", e)
+                                    emptyList()
+                                }
+                            } else {
+                                emptyList()
+                            }
+
+                            // 3) si sale bien, lo guardo en el resultado
+                            val finalPlan = if (geo != null) {
+                                base.copy(
+                                    destinoDisplayName = geo.displayName,
+                                    lat = geo.lat,
+                                    lon = geo.lon,
+                                    hoteles = hoteles,
+                                    hotelMesSeleccionado = hoteles.firstOrNull(),
+                                    apiHotelesOk = hoteles.any { it.isReal }
+                                )
+                            } else {
+                                base
+                            }
+
+                            PlanResultStore.lastResult = finalPlan
 
                             isLoading = false
                             onNavigateToResult()
@@ -351,7 +399,7 @@ fun PlanTabScreen(
             )
         }
 
-        // Date pickers
+        // date pickers
         if (showStartPicker) {
             val state = rememberDatePickerState(initialSelectedDateMillis = fechaInicioMillis)
             DatePickerDialog(
@@ -534,7 +582,7 @@ private fun generateLocalProposal(
     val comidas = presupuestoTotal * 0.20
     val actividades = presupuestoTotal * 0.10
 
-    // Estimación simple de días recomendados (MVP)
+    // estimacion simple de dias recomendados
     val costeDiarioEstimado = (alojamiento + comidas + actividades) / 3.0
     val diasRecomendados = (presupuestoTotal / maxOf(1.0, costeDiarioEstimado))
         .toInt()
@@ -582,5 +630,6 @@ private fun generateLocalProposal(
         actividadesGratis = actividadesGratis,
         actividadesPago = actividadesPago,
         usedFallback = true
+        // los nuevos campos (destinodisplayname/lat/lon) quedan null por defecto
     )
 }
