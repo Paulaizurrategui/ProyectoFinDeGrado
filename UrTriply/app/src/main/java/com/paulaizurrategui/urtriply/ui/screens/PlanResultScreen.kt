@@ -277,7 +277,7 @@ fun PlanResultScreen(
 
                             Spacer(Modifier.height(14.dp))
 
-                            SectionTitle("Actividades reales recomendadas")
+                            SectionTitle("Actividades recomendadas reales")
                             Spacer(Modifier.height(8.dp))
                             RealActivitiesBlock(
                                 activities = r.actividadesReales,
@@ -494,7 +494,7 @@ private fun RealActivitiesBlock(
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Text(
-                    text = "Aviso: las actividades mostradas son fallback estimado.",
+                    text = "Aviso: las actividades mostradas son fallback estimado (API lenta).",
                     modifier = Modifier.padding(12.dp),
                     fontWeight = FontWeight.SemiBold
                 )

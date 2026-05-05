@@ -4,7 +4,9 @@ import android.util.Log
 import com.paulaizurrategui.urtriply.domain.model.SuggestedActivity
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -33,8 +35,9 @@ class ActivitiesRepository {
                 chain.proceed(req)
             }
             .addInterceptor(logger)
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(20, TimeUnit.SECONDS)
+            // REDUCIR TIMEOUTS DRASTICAMENTE para que no cuelgue
+            .connectTimeout(3, TimeUnit.SECONDS)
+            .readTimeout(4, TimeUnit.SECONDS)
             .build()
 
         val moshi = Moshi.Builder()
@@ -55,32 +58,32 @@ class ActivitiesRepository {
         prefs: Set<String>,
         radiusKm: Float = 5f
     ): List<SuggestedActivity> {
-        val deltaLat = radiusKm / 111f
-        val deltaLon = radiusKm / (111f * kotlin.math.cos(Math.toRadians(lat)).toFloat())
-
-        val south = lat - deltaLat
-        val north = lat + deltaLat
-        val west = lon - deltaLon
-        val east = lon + deltaLon
-
-        val query = buildString {
-            append("[out:json][timeout:25];(")
-            append("node[\"tourism\"=\"museum\"]($south,$west,$north,$east);")
-            append("node[\"tourism\"=\"attraction\"]($south,$west,$north,$east);")
-            append("node[\"tourism\"=\"viewpoint\"]($south,$west,$north,$east);")
-            append("node[\"leisure\"=\"park\"]($south,$west,$north,$east);")
-            append("node[\"historic\"]($south,$west,$north,$east);")
-            append(");out body;")
-        }
-
-        var lastError: Throwable? = null
-
-        repeat(2) { attempt ->
+        // Timeout TOTAL de 8 segundos: si tarda más, devuelve fallback
+        val result = withTimeoutOrNull(8000) {
             try {
-                Log.d(TAG, "Searching activities (attempt ${attempt + 1}/2) around ($lat, $lon)")
-                val response = api.queryHotels(query)
+                val deltaLat = radiusKm / 111f
+                val deltaLon = radiusKm / (111f * kotlin.math.cos(Math.toRadians(lat)).toFloat())
+
+                val south = lat - deltaLat
+                val north = lat + deltaLat
+                val west = lon - deltaLon
+                val east = lon + deltaLon
+
+                // Query con timeout CORTO (5 segundos en Overpass)
+                val query = buildString {
+                    append("[out:json][timeout:5];(")
+                    append("node[\"tourism\"=\"museum\"]($south,$west,$north,$east);")
+                    append("node[\"tourism\"=\"attraction\"]($south,$west,$north,$east);")
+                    append("node[\"tourism\"=\"viewpoint\"]($south,$west,$north,$east);")
+                    append("node[\"leisure\"=\"park\"]($south,$west,$north,$east);")
+                    append("node[\"historic\"]($south,$west,$north,$east);")
+                    append(");out body;")
+                }
+
+                Log.d(TAG, "🔄 Buscando actividades alrededor de ($lat, $lon)")
+                val response = withContext(Dispatchers.IO) { api.queryHotels(query) }
                 val elements = response.elements.orEmpty()
-                Log.d(TAG, "API Response: ${elements.size} activity candidates found")
+                Log.d(TAG, "📋 API devolvió ${elements.size} candidatos")
 
                 val preferredCategories = prefs.map { it.lowercase(Locale.getDefault()) }.toSet()
 
@@ -111,21 +114,21 @@ class ActivitiesRepository {
                     .take(6)
 
                 if (activities.isNotEmpty()) {
-                    Log.d(TAG, "✅ SUCCESS: Found ${activities.size} activities")
-                    return activities
+                    Log.d(TAG, "✅ SUCCESS: Encontradas ${activities.size} actividades reales")
+                    return@withTimeoutOrNull activities
                 }
 
-                Log.w(TAG, "No activities returned by API, using fallback list")
-                return buildFallbackActivities(lat, lon, prefs)
+                // Si no hay actividades pero API respondió, fallback
+                Log.w(TAG, "⚠️ API respondió pero sin actividades, usando fallback")
+                buildFallbackActivities(lat, lon, prefs)
             } catch (e: Throwable) {
-                lastError = e
-                Log.e(TAG, "Error searching activities (attempt ${attempt + 1}/2): ${e.message}")
-                if (attempt < 1) delay(500)
+                Log.e(TAG, "⚠️ Error en searchActivities: ${e}")
+                null // Será capturado por withTimeoutOrNull
             }
         }
 
-        Log.e(TAG, "❌ FAILED to search activities", lastError)
-        return buildFallbackActivities(lat, lon, prefs)
+        // Si timeout o error, devolver fallback inmediatamente
+        return result ?: buildFallbackActivities(lat, lon, prefs)
     }
 
     private fun resolveCategory(tags: Map<String, String>?): String {

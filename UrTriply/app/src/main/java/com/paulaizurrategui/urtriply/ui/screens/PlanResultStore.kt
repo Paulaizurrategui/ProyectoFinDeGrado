@@ -3,6 +3,7 @@ package com.paulaizurrategui.urtriply.ui.screens
 import com.paulaizurrategui.urtriply.domain.model.Hotel
 import com.paulaizurrategui.urtriply.domain.model.SuggestedActivity
 
+
 /**
  * lo uso para poder pasar datos desde la Pantalla 4 (PlanTabScreen)
  * a la Pantalla 5 (PlanResultScreen)
