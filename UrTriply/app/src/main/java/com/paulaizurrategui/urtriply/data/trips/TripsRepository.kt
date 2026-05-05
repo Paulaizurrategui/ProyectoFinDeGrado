@@ -3,6 +3,8 @@ package com.paulaizurrategui.urtriply.data.trips
 import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.paulaizurrategui.urtriply.domain.model.Hotel
+import com.paulaizurrategui.urtriply.domain.model.SuggestedActivity
 import com.paulaizurrategui.urtriply.ui.screens.PlanResult
 
 // repositorio para centralizar las escrituras/updates de trips en firestore
@@ -35,6 +37,8 @@ class TripsRepository(
             itinerario = plan.itinerario,
             actividadesGratis = plan.actividadesGratis,
             actividadesPago = plan.actividadesPago,
+            hoteles = plan.hoteles,
+            actividadesReales = plan.actividadesReales,
             usedFallback = plan.usedFallback,
             status = status.name,
             createdAt = Timestamp.now(), // siempre lo seteo al crear

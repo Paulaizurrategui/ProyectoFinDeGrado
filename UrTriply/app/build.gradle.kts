@@ -44,6 +44,7 @@ dependencies {
     implementation("com.squareup.moshi:moshi:1.15.1")
     implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("androidx.browser:browser:1.8.0")
     // Firebase BOM (NO pongas versiones a las librerías de Firebase si usas BOM)
     implementation(platform("com.google.firebase:firebase-bom:33.10.0"))
     implementation("com.google.firebase:firebase-auth-ktx")

@@ -39,6 +39,7 @@ import android.content.Intent
 import android.net.Uri
 import com.paulaizurrategui.urtriply.data.trips.TripStatus
 import com.paulaizurrategui.urtriply.domain.model.Hotel
+import com.paulaizurrategui.urtriply.domain.model.SuggestedActivity
 import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
 import com.paulaizurrategui.urtriply.ui.theme.UrCream
 import com.paulaizurrategui.urtriply.ui.theme.UrOrange
@@ -276,6 +277,15 @@ fun PlanResultScreen(
 
                             Spacer(Modifier.height(14.dp))
 
+                            SectionTitle("Actividades reales recomendadas")
+                            Spacer(Modifier.height(8.dp))
+                            RealActivitiesBlock(
+                                activities = r.actividadesReales,
+                                apiOk = r.apiActividadesOk
+                            )
+
+                            Spacer(Modifier.height(14.dp))
+
                             SectionTitle("Alojamiento recomendado")
                             Spacer(Modifier.height(8.dp))
                             HotelsBlock(
@@ -458,6 +468,90 @@ private fun HotelsBlock(
 
         hoteles.forEach { hotel ->
             HotelCard(hotel = hotel)
+        }
+    }
+}
+
+@Composable
+private fun RealActivitiesBlock(
+    activities: List<SuggestedActivity>,
+    apiOk: Boolean
+) {
+    if (activities.isEmpty()) {
+        Text(
+            text = "No hay actividades reales disponibles para este destino.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        return
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (!apiOk) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = UrCream),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Text(
+                    text = "Aviso: las actividades mostradas son fallback estimado.",
+                    modifier = Modifier.padding(12.dp),
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+
+        activities.forEach { activity ->
+            ActivityCard(activity = activity)
+        }
+    }
+}
+
+@Composable
+private fun ActivityCard(activity: SuggestedActivity) {
+    val context = LocalContext.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = activity.name,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = activity.category,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Text(
+                text = if (activity.isFree) "Gratis" else "€${String.format("%.0f", activity.price)}",
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Text(
+                text = if (activity.isReal) "Datos reales de OpenStreetMap" else "Fallback estimado",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            if (activity.bookingUrl != null) {
+                TextButton(onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(activity.bookingUrl))
+                    context.startActivity(intent)
+                }) {
+                    Text("Ver enlace")
+                }
+            }
         }
     }
 }

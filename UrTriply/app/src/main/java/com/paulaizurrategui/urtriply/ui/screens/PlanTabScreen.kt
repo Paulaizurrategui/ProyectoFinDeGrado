@@ -48,9 +48,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import android.util.Log
+import com.paulaizurrategui.urtriply.data.remote.overpass.ActivitiesRepository
 import com.paulaizurrategui.urtriply.data.remote.overpass.HotelsRepository
 import com.paulaizurrategui.urtriply.data.remote.nominatim.GeocodingRepository
 import com.paulaizurrategui.urtriply.domain.model.Hotel
+import com.paulaizurrategui.urtriply.domain.model.SuggestedActivity
 import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -110,6 +112,7 @@ fun PlanTabScreen(
         // repo geocoding (nominatim)
         val geocodingRepo = remember { GeocodingRepository() }
         val hotelsRepo = remember { HotelsRepository() }
+        val activitiesRepo = remember { ActivitiesRepository() }
 
         Box(modifier = Modifier.fillMaxWidth()) {
             Column(
@@ -352,6 +355,22 @@ fun PlanTabScreen(
                                 emptyList()
                             }
 
+                            val actividadesReales: List<SuggestedActivity> = if (geo != null) {
+                                try {
+                                    val preferenceNames = prefs.map { it.label }.toSet()
+                                    activitiesRepo.searchActivities(
+                                        lat = geo.lat,
+                                        lon = geo.lon,
+                                        prefs = preferenceNames
+                                    )
+                                } catch (e: Throwable) {
+                                    Log.e("PlanTabScreen", "Error loading activities for $queryCity", e)
+                                    emptyList()
+                                }
+                            } else {
+                                emptyList()
+                            }
+
                             // 3) si sale bien, lo guardo en el resultado
                             val finalPlan = if (geo != null) {
                                 base.copy(
@@ -360,7 +379,9 @@ fun PlanTabScreen(
                                     lon = geo.lon,
                                     hoteles = hoteles,
                                     hotelMesSeleccionado = hoteles.firstOrNull(),
-                                    apiHotelesOk = hoteles.any { it.isReal }
+                                    apiHotelesOk = hoteles.any { it.isReal },
+                                    actividadesReales = actividadesReales,
+                                    apiActividadesOk = actividadesReales.any { it.isReal }
                                 )
                             } else {
                                 base

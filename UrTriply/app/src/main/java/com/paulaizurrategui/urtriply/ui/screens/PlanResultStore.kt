@@ -1,6 +1,7 @@
 package com.paulaizurrategui.urtriply.ui.screens
 
 import com.paulaizurrategui.urtriply.domain.model.Hotel
+import com.paulaizurrategui.urtriply.domain.model.SuggestedActivity
 
 /**
  * lo uso para poder pasar datos desde la Pantalla 4 (PlanTabScreen)
@@ -33,5 +34,7 @@ data class PlanResult(
     val lon: Double? = null,
     val hoteles: List<Hotel> = emptyList(),
     val hotelMesSeleccionado: Hotel? = null,
-    val apiHotelesOk: Boolean = false
+    val apiHotelesOk: Boolean = false,
+    val actividadesReales: List<SuggestedActivity> = emptyList(),
+    val apiActividadesOk: Boolean = false
 )
