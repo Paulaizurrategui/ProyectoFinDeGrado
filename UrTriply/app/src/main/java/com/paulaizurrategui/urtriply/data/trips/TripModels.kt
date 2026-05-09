@@ -29,6 +29,7 @@ data class TripDoc(
     val actividadesPago: List<String> = emptyList(),
     val hoteles: List<Hotel> = emptyList(),
     val actividadesReales: List<SuggestedActivity> = emptyList(),
+    val vuelos: List<com.paulaizurrategui.urtriply.domain.model.FlightOffer> = emptyList(),
     val usedFallback: Boolean = true, // true si hemos tirado de estimaciones
 
     // estado + timestamps
@@ -39,7 +40,7 @@ data class TripDoc(
 
 // helper: convierte un planresult en un tripdoc
 // (esto me sirve para guardar borrador o publicar segun el status)
-fun TripDoc.CompanionFromPlanResult(
+fun tripDocFromPlanResult(
     plan: PlanResult,
     authorUid: String,
     authorEmail: String?,
@@ -59,6 +60,7 @@ fun TripDoc.CompanionFromPlanResult(
     actividadesPago = plan.actividadesPago,
     hoteles = plan.hoteles,
     actividadesReales = plan.actividadesReales,
+    vuelos = plan.vuelos,
     usedFallback = plan.usedFallback,
     status = status.name
     // createdat/publishedat se setean donde se guarda (repositorio/vm)

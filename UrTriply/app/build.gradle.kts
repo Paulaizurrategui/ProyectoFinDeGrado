@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -16,6 +18,18 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Expose TEQUILA_API_KEY from local.properties or environment to BuildConfig
+        val localProps = Properties()
+        val localFile = rootProject.file("local.properties")
+        if (localFile.exists()) {
+            localProps.load(localFile.inputStream())
+        }
+        val tequilaKeyFromProps = (localProps.getProperty("TEQUILA_API_KEY") ?: System.getenv("TEQUILA_API_KEY") ?: "").replace("\"", "\\\"")
+        buildConfigField("String", "TEQUILA_API_KEY", "\"$tequilaKeyFromProps\"")
+        val amadeusId = (localProps.getProperty("AMADEUS_CLIENT_ID") ?: System.getenv("AMADEUS_CLIENT_ID") ?: "").replace("\"", "\\\"")
+        val amadeusSecret = (localProps.getProperty("AMADEUS_CLIENT_SECRET") ?: System.getenv("AMADEUS_CLIENT_SECRET") ?: "").replace("\"", "\\\"")
+        buildConfigField("String", "AMADEUS_CLIENT_ID", "\"$amadeusId\"")
+        buildConfigField("String", "AMADEUS_CLIENT_SECRET", "\"$amadeusSecret\"")
     }
 
     buildTypes {
@@ -35,6 +49,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

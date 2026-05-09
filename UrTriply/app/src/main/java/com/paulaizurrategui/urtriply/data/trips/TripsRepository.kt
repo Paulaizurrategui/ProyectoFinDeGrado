@@ -23,26 +23,11 @@ class TripsRepository(
         onSuccess: (tripId: String) -> Unit,
         onError: (Throwable) -> Unit
     ) {
-        // preparo el documento a guardar
-        val doc = TripDoc(
-            authorUid = authorUid,
-            authorEmail = authorEmail,
-            destino = plan.destino,
-            presupuestoTotal = plan.presupuestoTotal,
-            viajeros = plan.viajeros,
-            fechaInicioMillis = plan.fechaInicioMillis,
-            fechaFinMillis = plan.fechaFinMillis,
-            diasRecomendados = plan.diasRecomendados,
-            presupuestoCategorias = plan.presupuestoCategorias,
-            itinerario = plan.itinerario,
-            actividadesGratis = plan.actividadesGratis,
-            actividadesPago = plan.actividadesPago,
-            hoteles = plan.hoteles,
-            actividadesReales = plan.actividadesReales,
-            usedFallback = plan.usedFallback,
-            status = status.name,
-            createdAt = Timestamp.now(), // siempre lo seteo al crear
-            publishedAt = if (status == TripStatus.PUBLISHED) Timestamp.now() else null // solo si publico
+        // preparo el documento a guardar (usa el helper para mapear PlanResult incluyendo vuelos)
+        val baseDoc = tripDocFromPlanResult(plan, authorUid, authorEmail, status)
+        val doc = baseDoc.copy(
+            createdAt = Timestamp.now(),
+            publishedAt = if (status == TripStatus.PUBLISHED) Timestamp.now() else null
         )
 
         // una sola escritura (add crea el doc con id automatico)

@@ -293,6 +293,17 @@ fun PlanResultScreen(
                                 apiHotelesOk = r.apiHotelesOk
                             )
 
+                            Spacer(Modifier.height(14.dp))
+
+                            SectionTitle("Ofertas de vuelo")
+                            Spacer(Modifier.height(8.dp))
+                            FlightsBlock(
+                                flights = r.vuelos,
+                                apiOk = r.apiVuelosOk
+                            )
+
+                            Spacer(Modifier.height(14.dp))
+
                             Spacer(Modifier.height(24.dp))
                         }
                     }
@@ -618,6 +629,77 @@ private fun HotelCard(hotel: Hotel) {
                     context.startActivity(intent)
                 }) {
                     Text("Ver enlace de reserva")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FlightsBlock(
+    flights: List<com.paulaizurrategui.urtriply.domain.model.FlightOffer>,
+    apiOk: Boolean
+) {
+    if (flights.isEmpty()) {
+        Text(
+            text = "No hay ofertas de vuelo para este destino.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        return
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (!apiOk) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = UrCream),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Text(
+                    text = "Aviso: las ofertas mostradas son estimadas (sin API de vuelos).",
+                    modifier = Modifier.padding(12.dp),
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+
+        flights.forEach { flight ->
+            FlightCard(flight)
+        }
+    }
+}
+
+@Composable
+private fun FlightCard(flight: com.paulaizurrategui.urtriply.domain.model.FlightOffer) {
+    val context = LocalContext.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(text = "${flight.origin} → ${flight.destination}", fontWeight = FontWeight.Bold)
+
+            Text(text = "Salida: ${flight.departureDate} ${if (flight.returnDate != null) " • Vuelta: ${flight.returnDate}" else ""}")
+
+            Text(text = "Duración: ${flight.durationMinutes} min • ${flight.carrier}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            Text(text = "Precio: ${flight.currency} ${String.format("%.2f", flight.price)}", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+
+            Text(text = if (flight.isReal) "Datos reales (Proveedor)" else "Estimación (sin API)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            if (flight.bookingUrl != null) {
+                TextButton(onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(flight.bookingUrl))
+                    context.startActivity(intent)
+                }) {
+                    Text("Reservar")
                 }
             }
         }

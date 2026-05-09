@@ -90,6 +90,7 @@ fun PlanTabScreen(
 
         // --- estado formulario ---
         var destino by remember { mutableStateOf(destinos.first()) }
+        var origenIata by remember { mutableStateOf("") }
         var presupuestoText by remember { mutableStateOf("") }
         var viajerosText by remember { mutableStateOf("1") }
         var fechaInicioMillis by remember { mutableStateOf<Long?>(null) }
@@ -114,6 +115,7 @@ fun PlanTabScreen(
         val geocodingRepo = remember { GeocodingRepository() }
         val hotelsRepo = remember { HotelsRepository() }
         val activitiesRepo = remember { ActivitiesRepository() }
+        val flightsRepo = remember { com.paulaizurrategui.urtriply.data.remote.flights.FlightsRepository() }
 
         Box(modifier = Modifier.fillMaxWidth()) {
             Column(
@@ -159,6 +161,16 @@ fun PlanTabScreen(
                     destinos = destinos,
                     selected = destino,
                     onSelected = { destino = it }
+                )
+
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = origenIata,
+                    onValueChange = { origenIata = it.uppercase(Locale.getDefault()).filter { c -> c.isLetterOrDigit() } },
+                    label = { Text("Origen (IATA) - opcional") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
                 )
 
                 Spacer(Modifier.height(14.dp))
@@ -372,6 +384,23 @@ fun PlanTabScreen(
                                 emptyList()
                             }
 
+                            val vuelosOfertas: List<com.paulaizurrategui.urtriply.domain.model.FlightOffer> = if (origenIata.isNotBlank()) {
+                                try {
+                                    flightsRepo.searchFlights(
+                                        origin = origenIata,
+                                        destination = queryCity,
+                                        dateFrom = dateFormat.format(Date(fechaInicioMillis!!)),
+                                        dateTo = dateFormat.format(Date(fechaFinMillis!!)),
+                                        limit = 6
+                                    )
+                                } catch (e: Throwable) {
+                                    Log.e("PlanTabScreen", "Error loading flights for $queryCity", e)
+                                    emptyList()
+                                }
+                            } else {
+                                emptyList()
+                            }
+
                             // 3) si sale bien, lo guardo en el resultado
                             val finalPlan = if (geo != null) {
                                 base.copy(
@@ -383,6 +412,8 @@ fun PlanTabScreen(
                                     apiHotelesOk = hoteles.any { it.isReal },
                                     actividadesReales = actividadesReales,
                                     apiActividadesOk = actividadesReales.any { it.isReal }
+                                    ,vuelos = vuelosOfertas,
+                                    apiVuelosOk = vuelosOfertas.any { it.isReal }
                                 )
                             } else {
                                 base

@@ -2,6 +2,7 @@ package com.paulaizurrategui.urtriply.ui.screens
 
 import com.paulaizurrategui.urtriply.domain.model.Hotel
 import com.paulaizurrategui.urtriply.domain.model.SuggestedActivity
+import com.paulaizurrategui.urtriply.domain.model.FlightOffer
 
 
 /**
@@ -38,4 +39,7 @@ data class PlanResult(
     val apiHotelesOk: Boolean = false,
     val actividadesReales: List<SuggestedActivity> = emptyList(),
     val apiActividadesOk: Boolean = false
+    ,
+    val vuelos: List<FlightOffer> = emptyList(),
+    val apiVuelosOk: Boolean = false
 )
