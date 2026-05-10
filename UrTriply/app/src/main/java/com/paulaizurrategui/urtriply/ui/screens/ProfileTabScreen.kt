@@ -17,11 +17,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Publish
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import com.paulaizurrategui.urtriply.ui.theme.ThemeViewModel
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -59,8 +65,12 @@ fun ProfileTabScreen(
     onLoggedOut: () -> Unit,
     onEditProfile: () -> Unit,
     onEditTrip: (tripId: String) -> Unit,
-    onNavigateToFindFriends: () -> Unit
+    onNavigateToFindFriends: () -> Unit,
+    onNavigateToAdmin: () -> Unit = {}
 ) {
+    val themeViewModel: com.paulaizurrategui.urtriply.ui.theme.ThemeViewModel = viewModel()
+    val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
+    LaunchedEffect(Unit) { themeViewModel.loadThemePreference() }
     val user = FirebaseAuth.getInstance().currentUser
     val email = user?.email ?: "-"
     val displayName = user?.displayName
@@ -68,6 +78,8 @@ fun ProfileTabScreen(
 
     val tripsVm = remember { ProfileTripsViewModel() }
     val tripsState by tripsVm.uiState.collectAsState()
+    val adminVm: com.paulaizurrategui.urtriply.ui.viewmodels.AdminViewModel = viewModel()
+    val isAdmin by adminVm.isAdmin
 
     // NUEVO: contador de amigos (siguiendo)
     val friendsCountVm: ProfileFriendsCountViewModel = viewModel()
@@ -111,6 +123,26 @@ fun ProfileTabScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             item {
+                if (isAdmin) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateToAdmin() },
+                        shape = RoundedCornerShape(20.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(imageVector = Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.size(10.dp))
+                            Column {
+                                Text(text = "Panel Admin", fontWeight = FontWeight.Bold)
+                                Text(text = "Gestionar reportes y usuarios", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+                }
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -298,6 +330,55 @@ fun ProfileTabScreen(
                                 color = MaterialTheme.colorScheme.error
                             )
                         }
+                    }
+                }
+            }
+
+            // Dark mode toggle card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { themeViewModel.toggleTheme() }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (isDarkTheme) Icons.Default.DarkMode else Icons.Default.LightMode,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.size(10.dp))
+                            Column {
+                                Text(
+                                    text = if (isDarkTheme) stringResource(R.string.soon_title) else stringResource(R.string.soon_title),
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = if (isDarkTheme) "Modo Oscuro / Dark Mode" else "Modo Claro / Light Mode",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
+                                )
+                            }
+                        }
+
+                        Switch(
+                            checked = isDarkTheme,
+                            onCheckedChange = { themeViewModel.toggleTheme() },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
                     }
                 }
             }

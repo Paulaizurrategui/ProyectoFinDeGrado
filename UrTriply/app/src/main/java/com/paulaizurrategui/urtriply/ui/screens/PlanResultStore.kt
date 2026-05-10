@@ -41,5 +41,6 @@ data class PlanResult(
     val apiActividadesOk: Boolean = false
     ,
     val vuelos: List<FlightOffer> = emptyList(),
-    val apiVuelosOk: Boolean = false
+    val apiVuelosOk: Boolean = false,
+    val tripId: String? = null  // Firestore document ID (set when published)
 )

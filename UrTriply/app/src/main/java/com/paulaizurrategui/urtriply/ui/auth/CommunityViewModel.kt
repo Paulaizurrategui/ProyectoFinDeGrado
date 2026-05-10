@@ -28,9 +28,13 @@ class CommunityViewModel : ViewModel() {
     // interno: posts sin filtrar (feed base)
     private var rawPosts: List<TravelPost> = emptyList()
 
+    // bloqueos del usuario actual
+    private var blockedUserIds: Set<String> = emptySet()
+    private var usersWhoBlockedMe: Set<String> = emptySet()
+
     init {
-        // al crear el vm, escucho a quien sigo y cargo el feed
-        observeFollowingAndLoadFeed()
+        // al crear el vm, cargo los bloqueos y luego escucho a quien sigo
+        loadBlockedUsers()
     }
 
     fun toggleFilters() {
@@ -47,8 +51,34 @@ class CommunityViewModel : ViewModel() {
         applyFilters()
     }
 
-    // like local (si aun no hay likes en firestore, esto al menos anima la ui)
+    // like local + persistir en firestore
     fun toggleLike(postId: String) {
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            // Solo actualizar UI sin persistencia
+            val updated = _posts.value.map { p ->
+                if (p.id != postId) p
+                else p.copy(
+                    isLiked = !p.isLiked,
+                    likes = if (!p.isLiked) p.likes + 1 else maxOf(0, p.likes - 1)
+                )
+            }
+            rawPosts = rawPosts.map { p ->
+                if (p.id != postId) p
+                else p.copy(
+                    isLiked = !p.isLiked,
+                    likes = if (!p.isLiked) p.likes + 1 else maxOf(0, p.likes - 1)
+                )
+            }
+            _posts.value = updated
+            return
+        }
+
+        // Get current state
+        val post = _posts.value.find { it.id == postId }
+        val isCurrentlyLiked = post?.isLiked ?: false
+
+        // Update UI optimistically
         val updated = _posts.value.map { p ->
             if (p.id != postId) p
             else p.copy(
@@ -57,7 +87,6 @@ class CommunityViewModel : ViewModel() {
             )
         }
 
-        // actualizo tambien rawposts para no perder estado al filtrar
         rawPosts = rawPosts.map { p ->
             if (p.id != postId) p
             else p.copy(
@@ -67,10 +96,43 @@ class CommunityViewModel : ViewModel() {
         }
 
         _posts.value = updated
+
+        // Persist to Firestore
+        if (isCurrentlyLiked) {
+            // Remove like
+            db.collection("trips").document(postId).collection("likes")
+                .document(currentUser.uid).delete()
+        } else {
+            // Add like
+            val likeData = mapOf(
+                "uid" to currentUser.uid,
+                "timestamp" to com.google.firebase.Timestamp.now()
+            )
+            db.collection("trips").document(postId).collection("likes")
+                .document(currentUser.uid).set(likeData)
+        }
     }
 
-    // favorito local
+    // favorito local + persistir en firestore
     fun toggleFavorite(postId: String) {
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            // Solo actualizar UI sin persistencia
+            val updated = _posts.value.map { p ->
+                if (p.id != postId) p else p.copy(isFavorite = !p.isFavorite)
+            }
+            rawPosts = rawPosts.map { p ->
+                if (p.id != postId) p else p.copy(isFavorite = !p.isFavorite)
+            }
+            _posts.value = updated
+            return
+        }
+
+        // Get current state
+        val post = _posts.value.find { it.id == postId }
+        val isCurrentlyFavorite = post?.isFavorite ?: false
+
+        // Update UI optimistically
         val updated = _posts.value.map { p ->
             if (p.id != postId) p else p.copy(isFavorite = !p.isFavorite)
         }
@@ -80,6 +142,67 @@ class CommunityViewModel : ViewModel() {
         }
 
         _posts.value = updated
+
+        // Persist to Firestore
+        if (isCurrentlyFavorite) {
+            // Remove favorite
+            db.collection("trips").document(postId).collection("favorites")
+                .document(currentUser.uid).delete()
+        } else {
+            // Add favorite
+            val favoriteData = mapOf(
+                "uid" to currentUser.uid,
+                "timestamp" to com.google.firebase.Timestamp.now()
+            )
+            db.collection("trips").document(postId).collection("favorites")
+                .document(currentUser.uid).set(favoriteData)
+        }
+    }
+
+    // carga todos los bloqueos del usuario actual
+    private fun loadBlockedUsers() {
+        val myUid = auth.currentUser?.uid ?: run {
+            // si no hay usuario, no hay bloqueos
+            observeFollowingAndLoadFeed()
+            return
+        }
+
+        // 1. Cargar usuarios que yo he bloqueado (en /users/{myUid}/blocks/)
+        db.collection("users").document(myUid).collection("blocks")
+            .get()
+            .addOnSuccessListener { snap ->
+                blockedUserIds = snap.documents.mapNotNull { it.id }.toSet()
+                loadUsersWhoBlockedMe()
+            }
+            .addOnFailureListener {
+                // si falla, continuar sin bloqueos
+                blockedUserIds = emptySet()
+                loadUsersWhoBlockedMe()
+            }
+    }
+
+    // carga usuarios que me han bloqueado (query en /users/{otherUid}/blocks/{myUid})
+    private fun loadUsersWhoBlockedMe() {
+        val myUid = auth.currentUser?.uid ?: run {
+            observeFollowingAndLoadFeed()
+            return
+        }
+
+        // Para saber quién me bloqueó, debo buscar todos los usuarios y revisar si me tienen en su blocks
+        // Sin embargo, esto es ineficiente. Alternativa: guardar en /users/{myUid}/blockedBy
+        // Por ahora, voy a asumir que ese campo existe y lo consulto
+
+        db.collection("users").document(myUid)
+            .get()
+            .addOnSuccessListener { doc ->
+                val blockedByList = doc.get("blockedByUserIds") as? List<String> ?: emptyList()
+                usersWhoBlockedMe = blockedByList.toSet()
+                observeFollowingAndLoadFeed()
+            }
+            .addOnFailureListener {
+                usersWhoBlockedMe = emptySet()
+                observeFollowingAndLoadFeed()
+            }
     }
 
     // escucha cambios en /users/{uid}/following para recargar el feed
@@ -131,9 +254,24 @@ class CommunityViewModel : ViewModel() {
             db.collection("trips")
                 .whereEqualTo("status", "PUBLISHED")
                 .whereIn("authorUid", chunk)
+                // limit initial query size to reduce startup latency and reads
+                .limit(50)
                 .get()
                 .addOnSuccessListener { snap ->
                     val mapped = snap.documents.mapNotNull { doc ->
+                        // verificar si está bloqueado
+                        val authorUid = doc.getString("authorUid") ?: return@mapNotNull null
+                        
+                        // si yo bloqueé al autor, ignorar post
+                        if (authorUid in blockedUserIds) {
+                            return@mapNotNull null
+                        }
+                        
+                        // si el autor me bloqueó, ignorar post
+                        if (authorUid in usersWhoBlockedMe) {
+                            return@mapNotNull null
+                        }
+
                         // destino (acepto ambos nombres por compatibilidad)
                         val destination = doc.getString("destination")
                             ?: doc.getString("destino")

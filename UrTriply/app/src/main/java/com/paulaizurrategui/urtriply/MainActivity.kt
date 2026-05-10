@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import com.paulaizurrategui.urtriply.ui.navigation.AppNavHost
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.paulaizurrategui.urtriply.ui.theme.ThemeViewModel
 import com.paulaizurrategui.urtriply.ui.theme.UrTriplyTheme
 
 class MainActivity : ComponentActivity() {
@@ -18,7 +21,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge() // Permite dibujar bajo status/navigation bar (look moderno); Compose lo gestiona con paddings/insets
 
         setContent {
-            UrTriplyTheme { // Aplica el theme Material3 de la app (colores, tipografías, etc.)
+            val themeViewModel: ThemeViewModel = viewModel()
+            val isDarkTheme = themeViewModel.isDarkTheme.collectAsState().value
+
+            UrTriplyTheme(darkTheme = isDarkTheme) { // Aplica el theme Material3 de la app (colores, tipografías, etc.)
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding -> // Scaffold raíz para manejar insets/padding de edge-to-edge
                     androidx.compose.foundation.layout.Box(
                         modifier = Modifier.padding(innerPadding) // Respeta espacio de barras del sistema para que la UI no quede “tapada”

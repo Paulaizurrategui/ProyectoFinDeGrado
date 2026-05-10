@@ -8,6 +8,9 @@ object Routes {
 
     // contenedor principal (recibe modo: auth o guest)
     const val MAIN = "main/{mode}"  // navegar con "main/auth" o "main/guest"
+    
+    // admin moderation panel (solo admins)
+    const val ADMIN = "admin_moderate"
 }
 
 // tabs dentro del mainshell (bottom nav)

@@ -114,6 +114,8 @@ class PlanResultViewModel(
             repo.publishExistingTrip(
                 tripId = existingId,
                 onSuccess = {
+                    // Update tripId in PlanResultStore so comments can be loaded
+                    PlanResultStore.lastResult = PlanResultStore.lastResult?.copy(tripId = existingId)
                     _uiState.value = _uiState.value.copy(
                         isSaving = false,
                         successMessage = "Viaje publicado.",
@@ -135,6 +137,8 @@ class PlanResultViewModel(
                 authorEmail = user.email,
                 status = TripStatus.PUBLISHED,
                 onSuccess = { id ->
+                    // Update tripId in PlanResultStore so comments can be loaded
+                    PlanResultStore.lastResult = PlanResultStore.lastResult?.copy(tripId = id)
                     _uiState.value = _uiState.value.copy(
                         isSaving = false,
                         successMessage = "Viaje publicado.",

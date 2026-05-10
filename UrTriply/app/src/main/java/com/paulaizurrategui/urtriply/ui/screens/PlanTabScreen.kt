@@ -68,6 +68,23 @@ private enum class Preference(val label: String) {
     GASTRONOMIA("Gastronomía")
 }
 
+private fun destinationToIata(destination: String): String {
+    val value = destination.substringBefore("(").trim().lowercase(Locale.getDefault())
+    return when {
+        value.contains("parís") || value.contains("paris") -> "PAR"
+        value.contains("londres") -> "LON"
+        value.contains("roma") -> "ROM"
+        value.contains("ámsterdam") || value.contains("amsterdam") -> "AMS"
+        value.contains("atenas") -> "ATH"
+        value.contains("lisboa") -> "LIS"
+        value.contains("berlín") || value.contains("berlin") -> "BER"
+        value.contains("praga") -> "PRG"
+        value.contains("viena") -> "VIE"
+        value.contains("dublín") || value.contains("dublin") -> "DUB"
+        else -> "MAD"
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlanTabScreen(
@@ -90,7 +107,6 @@ fun PlanTabScreen(
 
         // --- estado formulario ---
         var destino by remember { mutableStateOf(destinos.first()) }
-        var origenIata by remember { mutableStateOf("") }
         var presupuestoText by remember { mutableStateOf("") }
         var viajerosText by remember { mutableStateOf("1") }
         var fechaInicioMillis by remember { mutableStateOf<Long?>(null) }
@@ -116,6 +132,9 @@ fun PlanTabScreen(
         val hotelsRepo = remember { HotelsRepository() }
         val activitiesRepo = remember { ActivitiesRepository() }
         val flightsRepo = remember { com.paulaizurrategui.urtriply.data.remote.flights.FlightsRepository() }
+        val queryCity = destino.substringBefore("(").trim()
+        val destinationIata = destinationToIata(destino)
+        val effectiveOriginIata = "MAD"
 
         Box(modifier = Modifier.fillMaxWidth()) {
             Column(
@@ -164,14 +183,24 @@ fun PlanTabScreen(
                 )
 
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = origenIata,
-                    onValueChange = { origenIata = it.uppercase(Locale.getDefault()).filter { c -> c.isLetterOrDigit() } },
-                    label = { Text("Origen (IATA) - opcional") },
+                Card(
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
-                )
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                ) {
+                    Column(Modifier.padding(14.dp)) {
+                        Text(
+                            text = "Origen fijo",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Madrid (MAD)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
 
                 Spacer(Modifier.height(14.dp))
 
@@ -285,6 +314,33 @@ fun PlanTabScreen(
 
                 Spacer(Modifier.height(14.dp))
 
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                ) {
+                    Column(Modifier.padding(14.dp)) {
+                        Text(
+                            text = "Ruta de vuelo",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Madrid (MAD) → $queryCity ($destinationIata)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Vuelta: $queryCity ($destinationIata) → Madrid (MAD)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+
                 // error local validacion
                 localError?.let {
                     Card(
@@ -349,7 +405,6 @@ fun PlanTabScreen(
                             )
 
                             // 2) geocoding real (b: solo parte antes del parentesis)
-                            val queryCity = destino.substringBefore("(").trim()
                             val geo = geocodingRepo.geocode(queryCity)
 
                             val hoteles: List<Hotel> = if (geo != null) {
@@ -384,20 +439,16 @@ fun PlanTabScreen(
                                 emptyList()
                             }
 
-                            val vuelosOfertas: List<com.paulaizurrategui.urtriply.domain.model.FlightOffer> = if (origenIata.isNotBlank()) {
-                                try {
-                                    flightsRepo.searchFlights(
-                                        origin = origenIata,
-                                        destination = queryCity,
-                                        dateFrom = dateFormat.format(Date(fechaInicioMillis!!)),
-                                        dateTo = dateFormat.format(Date(fechaFinMillis!!)),
-                                        limit = 6
-                                    )
-                                } catch (e: Throwable) {
-                                    Log.e("PlanTabScreen", "Error loading flights for $queryCity", e)
-                                    emptyList()
-                                }
-                            } else {
+                            val vuelosOfertas: List<com.paulaizurrategui.urtriply.domain.model.FlightOffer> = try {
+                                flightsRepo.searchFlights(
+                                    origin = effectiveOriginIata,
+                                    destination = destinationIata,
+                                    dateFrom = dateFormat.format(Date(fechaInicioMillis!!)),
+                                    dateTo = dateFormat.format(Date(fechaFinMillis!!)),
+                                    limit = 6
+                                )
+                            } catch (e: Throwable) {
+                                Log.e("PlanTabScreen", "Error loading flights for $queryCity", e)
                                 emptyList()
                             }
 

@@ -30,6 +30,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
+import com.google.firebase.auth.FirebaseAuth
+import com.paulaizurrategui.urtriply.ui.components.CommentSection
+import com.paulaizurrategui.urtriply.ui.viewmodels.CommentViewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.text.font.FontWeight
@@ -54,9 +57,18 @@ fun PlanResultScreen(
 ) {
     val r = PlanResultStore.lastResult
     val vm = remember { PlanResultViewModel() }
+    val commentVm = remember { CommentViewModel() }
     val uiState by vm.uiState.collectAsState()
-
+    val comments by commentVm.comments.collectAsState()
+    val currentUser = FirebaseAuth.getInstance().currentUser
     val isPublished = uiState.currentStatus == TripStatus.PUBLISHED
+
+    // Load comments when trip is available
+    remember {
+        if (r != null) {
+            commentVm.loadCommentsForTrip(r.tripId ?: "")
+        }
+    }
 
     val dialogText = uiState.errorMessage ?: uiState.successMessage
     if (dialogText != null) {
@@ -303,6 +315,30 @@ fun PlanResultScreen(
                             )
 
                             Spacer(Modifier.height(14.dp))
+
+                            // Comments section (only if trip is published)
+                            if (isPublished && r.tripId != null) {
+                                SectionTitle("Comentarios")
+                                Spacer(Modifier.height(8.dp))
+                                CommentSection(
+                                    tripId = r.tripId ?: "",
+                                    comments = comments,
+                                    isLoading = commentVm.isLoading.value,
+                                    onAddComment = { text ->
+                                        if (currentUser == null) {
+                                            onRequireLogin()
+                                        } else {
+                                            commentVm.addComment(text)
+                                        }
+                                    },
+                                    onDeleteComment = { commentId ->
+                                        commentVm.deleteComment(commentId)
+                                    },
+                                    currentUserId = currentUser?.uid,
+                                    isAdmin = false  // TODO: Check if current user is admin
+                                )
+                                Spacer(Modifier.height(14.dp))
+                            }
 
                             Spacer(Modifier.height(24.dp))
                         }
@@ -657,7 +693,7 @@ private fun FlightsBlock(
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Text(
-                    text = "Aviso: las ofertas mostradas son estimadas (sin API de vuelos).",
+                    text = "No se han encontrado ofertas reales para esta ruta en este momento.",
                     modifier = Modifier.padding(12.dp),
                     fontWeight = FontWeight.SemiBold
                 )

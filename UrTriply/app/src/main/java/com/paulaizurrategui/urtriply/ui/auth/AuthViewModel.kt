@@ -25,7 +25,7 @@ class AuthViewModel(
     }
 
     // registro con firebase auth + creo/actualizo el doc en /users
-    fun register(email: String, password: String, onSuccess: () -> Unit) {
+    fun register(email: String, password: String, isOver13: Boolean, onSuccess: () -> Unit) {
         val cleaned = email.trim() // quito espacios por si pega el email con espacios
 
         // pongo loading y limpio mensajes
@@ -58,7 +58,8 @@ class AuthViewModel(
                         "uid" to uid,
                         "email" to cleaned,
                         "displayName" to defaultDisplayName,
-                        "displayNameLower" to defaultDisplayName.lowercase() // para busquedas sin mayusculas
+                        "displayNameLower" to defaultDisplayName.lowercase(), // para busquedas sin mayusculas
+                        "isOver13Confirmed" to isOver13  // edad verificada
                     )
 
                     // merge para no pisar campos si ya existian
@@ -181,5 +182,24 @@ class AuthViewModel(
     fun logout() {
         auth.signOut()
         _uiState.value = AuthUiState(isLoggedIn = false)
+    }
+
+    // verifico si el usuario actual tiene +13 confirmado
+    fun isOver13Confirmed(onResult: (Boolean) -> Unit) {
+        val uid = auth.currentUser?.uid ?: run {
+            onResult(false)
+            return
+        }
+
+        db.collection("users")
+            .document(uid)
+            .get()
+            .addOnSuccessListener { doc ->
+                val isConfirmed = doc.getBoolean("isOver13Confirmed") ?: false
+                onResult(isConfirmed)
+            }
+            .addOnFailureListener {
+                onResult(false)
+            }
     }
 }

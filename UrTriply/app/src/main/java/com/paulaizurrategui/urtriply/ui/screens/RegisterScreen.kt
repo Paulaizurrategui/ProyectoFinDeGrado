@@ -37,6 +37,7 @@ fun RegisterScreen(
     var repeatPassword by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
     var showRepeatPassword by remember { mutableStateOf(false) }
+    var isOver13 by remember { mutableStateOf(false) }
 
     var localErrorResId by remember { mutableStateOf<Int?>(null) }
 
@@ -211,10 +212,40 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Age verification checkbox
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = isOver13,
+                        onCheckedChange = { isOver13 = it },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = orange,
+                            uncheckedColor = Color.Gray
+                        )
+                    )
+                    Text(
+                        text = "Tengo más de 13 años / I\'m over 13",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF6B7280)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Button(
                     onClick = {
                         localErrorResId = null
                         localErrorText = null
+
+                        // Validate age
+                        if (!isOver13) {
+                            localErrorText = "Debes confirmar que tienes más de 13 años para continuar / You must confirm you are over 13 to continue."
+                            return@Button
+                        }
 
                         // NUEVO: validar dominio permitido
                         if (!EmailValidator.isAllowed(email)) {
@@ -232,7 +263,7 @@ fun RegisterScreen(
                             return@Button
                         }
 
-                        authViewModel.register(email.trim(), password, onRegisterSuccess)
+                        authViewModel.register(email.trim(), password, isOver13, onRegisterSuccess)
                     },
                     modifier = Modifier
                         .fillMaxWidth()

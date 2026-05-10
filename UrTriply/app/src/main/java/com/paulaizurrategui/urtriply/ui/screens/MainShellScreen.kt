@@ -29,6 +29,7 @@ import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
 import com.paulaizurrategui.urtriply.ui.navigation.MainTabs
 import com.paulaizurrategui.urtriply.ui.navigation.PlanRoutes
+import com.paulaizurrategui.urtriply.ui.navigation.Routes
 
 data class BottomTab( // modelo de cada tab
     val route: String, // ruta navegación
@@ -123,7 +124,8 @@ fun MainShellScreen( // pantalla principal con navegación
                         onLoggedOut = onLoggedOut,
                         onEditProfile = { navController.navigate("profile/edit") }, // editar perfil
                         onEditTrip = { tripId -> navController.navigate("trip/edit/$tripId") }, // editar viaje
-                        onNavigateToFindFriends = { navController.navigate("find_friends") } // buscar amigos
+                        onNavigateToFindFriends = { navController.navigate("find_friends") }, // buscar amigos
+                        onNavigateToAdmin = { navController.navigate(Routes.ADMIN) }
                     )
                 }
             }

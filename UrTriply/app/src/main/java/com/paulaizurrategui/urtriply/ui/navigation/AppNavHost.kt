@@ -9,6 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.google.firebase.auth.FirebaseAuth
 import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
+import com.paulaizurrategui.urtriply.ui.screens.AdminModerateScreen
 import com.paulaizurrategui.urtriply.ui.screens.LoginScreen
 import com.paulaizurrategui.urtriply.ui.screens.MainShellScreen
 import com.paulaizurrategui.urtriply.ui.screens.RegisterScreen
@@ -105,6 +106,10 @@ fun AppNavHost() {
                     }
                 }
             )
+        }
+
+        composable(Routes.ADMIN) {
+            AdminModerateScreen()
         }
     }
 }

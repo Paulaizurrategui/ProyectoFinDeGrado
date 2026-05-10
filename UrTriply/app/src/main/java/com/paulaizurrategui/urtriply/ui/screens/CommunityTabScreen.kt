@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -35,9 +36,53 @@ import com.paulaizurrategui.urtriply.ui.auth.CommunityViewModel
 
 @Composable
 fun CommunityTabScreen() {
-    // version placeholder de comunidad (antes del feed completo)
-    UrTriplyGradientScaffold(title = stringResource(R.string.tab_community)) {
-        Text(text = stringResource(R.string.community_placeholder_body))
+    val authViewModel = viewModel<com.paulaizurrategui.urtriply.ui.auth.AuthViewModel>()
+    var isOver13 by remember { mutableStateOf<Boolean?>(null) }
+    
+    LaunchedEffect(Unit) {
+        authViewModel.isOver13Confirmed { confirmed ->
+            isOver13 = confirmed
+        }
+    }
+
+    when {
+        isOver13 == null -> {
+            // Verificando...
+            UrTriplyGradientScaffold(title = stringResource(R.string.tab_community)) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+        isOver13 == false -> {
+            // Usuario no confirmó +13 años
+            UrTriplyGradientScaffold(title = stringResource(R.string.tab_community)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Acceso Restringido / Restricted Access",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        Text(
+                            text = "Debes tener al menos 13 años para acceder a la comunidad. / You must be at least 13 years old to access the community.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
+        else -> {
+            // Usuario confirmó +13 años
+            CommunityScreen()
+        }
     }
 }
 
