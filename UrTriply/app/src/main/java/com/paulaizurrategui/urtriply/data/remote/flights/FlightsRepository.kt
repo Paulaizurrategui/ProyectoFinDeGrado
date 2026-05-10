@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
 class FlightsRepository() {
     companion object {
         private const val TAG = "FlightsRepository"
-        private const val TEQUILA_BASE = "https://api.tequila.kiwi.com/"
+        private const val TRAVELPAYOUTS_BASE = "https://api.travelpayouts.com/"
     }
 
     private val logger = HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC }
@@ -31,32 +31,14 @@ class FlightsRepository() {
 
     private val moshi: Moshi by lazy { Moshi.Builder().add(KotlinJsonAdapterFactory()).build() }
 
-    private val tequila: TequilaApi by lazy {
+    // Travelpayouts API (primary)
+    private val travelpayouts: TravelPayoutsApi by lazy {
         Retrofit.Builder()
-            .baseUrl(TEQUILA_BASE)
+            .baseUrl(TRAVELPAYOUTS_BASE)
             .client(client)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
-            .create(TequilaApi::class.java)
-    }
-
-    // Amadeus clients
-    private val amadeusAuth: AmadeusAuthApi by lazy {
-        Retrofit.Builder()
-            .baseUrl("https://api.amadeus.com/")
-            .client(client)
-            .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .build()
-            .create(AmadeusAuthApi::class.java)
-    }
-
-    private val amadeusApi: AmadeusApi by lazy {
-        Retrofit.Builder()
-            .baseUrl("https://api.amadeus.com/")
-            .client(client)
-            .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .build()
-            .create(AmadeusApi::class.java)
+            .create(TravelPayoutsApi::class.java)
     }
 
     suspend fun searchFlights(
@@ -67,130 +49,74 @@ class FlightsRepository() {
         limit: Int = 6
     ): List<FlightOffer> {
         return withContext(Dispatchers.IO) {
-            // 1) Try Amadeus first (preferred)
+            // 1) Try Travelpayouts first (primary, no auth required)
             try {
-                val amadeusPref = tryAmadeus(origin, destination, dateFrom, dateTo, limit)
-                if (amadeusPref.isNotEmpty()) return@withContext amadeusPref
-            } catch (e: Throwable) {
-                Log.w(TAG, "Amadeus primary attempt failed: ${e.message}")
-            }
-
-            // 2) Then try Tequila (if API key present)
-            val tequilaApiKey = BuildConfig.TEQUILA_API_KEY.takeIf { it.isNotBlank() }
-            if (!tequilaApiKey.isNullOrBlank()) {
-                try {
-                    // Resolve origin/destination to IATA codes if they look like city names
-                    val originCode = origin.takeIf { it.length == 3 && it.all { ch -> ch.isLetterOrDigit() } }
-                        ?: resolveLocationCode(tequilaApiKey, origin)
-                    val destCode = destination.takeIf { it.length == 3 && it.all { ch -> ch.isLetterOrDigit() } }
-                        ?: resolveLocationCode(tequilaApiKey, destination)
-
-                    val resp = tequila.searchFlights(tequilaApiKey, originCode ?: origin, destCode ?: destination, dateFrom, dateTo, null, null, limit)
-                    val items = resp.data.orEmpty()
-                    val tequilaOffers = items.map { dto ->
-                        val routeFirst = dto.route?.firstOrNull()
-                        FlightOffer(
-                            id = dto.id ?: "tequila_${dto.hashCode()}",
-                            origin = routeFirst?.flyFrom ?: origin,
-                            destination = routeFirst?.flyTo ?: destination,
-                            departureDate = routeFirst?.localDeparture ?: dateFrom,
-                            returnDate = dto.route?.lastOrNull()?.localArrival,
-                            price = dto.price ?: 0.0,
-                            currency = dto.currency ?: "EUR",
-                            durationMinutes = dto.duration?.total ?: 0,
-                            carrier = routeFirst?.airline ?: "",
-                            bookingUrl = dto.deepLink,
-                            isReal = true
-                        )
-                    }
-
-                    if (tequilaOffers.isNotEmpty()) return@withContext tequilaOffers
-                } catch (e: Throwable) {
-                    Log.w(TAG, "Error querying Tequila API: ${e.message}")
+                val tpOffers = tryTravelPayouts(origin, destination, dateFrom, dateTo, limit)
+                if (tpOffers.isNotEmpty()) {
+                    Log.i(TAG, "Travelpayouts: found ${tpOffers.size} offers")
+                    return@withContext tpOffers
                 }
-            } else {
-                Log.w(TAG, "No Tequila API key provided — skipping Tequila and using Amadeus/stub")
+            } catch (e: Throwable) {
+                Log.w(TAG, "Travelpayouts attempt failed: ${e.message}")
             }
 
-            // 3) fallback to stub
+            // 2) Fallback to stub
+            Log.w(TAG, "Travelpayouts failed; returning stub offers")
             buildStubOffers(origin, destination, dateFrom, dateTo, limit)
         }
     }
 
-    private suspend fun tryAmadeus(origin: String, destination: String, dateFrom: String, dateTo: String?, limit: Int): List<FlightOffer> {
-        val clientId = BuildConfig.AMADEUS_CLIENT_ID.takeIf { it.isNotBlank() }
-        val clientSecret = BuildConfig.AMADEUS_CLIENT_SECRET.takeIf { it.isNotBlank() }
-        if (clientId.isNullOrBlank() || clientSecret.isNullOrBlank()) return emptyList()
+    private suspend fun tryTravelPayouts(origin: String, destination: String, dateFrom: String, dateTo: String, limit: Int): List<FlightOffer> {
+        val token = BuildConfig.TRAVELPAYOUTS_API_TOKEN.takeIf { it.isNotBlank() }
+        if (token.isNullOrBlank()) {
+            Log.w(TAG, "No Travelpayouts API token provided")
+            return emptyList()
+        }
 
         return try {
             withContext(Dispatchers.IO) {
-                val tokenResp = amadeusAuth.getToken("client_credentials", clientId, clientSecret)
-                val token = tokenResp.accessToken ?: return@withContext emptyList<FlightOffer>()
-                val bearer = "Bearer $token"
+                val resp = travelpayouts.searchCheapFlights(
+                    origin = origin,
+                    destination = destination,
+                    departureAt = dateFrom,
+                    returnAt = dateTo,
+                    token = token,
+                    currency = "EUR",
+                    limit = limit
+                )
 
-                val originCode = origin.takeIf { it.length == 3 } ?: origin
-                val destCode = destination.takeIf { it.length == 3 } ?: destination
+                if (resp.success != true) {
+                    Log.w(TAG, "Travelpayouts error: ${resp.error}")
+                    return@withContext emptyList()
+                }
 
-                val offersResp = amadeusApi.searchOffers(bearer, originCode, destCode, dateFrom, dateTo, 1, limit)
-                val offers = offersResp.data.orEmpty()
-                offers.mapNotNull { offer ->
-                    val priceStr = offer.price?.total
-                    val price = priceStr?.toDoubleOrNull() ?: 0.0
-                    val currency = offer.price?.currency ?: "EUR"
-                    val itinerary = offer.itineraries?.firstOrNull()
-                    val carrier = itinerary?.segments?.firstOrNull()?.carrierCode ?: ""
-                    val durationMinutes = itinerary?.duration?.let { parseIsoDurationMinutes(it) } ?: 0
+                val data = resp.data.orEmpty()
+                if (data.isEmpty()) {
+                    Log.w(TAG, "Travelpayouts returned empty results")
+                    return@withContext emptyList()
+                }
 
+                data.entries.take(limit).mapNotNull { (key, flight) ->
+                    val price = flight.price ?: return@mapNotNull null
+                    val airline = flight.airline ?: "Unknown"
                     FlightOffer(
-                        id = offer.id ?: "amadeus_${offer.hashCode()}",
-                        origin = origin,
-                        destination = destination,
-                        departureDate = dateFrom,
-                        returnDate = dateTo,
+                        id = "tp_$key",
+                        origin = flight.origin ?: origin,
+                        destination = flight.destination ?: destination,
+                        departureDate = flight.departureAt ?: dateFrom,
+                        returnDate = flight.returnAt ?: dateTo,
                         price = price,
-                        currency = currency,
-                        durationMinutes = durationMinutes,
-                        carrier = carrier,
+                        currency = "EUR",
+                        durationMinutes = 0,  // Travelpayouts doesn't provide this
+                        carrier = airline,
                         bookingUrl = null,
                         isReal = true
                     )
                 }
             }
         } catch (e: Throwable) {
-            Log.w(TAG, "Amadeus search failed: ${e.message}")
+            Log.w(TAG, "Travelpayouts API call failed: ${e.message}")
             emptyList()
-        }
-    }
-
-    private fun parseIsoDurationMinutes(iso: String): Int {
-        // naive parser for formats like PT2H10M
-        try {
-            var hours = 0
-            var minutes = 0
-            var s = iso.removePrefix("PT")
-            val hIndex = s.indexOf('H')
-            if (hIndex >= 0) {
-                hours = s.substring(0, hIndex).toIntOrNull() ?: 0
-                s = s.substring(hIndex + 1)
-            }
-            val mIndex = s.indexOf('M')
-            if (mIndex >= 0) {
-                minutes = s.substring(0, mIndex).toIntOrNull() ?: 0
-            }
-            return hours * 60 + minutes
-        } catch (e: Throwable) {
-            return 0
-        }
-    }
-
-    private suspend fun resolveLocationCode(apiKey: String, term: String): String? {
-        return try {
-            val resp = tequila.queryLocations(apiKey, term)
-            val loc = resp.locations?.firstOrNull()
-            loc?.code
-        } catch (e: Throwable) {
-            Log.w(TAG, "Failed to resolve location code for '$term': ${e.message}")
-            null
         }
     }
 

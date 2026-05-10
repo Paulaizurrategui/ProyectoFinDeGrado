@@ -24,12 +24,8 @@ android {
         if (localFile.exists()) {
             localProps.load(localFile.inputStream())
         }
-        val tequilaKeyFromProps = (localProps.getProperty("TEQUILA_API_KEY") ?: System.getenv("TEQUILA_API_KEY") ?: "").replace("\"", "\\\"")
-        buildConfigField("String", "TEQUILA_API_KEY", "\"$tequilaKeyFromProps\"")
-        val amadeusId = (localProps.getProperty("AMADEUS_CLIENT_ID") ?: System.getenv("AMADEUS_CLIENT_ID") ?: "").replace("\"", "\\\"")
-        val amadeusSecret = (localProps.getProperty("AMADEUS_CLIENT_SECRET") ?: System.getenv("AMADEUS_CLIENT_SECRET") ?: "").replace("\"", "\\\"")
-        buildConfigField("String", "AMADEUS_CLIENT_ID", "\"$amadeusId\"")
-        buildConfigField("String", "AMADEUS_CLIENT_SECRET", "\"$amadeusSecret\"")
+        val travelpayoutsToken = (localProps.getProperty("TRAVELPAYOUTS_API_TOKEN") ?: System.getenv("TRAVELPAYOUTS_API_TOKEN") ?: "").replace("\"", "\\\"")
+        buildConfigField("String", "TRAVELPAYOUTS_API_TOKEN", "\"$travelpayoutsToken\"")
     }
 
     buildTypes {
