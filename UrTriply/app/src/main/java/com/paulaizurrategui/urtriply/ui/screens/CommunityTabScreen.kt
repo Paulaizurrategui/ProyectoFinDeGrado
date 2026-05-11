@@ -35,7 +35,7 @@ import com.paulaizurrategui.urtriply.domain.model.TravelPost
 import com.paulaizurrategui.urtriply.ui.auth.CommunityViewModel
 
 @Composable
-fun CommunityTabScreen() {
+fun CommunityTabScreen(onPostClick: (String) -> Unit = {}) {
     val authViewModel = viewModel<com.paulaizurrategui.urtriply.ui.auth.AuthViewModel>()
     var isOver13 by remember { mutableStateOf<Boolean?>(null) }
     
@@ -81,7 +81,7 @@ fun CommunityTabScreen() {
         }
         else -> {
             // Usuario confirmó +13 años
-            CommunityScreen()
+            CommunityScreen(onPostClick = onPostClick)
         }
     }
 }
@@ -365,8 +365,7 @@ fun TravelPostCard(
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onCardClick() },
+            .fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)

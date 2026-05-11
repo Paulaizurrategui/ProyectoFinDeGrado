@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.paulaizurrategui.urtriply.data.favorites.FavoritesRepository
+import com.paulaizurrategui.urtriply.data.likes.LikesRepository
 import com.paulaizurrategui.urtriply.domain.model.CommunityFilters
 import com.paulaizurrategui.urtriply.domain.model.TravelPost
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +17,8 @@ class CommunityViewModel : ViewModel() {
     // firebase
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private val likesRepo = LikesRepository()
+    private val favoritesRepo = FavoritesRepository()
 
     // lista que consume la ui (ya filtrada)
     private val _posts = MutableStateFlow<List<TravelPost>>(emptyList())
@@ -24,6 +28,7 @@ class CommunityViewModel : ViewModel() {
     val filters: MutableState<CommunityFilters> = mutableStateOf(CommunityFilters())
     val isLoading: MutableState<Boolean> = mutableStateOf(false)
     val showFilters: MutableState<Boolean> = mutableStateOf(false)
+    val errorMessage: MutableState<String?> = mutableStateOf(null)
 
     // interno: posts sin filtrar (feed base)
     private var rawPosts: List<TravelPost> = emptyList()
@@ -55,22 +60,7 @@ class CommunityViewModel : ViewModel() {
     fun toggleLike(postId: String) {
         val currentUser = auth.currentUser
         if (currentUser == null) {
-            // Solo actualizar UI sin persistencia
-            val updated = _posts.value.map { p ->
-                if (p.id != postId) p
-                else p.copy(
-                    isLiked = !p.isLiked,
-                    likes = if (!p.isLiked) p.likes + 1 else maxOf(0, p.likes - 1)
-                )
-            }
-            rawPosts = rawPosts.map { p ->
-                if (p.id != postId) p
-                else p.copy(
-                    isLiked = !p.isLiked,
-                    likes = if (!p.isLiked) p.likes + 1 else maxOf(0, p.likes - 1)
-                )
-            }
-            _posts.value = updated
+            errorMessage.value = "Inicia sesión para dar like"
             return
         }
 
@@ -78,6 +68,10 @@ class CommunityViewModel : ViewModel() {
         val post = _posts.value.find { it.id == postId }
         val isCurrentlyLiked = post?.isLiked ?: false
 
+        // Save previous state for rollback
+        val previousPosts = _posts.value
+        val previousRawPosts = rawPosts
+
         // Update UI optimistically
         val updated = _posts.value.map { p ->
             if (p.id != postId) p
@@ -97,19 +91,33 @@ class CommunityViewModel : ViewModel() {
 
         _posts.value = updated
 
-        // Persist to Firestore
+        // Persist to Firestore WITH ERROR HANDLING
         if (isCurrentlyLiked) {
             // Remove like
-            db.collection("trips").document(postId).collection("likes")
-                .document(currentUser.uid).delete()
+            likesRepo.removeLike(postId, currentUser.uid,
+                onSuccess = {
+                    errorMessage.value = null
+                },
+                onError = { e ->
+                    // Rollback UI on error
+                    _posts.value = previousPosts
+                    rawPosts = previousRawPosts
+                    errorMessage.value = "Error: ${e.message}"
+                }
+            )
         } else {
             // Add like
-            val likeData = mapOf(
-                "uid" to currentUser.uid,
-                "timestamp" to com.google.firebase.Timestamp.now()
+            likesRepo.addLike(postId, currentUser.uid,
+                onSuccess = {
+                    errorMessage.value = null
+                },
+                onError = { e ->
+                    // Rollback UI on error
+                    _posts.value = previousPosts
+                    rawPosts = previousRawPosts
+                    errorMessage.value = "Error: ${e.message}"
+                }
             )
-            db.collection("trips").document(postId).collection("likes")
-                .document(currentUser.uid).set(likeData)
         }
     }
 
@@ -117,20 +125,17 @@ class CommunityViewModel : ViewModel() {
     fun toggleFavorite(postId: String) {
         val currentUser = auth.currentUser
         if (currentUser == null) {
-            // Solo actualizar UI sin persistencia
-            val updated = _posts.value.map { p ->
-                if (p.id != postId) p else p.copy(isFavorite = !p.isFavorite)
-            }
-            rawPosts = rawPosts.map { p ->
-                if (p.id != postId) p else p.copy(isFavorite = !p.isFavorite)
-            }
-            _posts.value = updated
+            errorMessage.value = "Inicia sesión para guardar favoritos"
             return
         }
 
         // Get current state
         val post = _posts.value.find { it.id == postId }
         val isCurrentlyFavorite = post?.isFavorite ?: false
+
+        // Save previous state for rollback
+        val previousPosts = _posts.value
+        val previousRawPosts = rawPosts
 
         // Update UI optimistically
         val updated = _posts.value.map { p ->
@@ -143,19 +148,33 @@ class CommunityViewModel : ViewModel() {
 
         _posts.value = updated
 
-        // Persist to Firestore
+        // Persist to Firestore WITH ERROR HANDLING
         if (isCurrentlyFavorite) {
             // Remove favorite
-            db.collection("trips").document(postId).collection("favorites")
-                .document(currentUser.uid).delete()
+            favoritesRepo.removeFavorite(postId, currentUser.uid,
+                onSuccess = {
+                    errorMessage.value = null
+                },
+                onError = { e ->
+                    // Rollback UI on error
+                    _posts.value = previousPosts
+                    rawPosts = previousRawPosts
+                    errorMessage.value = "Error: ${e.message}"
+                }
+            )
         } else {
             // Add favorite
-            val favoriteData = mapOf(
-                "uid" to currentUser.uid,
-                "timestamp" to com.google.firebase.Timestamp.now()
+            favoritesRepo.addFavorite(postId, currentUser.uid,
+                onSuccess = {
+                    errorMessage.value = null
+                },
+                onError = { e ->
+                    // Rollback UI on error
+                    _posts.value = previousPosts
+                    rawPosts = previousRawPosts
+                    errorMessage.value = "Error: ${e.message}"
+                }
             )
-            db.collection("trips").document(postId).collection("favorites")
-                .document(currentUser.uid).set(favoriteData)
         }
     }
 

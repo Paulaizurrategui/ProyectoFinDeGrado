@@ -93,4 +93,69 @@
     <string name="login_required_title">Sign In Required</string>
     <string name="login_required_body">To access this section you need to sign in or create an account.</string>
     <string name="generic_error">Error</string>
+
+    <!-- Comments -->
+    <string name="comments_title">Comments (%1$d)</string>
+    <string name="comments_placeholder">Write a comment...</string>
+    <string name="comments_button">Comment</string>
+    <string name="comments_cancel">Cancel</string>
+    <string name="comments_empty">No comments yet</string>
+    <string name="comments_login">Sign in to comment</string>
+    <string name="comments_delete_confirm">Delete this comment?</string>
+    <string name="comments_delete">Delete</string>
+
+    <!-- Dark Mode -->
+    <string name="dark_mode_title_dark">Dark Mode / Dark Mode</string>
+    <string name="dark_mode_title_light">Light Mode / Light Mode</string>
+    <string name="dark_mode_subtitle">Change app theme</string>
+
+    <!-- Admin Panel -->
+    <string name="admin_panel">Admin Panel</string>
+    <string name="admin_description">Manage reports and users</string>
+    <string name="admin_access_denied">Access Restricted</string>
+    <string name="admin_access_denied_body">Only administrators can access this section.</string>
+    <string name="admin_reports_title">Reports</string>
+    <string name="admin_reports_empty">No pending reports</string>
+    <string name="admin_report_resolve">Resolve</string>
+    <string name="admin_report_dismiss">Dismiss</string>
+    <string name="admin_report_block">Block User</string>
+    <string name="admin_report_delete">Delete</string>
+
+    <!-- Community Posts -->
+    <string name="post_like">Like</string>
+    <string name="post_favorite">Favorite</string>
+    <string name="post_comments">Comments</string>
+    <string name="post_author">Author: %1$s</string>
+    <string name="post_destination">Trip to %1$s</string>
+    <string name="post_budget">Budget: %1$s EUR</string>
+
+    <!-- Age Verification -->
+    <string name="age_verification_over_13">I\'m over 13 years old / I\'m over 13</string>
+    <string name="age_verification_error">You must confirm you are over 13 years old to continue.</string>
+    <string name="age_verification_restricted">Access Restricted</string>
+    <string name="age_verification_body">You must be over 13 years old to access the community. Create a new account and confirm your age.</string>
+
+    <!-- Blocking -->
+    <string name="block_user">Block User</string>
+    <string name="block_reason">Block Reason</string>
+    <string name="block_confirm">Block this user?</string>
+    <string name="unblock_user">Unblock User</string>
+
+    <!-- Profile -->
+    <string name="profile_my_account">My Account</string>
+    <string name="profile_edit">Edit Profile</string>
+    <string name="profile_my_trips">My Trips</string>
+    <string name="profile_my_favorites">My Favorites</string>
+    <string name="profile_my_likes">My Likes</string>
+    <string name="profile_delete_trip">Delete Trip</string>
+    <string name="profile_delete_confirm">Delete this trip? This action cannot be undone.</string>
+    <string name="profile_see_more">See More</string>
+
+    <!-- Trip Actions -->
+    <string name="trip_save_draft">Save Draft</string>
+    <string name="trip_publish">Publish</string>
+    <string name="trip_publishing">Publishing...</string>
+    <string name="trip_saving">Saving...</string>
+    <string name="trip_already_published">Already Published</string>
+    <string name="trip_share">Share</string>
 </resources>

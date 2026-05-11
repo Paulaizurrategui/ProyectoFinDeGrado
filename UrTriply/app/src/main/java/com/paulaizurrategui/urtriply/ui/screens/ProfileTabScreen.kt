@@ -33,6 +33,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -70,7 +71,7 @@ fun ProfileTabScreen(
 ) {
     val themeViewModel: com.paulaizurrategui.urtriply.ui.theme.ThemeViewModel = viewModel()
     val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
-    LaunchedEffect(Unit) { themeViewModel.loadThemePreference() }
+    // Theme is loaded once in MainActivity.kt - no need to load it again here
     val user = FirebaseAuth.getInstance().currentUser
     val email = user?.email ?: "-"
     val displayName = user?.displayName
@@ -85,9 +86,24 @@ fun ProfileTabScreen(
     val friendsCountVm: ProfileFriendsCountViewModel = viewModel()
     val friendsCount by friendsCountVm.followingCount.collectAsState()
 
+    // NUEVO: Favoritos y Likes
+    val favoritesVm: com.paulaizurrategui.urtriply.ui.viewmodels.ProfileFavoritesViewModel = viewModel()
+    val favorites by favoritesVm.favorites.collectAsState()
+    val likes by favoritesVm.likes.collectAsState()
+    val favoritesLoading by favoritesVm.isLoading.collectAsState()
+
     var confirmDeleteId by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(Unit) { tripsVm.loadMyTrips() }
+    LaunchedEffect(Unit) {
+        tripsVm.loadMyTrips()
+        favoritesVm.loadFavoritesAndLikes()
+    }
+
+    // Reload favorites/likes when user returns to profile
+    LaunchedEffect(true) {
+        // This will be called whenever the profile tab gains focus
+        favoritesVm.loadFavoritesAndLikes()
+    }
 
     if (tripsState.errorMessage != null) {
         AlertDialog(
@@ -243,6 +259,54 @@ fun ProfileTabScreen(
                         Spacer(Modifier.size(8.dp))
                         Text(if (tripsState.isLoading) "Cargando..." else "Recargar")
                     }
+                }
+            }
+
+            // NUEVA SECCIÓN: Favoritos
+            item { SectionTitle("Mis Favoritos", "Viajes que marcaste como favoritos") }
+            if (favorites.isEmpty() && !favoritesLoading) {
+                item { EmptyStateCard("Aún no tienes favoritos. Marca viajes como favoritos en la comunidad.") }
+            } else if (favoritesLoading) {
+                item { 
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+            } else {
+                items(favorites.size, key = { index -> "favorite-${favorites[index].id}" }) { index ->
+                    val trip = favorites[index]
+                    TripCard(
+                        title = trip.destino,
+                        status = TripStatus.PUBLISHED,
+                        onEdit = { /* No editable */ },
+                        onPublish = null,
+                        onDelete = { /* No deletable */ },
+                        actionsEnabled = false
+                    )
+                }
+            }
+
+            // NUEVA SECCIÓN: Me Gusta
+            item { SectionTitle("Mis Me Gusta", "Viajes que likeaste") }
+            if (likes.isEmpty() && !favoritesLoading) {
+                item { EmptyStateCard("Aún no tienes me gusta. Dale like a viajes en la comunidad.") }
+            } else if (favoritesLoading) {
+                item { 
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+            } else {
+                items(likes.size, key = { index -> "like-${likes[index].id}" }) { index ->
+                    val trip = likes[index]
+                    TripCard(
+                        title = trip.destino,
+                        status = TripStatus.PUBLISHED,
+                        onEdit = { /* No editable */ },
+                        onPublish = null,
+                        onDelete = { /* No deletable */ },
+                        actionsEnabled = false
+                    )
                 }
             }
 

@@ -7,6 +7,14 @@ import com.paulaizurrategui.urtriply.domain.model.Comment
 class CommentRepository {
     private val db = FirebaseFirestore.getInstance()
 
+    private fun validateTripId(tripId: String, onError: (Exception) -> Unit): Boolean {
+        if (tripId.isBlank()) {
+            onError(IllegalArgumentException("Trip ID cannot be blank"))
+            return false
+        }
+        return true
+    }
+
     // Add comment to trip
     fun addComment(
         tripId: String,
@@ -17,6 +25,8 @@ class CommentRepository {
         onSuccess: (commentId: String) -> Unit,
         onError: (Exception) -> Unit
     ) {
+        if (!validateTripId(tripId, onError)) return
+
         val comment = mapOf(
             "tripId" to tripId,
             "authorUid" to authorUid,
@@ -45,6 +55,11 @@ class CommentRepository {
         onSuccess: (List<Comment>) -> Unit,
         onError: (Exception) -> Unit
     ) {
+        if (tripId.isBlank()) {
+            onSuccess(emptyList())
+            return
+        }
+
         db.collection("trips")
             .document(tripId)
             .collection("comments")
@@ -79,6 +94,8 @@ class CommentRepository {
         onSuccess: () -> Unit,
         onError: (Exception) -> Unit
     ) {
+        if (!validateTripId(tripId, onError)) return
+
         db.collection("trips")
             .document(tripId)
             .collection("comments")
@@ -100,6 +117,8 @@ class CommentRepository {
         onSuccess: () -> Unit,
         onError: (Exception) -> Unit
     ) {
+        if (!validateTripId(tripId, onError)) return
+
         db.collection("trips")
             .document(tripId)
             .collection("comments")

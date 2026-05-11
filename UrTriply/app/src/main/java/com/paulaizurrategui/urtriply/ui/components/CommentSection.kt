@@ -16,11 +16,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.domain.model.Comment
 import com.paulaizurrategui.urtriply.ui.theme.UrOrange
 
@@ -42,7 +44,7 @@ fun CommentSection(
             .padding(16.dp)
     ) {
         Text(
-            text = "Comentarios (${comments.size})",
+            text = stringResource(R.string.comments_title, comments.size),
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 12.dp)
@@ -55,10 +57,12 @@ fun CommentSection(
                 onValueChange = { newCommentText = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 80.dp),
-                placeholder = { Text("Escribe un comentario...") },
-                maxLines = 3,
-                shape = RoundedCornerShape(8.dp)
+                    .height(100.dp),
+                placeholder = { Text(stringResource(R.string.comments_placeholder)) },
+                maxLines = 4,
+                shape = RoundedCornerShape(8.dp),
+                enabled = true,
+                singleLine = false
             )
 
             Row(
@@ -70,25 +74,27 @@ fun CommentSection(
                 TextButton(
                     onClick = { newCommentText = "" }
                 ) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.comments_cancel))
                 }
 
                 Button(
                     onClick = {
-                        onAddComment(newCommentText)
-                        newCommentText = ""
+                        if (newCommentText.isNotBlank()) {
+                            onAddComment(newCommentText)
+                            newCommentText = ""
+                        }
                     },
                     enabled = newCommentText.isNotBlank() && !isLoading,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = UrOrange
                     )
                 ) {
-                    Text("Comentar")
+                    Text(stringResource(R.string.comments_button))
                 }
             }
         } else {
             Text(
-                text = "Inicia sesión para comentar",
+                text = stringResource(R.string.comments_login),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(8.dp)
@@ -100,7 +106,7 @@ fun CommentSection(
 
         if (comments.isEmpty() && !isLoading) {
             Text(
-                text = "Sin comentarios aún",
+                text = stringResource(R.string.comments_empty),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 modifier = Modifier.align(Alignment.CenterHorizontally)

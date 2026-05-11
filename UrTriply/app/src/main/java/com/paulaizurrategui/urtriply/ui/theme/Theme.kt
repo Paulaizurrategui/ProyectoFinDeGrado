@@ -11,30 +11,36 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-// Esquema de colores para modo oscuro (adaptado a UrTriply)
+// Esquema de colores para modo oscuro (adaptado a UrTriply) - MEJORADO
 private val DarkColorScheme = darkColorScheme(
     primary = UrOrange,
     onPrimary = Color.White,
 
     secondary = UrSky,
-    onSecondary = UrText,
+    onSecondary = Color.White,
 
     tertiary = UrCream,
-    onTertiary = UrText,
+    onTertiary = Color(0xFF1A1A1A),
 
-    background = Color(0xFF0B1220),
-    onBackground = Color.White,
+    background = Color(0xFF121212),  // Más claro para mejor contraste
+    onBackground = Color(0xFFE8E8E8),  // Texto muy claro
 
-    surface = Color(0xFF101827),
-    onSurface = Color.White,
+    surface = Color(0xFF1E1E1E),     // Más visible
+    onSurface = Color(0xFFF5F5F5),   // Blanco casi puro
 
-    surfaceVariant = Color(0xFF1F2937),
-    onSurfaceVariant = Color.White.copy(alpha = 0.75f),
+    surfaceVariant = Color(0xFF2A2A2A),   // Más claro
+    onSurfaceVariant = Color(0xFFD0D0D0),  // Gris claro
 
-    outline = Color(0xFF334155),
+    outline = Color(0xFF505050),  // Líneas más visibles
 
-    error = UrError,
-    onError = Color.White
+    error = Color(0xFFFF6B6B),   // Rojo más vívido
+    onError = Color.White,
+    
+    // Removed duplicate tertiary parameter
+    // onTertiary = Color(0xFF1A1A1A), // This line is removed
+    
+    errorContainer = Color(0xFF8B0000),  // Rojo más oscuro para fondo
+    onErrorContainer = Color(0xFFFFB3B3)
 )
 
 // Esquema de colores para modo claro (UrTriply)

@@ -25,6 +25,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -63,10 +64,10 @@ fun PlanResultScreen(
     val currentUser = FirebaseAuth.getInstance().currentUser
     val isPublished = uiState.currentStatus == TripStatus.PUBLISHED
 
-    // Load comments when trip is available
-    remember {
-        if (r != null) {
-            commentVm.loadCommentsForTrip(r.tripId ?: "")
+    // Load comments only when we have a valid Firestore trip id
+    LaunchedEffect(r?.tripId) {
+        r?.tripId?.takeIf { it.isNotBlank() }?.let { validTripId ->
+            commentVm.loadCommentsForTrip(validTripId)
         }
     }
 

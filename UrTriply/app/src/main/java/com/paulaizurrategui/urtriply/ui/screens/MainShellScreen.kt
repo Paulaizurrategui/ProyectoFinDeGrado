@@ -112,7 +112,21 @@ fun MainShellScreen( // pantalla principal con navegación
 
             composable(MainTabs.COMMUNITY) {
                 if (isGuest) RequireLoginScreen(onRequireLogin = onRequireLogin) // si invitado, bloqueo
-                else CommunityScreen() // si no, comunidad
+                else CommunityTabScreen(onPostClick = { postId ->
+                    // Navigate to post details
+                    navController.navigate("community/post/$postId")
+                })
+            }
+
+            composable(
+                route = "community/post/{postId}",
+                arguments = listOf(navArgument("postId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val postId = backStackEntry.arguments?.getString("postId") ?: return@composable
+                PostDetailScreen(
+                    postId = postId,
+                    onBack = { navController.popBackStack() }
+                )
             }
 
             composable(MainTabs.PROFILE) {

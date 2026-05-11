@@ -92,4 +92,69 @@
     <string name="login_required_title">Necesitas iniciar sesión</string>
     <string name="login_required_body">Para acceder a esta sección tienes que iniciar sesión o crear una cuenta.</string>
     <string name="generic_error">Error</string>
+
+    <!-- Comments -->
+    <string name="comments_title">Comentarios (%1$d)</string>
+    <string name="comments_placeholder">Escribe un comentario...</string>
+    <string name="comments_button">Comentar</string>
+    <string name="comments_cancel">Cancelar</string>
+    <string name="comments_empty">Sin comentarios aún</string>
+    <string name="comments_login">Inicia sesión para comentar</string>
+    <string name="comments_delete_confirm">¿Eliminar este comentario?</string>
+    <string name="comments_delete">Eliminar</string>
+
+    <!-- Dark Mode -->
+    <string name="dark_mode_title_dark">Modo Oscuro / Dark Mode</string>
+    <string name="dark_mode_title_light">Modo Claro / Light Mode</string>
+    <string name="dark_mode_subtitle">Cambia el tema de la app</string>
+
+    <!-- Admin Panel -->
+    <string name="admin_panel">Panel Admin</string>
+    <string name="admin_description">Gestionar reportes y usuarios</string>
+    <string name="admin_access_denied">Acceso Restringido</string>
+    <string name="admin_access_denied_body">Solo administradores pueden acceder a esta sección.</string>
+    <string name="admin_reports_title">Reportes</string>
+    <string name="admin_reports_empty">Sin reportes pendientes</string>
+    <string name="admin_report_resolve">Resolver</string>
+    <string name="admin_report_dismiss">Descartar</string>
+    <string name="admin_report_block">Bloquear usuario</string>
+    <string name="admin_report_delete">Eliminar</string>
+
+    <!-- Community Posts -->
+    <string name="post_like">Me gusta</string>
+    <string name="post_favorite">Favorito</string>
+    <string name="post_comments">Comentarios</string>
+    <string name="post_author">Autor: %1$s</string>
+    <string name="post_destination">Viaje a %1$s</string>
+    <string name="post_budget">Presupuesto: %1$s EUR</string>
+
+    <!-- Age Verification -->
+    <string name="age_verification_over_13">Tengo más de 13 años / I\'m over 13</string>
+    <string name="age_verification_error">Debes confirmar que tienes más de 13 años para continuar.</string>
+    <string name="age_verification_restricted">Acceso Restringido</string>
+    <string name="age_verification_body">Debes ser mayor de 13 años para acceder a la comunidad. Crea una nueva cuenta y confirma tu edad.</string>
+
+    <!-- Blocking -->
+    <string name="block_user">Bloquear usuario</string>
+    <string name="block_reason">Razón del bloqueo</string>
+    <string name="block_confirm">¿Bloquear a este usuario?</string>
+    <string name="unblock_user">Desbloquear usuario</string>
+
+    <!-- Profile -->
+    <string name="profile_my_account">Mi cuenta</string>
+    <string name="profile_edit">Editar perfil</string>
+    <string name="profile_my_trips">Mis viajes</string>
+    <string name="profile_my_favorites">Mis favoritos</string>
+    <string name="profile_my_likes">Mis me gusta</string>
+    <string name="profile_delete_trip">Eliminar viaje</string>
+    <string name="profile_delete_confirm">¿Eliminar este viaje? Esta acción no se puede deshacer.</string>
+    <string name="profile_see_more">Ver más</string>
+
+    <!-- Trip Actions -->
+    <string name="trip_save_draft">Guardar borrador</string>
+    <string name="trip_publish">Publicar</string>
+    <string name="trip_publishing">Publicando...</string>
+    <string name="trip_saving">Guardando...</string>
+    <string name="trip_already_published">Ya publicado</string>
+    <string name="trip_share">Compartir</string>
 </resources>

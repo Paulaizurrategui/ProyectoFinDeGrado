@@ -10,6 +10,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import com.paulaizurrategui.urtriply.ui.navigation.AppNavHost
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.paulaizurrategui.urtriply.ui.theme.ThemeViewModel
 import com.paulaizurrategui.urtriply.ui.theme.UrTriplyTheme
@@ -23,6 +24,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             val themeViewModel: ThemeViewModel = viewModel()
             val isDarkTheme = themeViewModel.isDarkTheme.collectAsState().value
+            
+            // Load theme preference ONLY ONCE on app startup
+            LaunchedEffect(Unit) {
+                themeViewModel.loadThemePreference()
+            }
 
             UrTriplyTheme(darkTheme = isDarkTheme) { // Aplica el theme Material3 de la app (colores, tipografías, etc.)
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding -> // Scaffold raíz para manejar insets/padding de edge-to-edge
