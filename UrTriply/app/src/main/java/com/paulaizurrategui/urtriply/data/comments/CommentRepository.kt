@@ -1,6 +1,7 @@
 package com.paulaizurrategui.urtriply.data.comments
 
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.paulaizurrategui.urtriply.domain.model.Comment
 
@@ -42,7 +43,15 @@ class CommentRepository {
             .collection("comments")
             .add(comment)
             .addOnSuccessListener { ref ->
-                onSuccess(ref.id)
+                db.collection("trips")
+                    .document(tripId)
+                    .update("comments", FieldValue.increment(1))
+                    .addOnSuccessListener {
+                        onSuccess(ref.id)
+                    }
+                    .addOnFailureListener { e ->
+                        onError(e)
+                    }
             }
             .addOnFailureListener { e ->
                 onError(e)
@@ -102,7 +111,15 @@ class CommentRepository {
             .document(commentId)
             .delete()
             .addOnSuccessListener {
-                onSuccess()
+                db.collection("trips")
+                    .document(tripId)
+                    .update("comments", FieldValue.increment(-1))
+                    .addOnSuccessListener {
+                        onSuccess()
+                    }
+                    .addOnFailureListener { e ->
+                        onError(e)
+                    }
             }
             .addOnFailureListener { e ->
                 onError(e)

@@ -686,11 +686,37 @@ private fun generateLocalProposal(
     val comidas = presupuestoTotal * 0.20
     val actividades = presupuestoTotal * 0.10
 
-    // estimacion simple de dias recomendados
-    val costeDiarioEstimado = (alojamiento + comidas + actividades) / 3.0
-    val diasRecomendados = (presupuestoTotal / maxOf(1.0, costeDiarioEstimado))
-        .toInt()
-        .coerceIn(2, 7)
+    // estimación basada en presupuesto por persona y rango de fechas
+    val presupuestoPorPersona = presupuestoTotal / maxOf(1, viajeros)
+    val diasPorPresupuesto = when {
+        presupuestoPorPersona < 250 -> 2
+        presupuestoPorPersona < 450 -> 3
+        presupuestoPorPersona < 700 -> 4
+        presupuestoPorPersona < 950 -> 5
+        presupuestoPorPersona < 1300 -> 6
+        presupuestoPorPersona < 1700 -> 7
+        else -> 8
+    }
+
+    val diasDisponibles = if (fechaInicioMillis != null && fechaFinMillis != null) {
+        val millisPerDay = 24L * 60L * 60L * 1000L
+        (((fechaFinMillis - fechaInicioMillis).coerceAtLeast(0L) / millisPerDay) + 1L)
+            .toInt()
+            .coerceAtLeast(1)
+    } else {
+        8
+    }
+
+    val bonusPorPreferencias = when {
+        prefs.size >= 3 -> 1
+        prefs.contains(Preference.CULTURA) && prefs.contains(Preference.GASTRONOMIA) -> 1
+        prefs.contains(Preference.NATURALEZA) && prefs.contains(Preference.OCIO) -> 1
+        else -> 0
+    }
+
+    val diasRecomendados = (diasPorPresupuesto + bonusPorPreferencias)
+        .coerceAtMost(diasDisponibles)
+        .coerceIn(2, 10)
 
     val itinerario = (1..diasRecomendados).map { day ->
         val focus = when {

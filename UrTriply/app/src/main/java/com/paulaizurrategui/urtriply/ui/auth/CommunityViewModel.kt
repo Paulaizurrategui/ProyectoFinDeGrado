@@ -32,6 +32,8 @@ class CommunityViewModel : ViewModel() {
 
     // interno: posts sin filtrar (feed base)
     private var rawPosts: List<TravelPost> = emptyList()
+    private var likedTripIds: Set<String> = emptySet()
+    private var favoriteTripIds: Set<String> = emptySet()
 
     // bloqueos del usuario actual
     private var blockedUserIds: Set<String> = emptySet()
@@ -344,11 +346,70 @@ class CommunityViewModel : ViewModel() {
                     if (pending == 0) {
                         // quito duplicados por si un post entra dos veces
                         rawPosts = all.distinctBy { it.id }
-                        applyFilters()
-                        isLoading.value = false
+                        loadUserInteractionStates()
                     }
                 }
         }
+    }
+
+    private fun loadUserInteractionStates() {
+        val myUid = auth.currentUser?.uid
+        if (myUid == null) {
+            likedTripIds = emptySet()
+            favoriteTripIds = emptySet()
+            applyInteractionFlagsAndFilters()
+            isLoading.value = false
+            return
+        }
+
+        var loadedParts = 0
+        val markLoaded: () -> Unit = {
+            loadedParts++
+            if (loadedParts == 2) {
+                applyInteractionFlagsAndFilters()
+                isLoading.value = false
+            }
+        }
+
+        db.collectionGroup("likes")
+            .whereEqualTo("uid", myUid)
+            .get()
+            .addOnSuccessListener { snap ->
+                likedTripIds = snap.documents
+                    .mapNotNull { it.reference.parent.parent?.id }
+                    .toSet()
+            }
+            .addOnFailureListener {
+                likedTripIds = emptySet()
+            }
+            .addOnCompleteListener {
+                markLoaded()
+            }
+
+        db.collectionGroup("favorites")
+            .whereEqualTo("uid", myUid)
+            .get()
+            .addOnSuccessListener { snap ->
+                favoriteTripIds = snap.documents
+                    .mapNotNull { it.reference.parent.parent?.id }
+                    .toSet()
+            }
+            .addOnFailureListener {
+                favoriteTripIds = emptySet()
+            }
+            .addOnCompleteListener {
+                markLoaded()
+            }
+    }
+
+    private fun applyInteractionFlagsAndFilters() {
+        rawPosts = rawPosts.map { post ->
+            post.copy(
+                isLiked = post.id in likedTripIds,
+                isFavorite = post.id in favoriteTripIds
+            )
+        }
+        applyFilters()
     }
 
     // aplica filtros locales sobre rawposts y actualiza lo que ve la ui

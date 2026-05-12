@@ -17,38 +17,38 @@ import com.paulaizurrategui.urtriply.R
 
 @Composable
 fun WelcomeScreen(
-    isLoggedIn: Boolean, // true si FirebaseAuth detecta un usuario actual (sesión iniciada)
-    onGoHome: () -> Unit, // Acción cuando el usuario ya está logueado y quiere "Entrar" a la app (modo auth)
-    onGoLogin: () -> Unit, // Navegar a Login
-    onGoRegister: () -> Unit, // Navegar a Registro
-    onContinueGuest: () -> Unit // Entrar sin cuenta (modo invitado) -> MainShell guest
+    isLoggedIn: Boolean,
+    onGoHome: () -> Unit,
+    onGoLogin: () -> Unit,
+    onGoRegister: () -> Unit,
+    onContinueGuest: () -> Unit
 ) {
-    val bg = Brush.verticalGradient( // Fondo degradado (identidad visual estilo “viaje”)
+    val bg = Brush.verticalGradient(
         0f to Color(0xFF4FC3F7),
         0.55f to Color(0xFFB3E5FC),
         1f to Color(0xFFE3F2FD)
     )
-    val orange = Color(0xFFFF8A00) // Color principal para CTA (botones destacados)
+    val orange = Color(0xFFFF8A00)
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(bg) // Aplica el degradado al fondo completo
+                .background(bg)
                 .padding(20.dp),
             contentAlignment = Alignment.Center
         ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White), // Tarjeta blanca sobre el fondo
+                colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box( // “Logo” textual dentro de una cápsula (se puede cambiar por Image más adelante)
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(18.dp))
@@ -66,7 +66,7 @@ fun WelcomeScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Text( // Eslogan de UrTriply (del Hito 1)
+                    Text(
                         text = stringResource(R.string.slogan),
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color(0xFF374151)
@@ -74,9 +74,9 @@ fun WelcomeScreen(
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    if (isLoggedIn) { // Si ya hay sesión activa, priorizamos el botón "Entrar"
+                    if (isLoggedIn) {
                         Button(
-                            onClick = onGoHome, // Ir al Main autenticado
+                            onClick = onGoHome,
                             modifier = Modifier.fillMaxWidth().height(52.dp),
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = orange)
@@ -90,14 +90,14 @@ fun WelcomeScreen(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        OutlinedButton( // Permite entrar como invitado aunque haya sesión (útil para demo / pruebas)
+                        OutlinedButton(
                             onClick = onContinueGuest,
                             modifier = Modifier.fillMaxWidth().height(52.dp),
                             shape = RoundedCornerShape(14.dp)
                         ) {
                             Text(stringResource(R.string.welcome_guest), fontWeight = FontWeight.Bold)
                         }
-                    } else { // Si no hay sesión, mostramos login/registro + opción de invitado
+                    } else {
                         Button(
                             onClick = onGoLogin,
                             modifier = Modifier.fillMaxWidth().height(52.dp),
@@ -123,14 +123,14 @@ fun WelcomeScreen(
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        TextButton(onClick = onContinueGuest) { // CTA secundario para modo invitado
+                        TextButton(onClick = onContinueGuest) {
                             Text(stringResource(R.string.welcome_guest))
                         }
                     }
 
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    Text( // Aviso: en invitado no hay comunidad/guardado (alineado con Hito 1)
+                    Text(
                         text = stringResource(R.string.welcome_guest_note),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF6B7280)

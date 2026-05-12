@@ -1,45 +1,250 @@
 package com.paulaizurrategui.urtriply.ui.screens
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.Text
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
 import com.paulaizurrategui.urtriply.R
-import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
+import com.paulaizurrategui.urtriply.ui.theme.UrOrange
+import com.paulaizurrategui.urtriply.ui.theme.UrSky
+import com.paulaizurrategui.urtriply.ui.theme.UrSkySoft
 
 @Composable
 fun InicioTabScreen(
-    isGuest: Boolean, // true si el usuario entró con "Continuar sin cuenta" (modo invitado)
-    onRequireLogin: () -> Unit // Callback para enviar al usuario a Login cuando quiera desbloquear funciones
+    isGuest: Boolean,
+    onRequireLogin: () -> Unit,
+    onGoPlan: () -> Unit,
+    onGoCommunity: () -> Unit,
+    onGoProfile: () -> Unit
 ) {
-    UrTriplyGradientScaffold(title = stringResource(R.string.tab_home)) { // Scaffold común con el estilo UrTriply y título del tab
-        Text(text = stringResource(R.string.home_subtitle)) // Texto introductorio del home
-        Spacer(modifier = Modifier.height(16.dp)) // Separación visual
+    val scrollState = rememberScrollState()
+    val isDarkTheme = isSystemInDarkTheme()
+    val email = FirebaseAuth.getInstance().currentUser?.email ?: "usuario"
 
-        if (isGuest) { // Si es invitado, mostramos un "mensaje" de que hay funciones bloqueadas
-            Card {
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = if (isDarkTheme) Color(0xFF0F172A) else Color.White
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+        ) {
+            // ==================== HERO SECTION ====================
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(320.dp)
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = if (isDarkTheme) {
+                                listOf(
+                                    Color(0xFF1A1F3A),
+                                    Color(0xFF2D1B4E)
+                                )
+                            } else {
+                                listOf(
+                                    UrOrange,
+                                    UrSky
+                                )
+                            }
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                // Overlay oscuro
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            color = Color.Black.copy(alpha = if (isDarkTheme) 0.2f else 0.15f)
+                        )
+                )
+
+                // Contenido hero
                 Column(
-                    modifier = Modifier.padding(14.dp) // Padding interior de la card para que respire el contenido
+                    modifier = Modifier
+                        .padding(horizontal = 24.dp)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Text(text = stringResource(R.string.guest_hint_title), fontWeight = FontWeight.Bold) // Título: modo invitado
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = stringResource(R.string.guest_hint_body)) // Explicación: comunidad/guardado requieren login
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Button(onClick = onRequireLogin) { // CTA para ir a login (decidido por el NavHost)
-                        Text(stringResource(R.string.welcome_login))
+                    // Logo
+                    Text(
+                        text = "✈️",
+                        fontSize = 44.sp,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    // Título
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.displaySmall.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 38.sp
+                        ),
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Mensaje personalizado
+                    if (!isGuest) {
+                        Text(
+                            text = "Hola, $email",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White,
+                            textAlign = TextAlign.Center
+                        )
+                    } else {
+                        Text(
+                            text = "Explora sin cuenta",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White,
+                            textAlign = TextAlign.Center
+                        )
                     }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Eslogan
+                    Text(
+                        text = "Viaja sin salirte del presupuesto",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.9f),
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
-        } else { // Si está autenticado, mostramos mensaje de estado OK (y en el futuro botones: Planificar, Borradores, Comunidad)
-            Text(text = stringResource(R.string.home_logged_in_ok))
+
+
+
+            // ==================== VALUE CARDS SECTION ====================
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Accesos rápidos",
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                    color = if (isDarkTheme) Color.White else Color.Black
+                )
+
+                // Planificar viaje
+                HomeActionCard(
+                    icon = "🗺️",
+                    title = "Planificar viaje",
+                    description = "Genera una propuesta ajustada a tu presupuesto",
+                    onClick = onGoPlan
+                )
+
+                // Comunidad
+                HomeActionCard(
+                    icon = "👥",
+                    title = "Comunidad",
+                    description = if (isGuest) "Inicia sesión para ver publicaciones" else "Mira las publicaciones de tus amigos",
+                    onClick = if (isGuest) onRequireLogin else onGoCommunity
+                )
+
+                // Mi perfil
+                HomeActionCard(
+                    icon = "👤",
+                    title = "Mi perfil",
+                    description = if (isGuest) "Inicia sesión para guardar favoritos" else "Tus viajes, likes y guardados",
+                    onClick = if (isGuest) onRequireLogin else onGoProfile
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun HomeActionCard(
+    icon: String,
+    title: String,
+    description: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isDarkTheme = isSystemInDarkTheme()
+
+    ElevatedCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp)),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = if (isDarkTheme) Color(0xFF1E293B) else UrSkySoft
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp),
+        onClick = onClick
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Icon
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        if (isDarkTheme) Color(0xFF334155) else Color(0xFFE2E8F0)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = icon, fontSize = 28.sp)
+            }
+
+            // Content
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    color = if (isDarkTheme) Color.White else Color.Black
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isDarkTheme) Color(0xFFCBD5E1) else Color(0xFF64748B)
+                )
+            }
+
+            // Arrow
+            Text(
+                text = "→",
+                style = MaterialTheme.typography.headlineSmall,
+                color = UrOrange
+            )
         }
     }
 }

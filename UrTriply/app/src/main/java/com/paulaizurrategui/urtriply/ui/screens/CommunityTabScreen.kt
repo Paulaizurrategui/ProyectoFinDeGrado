@@ -508,12 +508,6 @@ fun TravelPostCard(
                         tint = if (post.isLiked) Color.Red else Color.Gray,
                         modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "${post.likes}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
                 }
 
                 Row(
@@ -525,12 +519,6 @@ fun TravelPostCard(
                         contentDescription = "Comentarios",
                         tint = Color.Gray,
                         modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "${post.comments}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
                     )
                 }
 

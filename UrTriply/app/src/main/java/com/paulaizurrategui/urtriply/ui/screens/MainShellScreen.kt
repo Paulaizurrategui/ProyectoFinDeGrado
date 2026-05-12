@@ -42,7 +42,8 @@ fun MainShellScreen( // pantalla principal con navegación
     mode: String, // modo usuario
     authViewModel: AuthViewModel,
     onRequireLogin: () -> Unit, // pedir login
-    onLoggedOut: () -> Unit // logout
+    onLoggedOut: () -> Unit, // logout
+    onNavigateToAdmin: () -> Unit
 ) {
     val navController = rememberNavController() // creo controlador
 
@@ -58,6 +59,16 @@ fun MainShellScreen( // pantalla principal con navegación
         BottomTab(MainTabs.PROFILE, R.string.tab_profile) { Icon(Icons.Default.Person, contentDescription = null) }
     )
 
+    fun navigateToTab(route: String) {
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
     Scaffold(
         // CLAVE: gestionamos insets una sola vez a nivel app
         contentWindowInsets = WindowInsets.safeDrawing, // evita solaparse con sistema
@@ -72,11 +83,7 @@ fun MainShellScreen( // pantalla principal con navegación
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
-                            navController.navigate(tab.route) { // navego a tab
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true } // vuelvo al inicio guardando estado
-                                launchSingleTop = true // evita duplicados
-                                restoreState = true // restaura estado
-                            }
+                            navigateToTab(tab.route)
                         },
                         icon = tab.icon,
                         label = { Text(stringResource(tab.labelRes)) } // texto tab
@@ -92,7 +99,13 @@ fun MainShellScreen( // pantalla principal con navegación
         ) {
 
             composable(MainTabs.HOME) {
-                InicioTabScreen(isGuest = isGuest, onRequireLogin = onRequireLogin) // pantalla inicio
+                InicioTabScreen(
+                    isGuest = isGuest,
+                    onRequireLogin = onRequireLogin,
+                    onGoPlan = { navigateToTab(MainTabs.PLAN) },
+                    onGoCommunity = { navigateToTab(MainTabs.COMMUNITY) },
+                    onGoProfile = { navigateToTab(MainTabs.PROFILE) }
+                )
             }
 
             composable(MainTabs.PLAN) {
@@ -139,7 +152,7 @@ fun MainShellScreen( // pantalla principal con navegación
                         onEditProfile = { navController.navigate("profile/edit") }, // editar perfil
                         onEditTrip = { tripId -> navController.navigate("trip/edit/$tripId") }, // editar viaje
                         onNavigateToFindFriends = { navController.navigate("find_friends") }, // buscar amigos
-                        onNavigateToAdmin = { navController.navigate(Routes.ADMIN) }
+                        onNavigateToAdmin = onNavigateToAdmin
                     )
                 }
             }

@@ -104,7 +104,8 @@ fun AppNavHost() {
                     navController.navigate(Routes.WELCOME) {
                         popUpTo(0) { inclusive = true }
                     }
-                }
+                },
+                onNavigateToAdmin = { navController.navigate(Routes.ADMIN) }
             )
         }
 

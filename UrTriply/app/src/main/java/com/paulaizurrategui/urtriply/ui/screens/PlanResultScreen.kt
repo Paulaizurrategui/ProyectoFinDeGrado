@@ -45,7 +45,6 @@ import com.paulaizurrategui.urtriply.data.trips.TripStatus
 import com.paulaizurrategui.urtriply.domain.model.Hotel
 import com.paulaizurrategui.urtriply.domain.model.SuggestedActivity
 import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
-import com.paulaizurrategui.urtriply.ui.theme.UrCream
 import com.paulaizurrategui.urtriply.ui.theme.UrOrange
 import java.text.NumberFormat
 import androidx.compose.runtime.remember as rememberRuntime
@@ -246,50 +245,6 @@ fun PlanResultScreen(
 
                             Spacer(Modifier.height(12.dp))
 
-                            if (r.usedFallback) {
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(containerColor = UrCream),
-                                    shape = RoundedCornerShape(18.dp),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-                                ) {
-                                    Column(Modifier.padding(14.dp)) {
-                                        Text(
-                                            text = "Aviso: se han usado estimaciones (fallback).",
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Spacer(Modifier.height(4.dp))
-                                        Text(
-                                            text = "Cuando conecte las APIs, verás precios reales y enlaces.",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                                Spacer(Modifier.height(12.dp))
-                            }
-
-                            SectionTitle("Presupuesto por categorías")
-                            Spacer(Modifier.height(8.dp))
-                            BudgetCards(r.presupuestoCategorias)
-
-                            Spacer(Modifier.height(14.dp))
-
-                            SectionTitle("Itinerario por días")
-                            Spacer(Modifier.height(8.dp))
-                            ItineraryCards(r.itinerario)
-
-                            Spacer(Modifier.height(14.dp))
-
-                            SectionTitle("Actividades recomendadas")
-                            Spacer(Modifier.height(8.dp))
-                            ActivitiesBlock(
-                                gratis = r.actividadesGratis,
-                                pago = r.actividadesPago
-                            )
-
-                            Spacer(Modifier.height(14.dp))
-
                             SectionTitle("Actividades recomendadas reales")
                             Spacer(Modifier.height(8.dp))
                             RealActivitiesBlock(
@@ -474,13 +429,6 @@ private fun ActivitiesBlock(
             } else {
                 pago.forEach { Text("• $it") }
             }
-
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "No incluyen enlaces ni precios reales.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }
@@ -490,31 +438,18 @@ private fun HotelsBlock(
     hoteles: List<Hotel>,
     apiHotelesOk: Boolean
 ) {
-    if (hoteles.isEmpty()) {
+    val realHotels = hoteles.filter { it.isReal }
+
+    if (realHotels.isEmpty()) {
         Text(
-            text = "No hay hoteles disponibles para este destino.",
+            text = "No hay alojamiento real disponible para este destino.",
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         return
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        if (!apiHotelesOk) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = UrCream),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Text(
-                    text = "Aviso: el alojamiento mostrado es fallback estimado.",
-                    modifier = Modifier.padding(12.dp),
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
-
-        hoteles.forEach { hotel ->
+        realHotels.forEach { hotel ->
             HotelCard(hotel = hotel)
         }
     }
@@ -525,7 +460,9 @@ private fun RealActivitiesBlock(
     activities: List<SuggestedActivity>,
     apiOk: Boolean
 ) {
-    if (activities.isEmpty()) {
+    val realActivities = activities.filter { it.isReal }
+
+    if (realActivities.isEmpty()) {
         Text(
             text = "No hay actividades reales disponibles para este destino.",
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -534,22 +471,7 @@ private fun RealActivitiesBlock(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        if (!apiOk) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = UrCream),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Text(
-                    text = "Aviso: las actividades mostradas son fallback estimado (API lenta).",
-                    modifier = Modifier.padding(12.dp),
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
-
-        activities.forEach { activity ->
+        realActivities.forEach { activity ->
             ActivityCard(activity = activity)
         }
     }
@@ -587,7 +509,7 @@ private fun ActivityCard(activity: SuggestedActivity) {
             )
 
             Text(
-                text = if (activity.isReal) "Datos reales de OpenStreetMap" else "Fallback estimado",
+                text = "Datos reales",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -647,7 +569,7 @@ private fun HotelCard(hotel: Hotel) {
             }
 
             Text(
-                text = if (hotel.isReal) "Datos reales de OpenStreetMap" else "Fallback estimado",
+                text = "Datos reales",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -677,31 +599,18 @@ private fun FlightsBlock(
     flights: List<com.paulaizurrategui.urtriply.domain.model.FlightOffer>,
     apiOk: Boolean
 ) {
-    if (flights.isEmpty()) {
+    val realFlights = flights.filter { it.isReal }
+
+    if (realFlights.isEmpty()) {
         Text(
-            text = "No hay ofertas de vuelo para este destino.",
+            text = "No hay ofertas de vuelo reales para este destino.",
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         return
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        if (!apiOk) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = UrCream),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Text(
-                    text = "No se han encontrado ofertas reales para esta ruta en este momento.",
-                    modifier = Modifier.padding(12.dp),
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
-
-        flights.forEach { flight ->
+        realFlights.forEach { flight ->
             FlightCard(flight)
         }
     }
@@ -729,7 +638,7 @@ private fun FlightCard(flight: com.paulaizurrategui.urtriply.domain.model.Flight
 
             Text(text = "Precio: ${flight.currency} ${String.format("%.2f", flight.price)}", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
 
-            Text(text = if (flight.isReal) "Datos reales (Proveedor)" else "Estimación (sin API)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(text = "Datos reales", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             if (flight.bookingUrl != null) {
                 TextButton(onClick = {

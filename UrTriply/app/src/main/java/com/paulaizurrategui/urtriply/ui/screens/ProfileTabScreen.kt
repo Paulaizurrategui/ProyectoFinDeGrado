@@ -278,10 +278,12 @@ fun ProfileTabScreen(
                     TripCard(
                         title = trip.destino,
                         status = TripStatus.PUBLISHED,
-                        onEdit = { /* No editable */ },
+                        onEdit = { },
                         onPublish = null,
-                        onDelete = { /* No deletable */ },
-                        actionsEnabled = false
+                        onDelete = { favoritesVm.removeFavorite(trip.id) },
+                        actionsEnabled = true,
+                        showEditAction = false,
+                        showPublishAction = false
                     )
                 }
             }
@@ -302,10 +304,12 @@ fun ProfileTabScreen(
                     TripCard(
                         title = trip.destino,
                         status = TripStatus.PUBLISHED,
-                        onEdit = { /* No editable */ },
+                        onEdit = { },
                         onPublish = null,
-                        onDelete = { /* No deletable */ },
-                        actionsEnabled = false
+                        onDelete = { favoritesVm.removeLike(trip.id) },
+                        actionsEnabled = true,
+                        showEditAction = false,
+                        showPublishAction = false
                     )
                 }
             }
@@ -492,7 +496,9 @@ private fun TripCard(
     onEdit: () -> Unit,
     onPublish: (() -> Unit)?,
     onDelete: () -> Unit,
-    actionsEnabled: Boolean
+    actionsEnabled: Boolean,
+    showEditAction: Boolean = true,
+    showPublishAction: Boolean = true
 ) {
     val chipBg = when (status) {
         TripStatus.DRAFT -> MaterialTheme.colorScheme.secondaryContainer
@@ -547,18 +553,20 @@ private fun TripCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                OutlinedButton(
-                    onClick = onEdit,
-                    enabled = actionsEnabled,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(imageVector = Icons.Default.Edit, contentDescription = null)
-                    Spacer(Modifier.size(8.dp))
-                    Text("Editar")
+                if (showEditAction) {
+                    OutlinedButton(
+                        onClick = onEdit,
+                        enabled = actionsEnabled,
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(imageVector = Icons.Default.Edit, contentDescription = null)
+                        Spacer(Modifier.size(8.dp))
+                        Text("Editar")
+                    }
                 }
 
-                if (onPublish != null) {
+                if (onPublish != null && showPublishAction) {
                     Button(
                         onClick = onPublish,
                         enabled = actionsEnabled,

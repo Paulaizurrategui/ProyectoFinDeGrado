@@ -95,6 +95,18 @@ class ProfileFavoritesViewModel : ViewModel() {
             }
     }
 
+    fun removeLike(tripId: String) {
+        val uid = auth.currentUser?.uid ?: return
+        db.collection("trips").document(tripId).collection("likes").document(uid)
+            .delete()
+    }
+
+    fun removeFavorite(tripId: String) {
+        val uid = auth.currentUser?.uid ?: return
+        db.collection("trips").document(tripId).collection("favorites").document(uid)
+            .delete()
+    }
+
     private fun loadTripDetails(
         tripIds: Set<String>,
         onResult: (List<SimpleTripData>) -> Unit
