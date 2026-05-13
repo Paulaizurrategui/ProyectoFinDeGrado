@@ -12,6 +12,9 @@ class ReportRepository {
     fun submitReport(
         targetType: String,  // "TRIP" or "COMMENT"
         targetId: String,    // tripId or commentId
+        targetUserUid: String? = null,
+        tripId: String? = null,
+        commentId: String? = null,
         reporterUid: String,
         reporterName: String,
         reason: String,      // abuse, spam, inappropriate
@@ -22,6 +25,9 @@ class ReportRepository {
         val report = mapOf(
             "targetType" to targetType,
             "targetId" to targetId,
+            "targetUserUid" to targetUserUid,
+            "tripId" to tripId,
+            "commentId" to commentId,
             "reporterUid" to reporterUid,
             "reporterName" to reporterName,
             "reason" to reason,
@@ -47,7 +53,6 @@ class ReportRepository {
     ) {
         db.collection("reports")
             .whereEqualTo("status", ReportStatus.OPEN.name)
-            .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
             .addSnapshotListener { snap, e ->
                 if (e != null) {
                     onError(e)
@@ -59,6 +64,9 @@ class ReportRepository {
                         id = doc.id,
                         targetType = doc.getString("targetType") ?: "TRIP",
                         targetId = doc.getString("targetId") ?: "",
+                        targetUserUid = doc.getString("targetUserUid"),
+                        tripId = doc.getString("tripId"),
+                        commentId = doc.getString("commentId"),
                         reporterUid = doc.getString("reporterUid") ?: "",
                         reporterName = doc.getString("reporterName") ?: "",
                         reason = doc.getString("reason") ?: "",
@@ -66,7 +74,7 @@ class ReportRepository {
                         createdAt = doc.getTimestamp("createdAt"),
                         status = doc.getString("status") ?: ReportStatus.OPEN.name
                     )
-                } ?: emptyList()
+                }?.sortedByDescending { it.createdAt?.seconds ?: 0L } ?: emptyList()
 
                 onSuccess(reports)
             }

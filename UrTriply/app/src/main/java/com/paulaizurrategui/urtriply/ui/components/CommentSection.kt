@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,7 +35,8 @@ fun CommentSection(
     onAddComment: (String) -> Unit,
     onDeleteComment: (String) -> Unit,
     currentUserId: String?,
-    isAdmin: Boolean = false
+    isAdmin: Boolean = false,
+    onReportComment: ((Comment) -> Unit)? = null
 ) {
     var newCommentText by remember { mutableStateOf("") }
 
@@ -126,7 +128,8 @@ fun CommentSection(
                     CommentCard(
                         comment = comment,
                         onDelete = { onDeleteComment(comment.id) },
-                        canDelete = currentUserId == comment.authorUid || isAdmin
+                        canDelete = currentUserId == comment.authorUid || isAdmin,
+                        onReport = { onReportComment?.invoke(comment) }
                     )
                 }
             }
@@ -138,7 +141,8 @@ fun CommentSection(
 fun CommentCard(
     comment: Comment,
     onDelete: () -> Unit,
-    canDelete: Boolean
+    canDelete: Boolean,
+    onReport: (() -> Unit)? = null
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
@@ -223,7 +227,6 @@ fun CommentCard(
                     }
                 }
 
-                // Delete button
                 if (canDelete) {
                     IconButton(
                         onClick = { showDeleteConfirm = true },
@@ -231,8 +234,22 @@ fun CommentCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete comment",
+                            contentDescription = "Eliminar comentario",
                             tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+
+                if (onReport != null) {
+                    IconButton(
+                        onClick = onReport,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Flag,
+                            contentDescription = "Reportar comentario",
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp)
                         )
                     }

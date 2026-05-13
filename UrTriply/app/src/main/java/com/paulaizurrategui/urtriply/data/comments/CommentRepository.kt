@@ -80,6 +80,11 @@ class CommentRepository {
                 }
 
                 val comments = snap?.documents?.mapNotNull { doc ->
+                    val isDeleted = doc.getBoolean("deleted") ?: false
+                    if (isDeleted) {
+                        return@mapNotNull null
+                    }
+
                     Comment(
                         id = doc.id,
                         tripId = doc.getString("tripId") ?: tripId,

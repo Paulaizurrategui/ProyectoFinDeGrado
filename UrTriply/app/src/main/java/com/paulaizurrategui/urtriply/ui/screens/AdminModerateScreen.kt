@@ -330,23 +330,13 @@ fun ReportCard(
                     onClick = {
                         when (selectedAction) {
                             "delete" -> {
-                                if (report.targetType == "TRIP") {
-                                    viewModel.deleteTripByAdmin(report.targetId)
-                                } else {
-                                    // Extract tripId from report if it's a comment
-                                    // For simplicity, we assume comment deletion needs tripId
-                                    // This might need adjustment based on your actual structure
-                                    viewModel.deleteCommentByAdmin(report.targetId, report.targetId)
-                                }
-                                viewModel.resolveReport(report.id, "Contenido eliminado")
+                                viewModel.deleteReportedContentAndResolve(report)
                             }
                             "resolve" -> {
                                 viewModel.resolveReport(report.id, resolutionText.ifEmpty { "No action needed" })
                             }
                             "block" -> {
-                                // This needs the user being reported, not in current Report model
-                                // You might need to fetch the trip author or comment author first
-                                viewModel.blockUser(report.targetId, "Reporte: ${report.reason}")
+                                viewModel.blockReportedUserAndResolve(report)
                             }
                         }
                         showResolutionDialog = false

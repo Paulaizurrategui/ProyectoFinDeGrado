@@ -280,6 +280,11 @@ class CommunityViewModel : ViewModel() {
                 .get()
                 .addOnSuccessListener { snap ->
                     val mapped = snap.documents.mapNotNull { doc ->
+                        val isDeleted = doc.getBoolean("deleted") ?: false
+                        if (isDeleted) {
+                            return@mapNotNull null
+                        }
+
                         // verificar si está bloqueado
                         val authorUid = doc.getString("authorUid") ?: return@mapNotNull null
                         

@@ -197,6 +197,115 @@ class AdminViewModel : ViewModel() {
         )
     }
 
+    fun deleteReportedContentAndResolve(report: Report, resolution: String = "Contenido eliminado") {
+        val adminUid = auth.currentUser?.uid
+        if (adminUid == null) {
+            errorMessage.value = "Not authenticated"
+            return
+        }
+
+        isLoading.value = true
+        errorMessage.value = ""
+
+        val onDeleteSuccess = {
+            reportRepo.resolveReport(
+                reportId = report.id,
+                adminUid = adminUid,
+                resolution = resolution,
+                onSuccess = {
+                    successMessage.value = "Contenido eliminado y reporte resuelto"
+                    loadOpenReports()
+                    isLoading.value = false
+                },
+                onError = { e ->
+                    errorMessage.value = e.message ?: "Contenido eliminado, pero no se pudo resolver el reporte"
+                    isLoading.value = false
+                }
+            )
+        }
+
+        if (report.targetType == "TRIP") {
+            val tripId = report.tripId ?: report.targetId
+            if (tripId.isBlank()) {
+                errorMessage.value = "No hay datos suficientes para borrar el viaje"
+                isLoading.value = false
+                return
+            }
+
+            reportRepo.deleteTripByAdmin(
+                tripId = tripId,
+                adminUid = adminUid,
+                onSuccess = onDeleteSuccess,
+                onError = { e ->
+                    errorMessage.value = e.message ?: "Error deleting trip"
+                    isLoading.value = false
+                }
+            )
+        } else {
+            val tripId = report.tripId ?: ""
+            val commentId = report.commentId ?: report.targetId
+            if (tripId.isBlank() || commentId.isBlank()) {
+                errorMessage.value = "No hay datos suficientes para borrar el comentario"
+                isLoading.value = false
+                return
+            }
+
+            reportRepo.deleteCommentByAdmin(
+                tripId = tripId,
+                commentId = commentId,
+                adminUid = adminUid,
+                onSuccess = onDeleteSuccess,
+                onError = { e ->
+                    errorMessage.value = e.message ?: "Error deleting comment"
+                    isLoading.value = false
+                }
+            )
+        }
+    }
+
+    fun blockReportedUserAndResolve(report: Report) {
+        val adminUid = auth.currentUser?.uid
+        val targetUid = report.targetUserUid
+
+        if (adminUid == null) {
+            errorMessage.value = "Not authenticated"
+            return
+        }
+        if (targetUid.isNullOrBlank()) {
+            errorMessage.value = "No hay usuario asociado al reporte"
+            return
+        }
+
+        isLoading.value = true
+        errorMessage.value = ""
+
+        reportRepo.blockUser(
+            adminUid = adminUid,
+            userToBlockUid = targetUid,
+            reason = "Reporte: ${report.reason}",
+            onSuccess = {
+                reportRepo.resolveReport(
+                    reportId = report.id,
+                    adminUid = adminUid,
+                    resolution = "Usuario bloqueado",
+                    onSuccess = {
+                        successMessage.value = "Usuario bloqueado y reporte resuelto"
+                        loadOpenReports()
+                        isLoading.value = false
+                    },
+                    onError = { e ->
+                        errorMessage.value = e.message ?: "Usuario bloqueado, pero no se pudo resolver el reporte"
+                        isLoading.value = false
+                    }
+                )
+            },
+            onError = { e ->
+                errorMessage.value = e.message ?: "Error blocking user"
+                isLoading.value = false
+            }
+        )
+    }
+
     // Unblock user
     fun unblockUser(userToUnblockUid: String) {
         val adminUid = auth.currentUser?.uid

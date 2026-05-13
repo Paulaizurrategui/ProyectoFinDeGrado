@@ -14,6 +14,9 @@ data class Report(
     val id: String = "",
     val targetType: String = ReportType.TRIP.name,  // TRIP or COMMENT
     val targetId: String = "",  // tripId or commentId
+    val targetUserUid: String? = null,
+    val tripId: String? = null,
+    val commentId: String? = null,
     val reporterUid: String = "",
     val reporterName: String = "",
     val reason: String = "",  // abuse, spam, inappropriate, etc.

@@ -36,7 +36,7 @@ service cloud.firestore {
     // ===== COLECCIÓN /trips =====
     match /trips/{tripId} {
       // Lectura: Todos pueden leer trips publicados
-      allow read: if resource.data.status == 'published';
+      allow read: if resource.data.status == 'PUBLISHED' || resource.data.status == 'published';
       
       // Lectura: Autor del viaje + admin
       allow read: if isAuthenticated() && (resource.data.authorUid == request.auth.uid || isAdmin());
@@ -99,6 +99,14 @@ service cloud.firestore {
     // Admin puede ver todos los favoritos
     match /trips/{tripId}/favorites/{uid} {
       allow read: if isAdmin();
+    }
+
+    // ===== COLECCIÓN /reports =====
+    // Cualquiera autenticado puede crear reportes
+    match /reports/{reportId} {
+      allow create: if isAuthenticated();
+      allow read: if isAdmin();  // Solo admin puede ver reportes
+      allow update, delete: if isAdmin();  // Solo admin puede resolver/descartar
     }
     
     // Default: Denegar todo

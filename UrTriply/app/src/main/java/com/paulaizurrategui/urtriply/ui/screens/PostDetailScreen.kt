@@ -20,8 +20,11 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Euro
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,9 +55,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.paulaizurrategui.urtriply.domain.model.Comment
 import com.paulaizurrategui.urtriply.data.trips.TripDoc
 import com.paulaizurrategui.urtriply.ui.components.CommentSection
 import com.paulaizurrategui.urtriply.ui.theme.UrOrange
+import com.paulaizurrategui.urtriply.data.reports.ReportRepository
 import com.paulaizurrategui.urtriply.ui.theme.UrSky
 import com.paulaizurrategui.urtriply.ui.theme.UrSkySoft
 import com.paulaizurrategui.urtriply.ui.viewmodels.CommentViewModel
@@ -78,14 +83,31 @@ fun PostDetailScreen(
     val commentVm = remember { CommentViewModel() }
     val comments by commentVm.comments.collectAsState()
     val currentUser = auth.currentUser
+    
+    var showReportDialog by remember { mutableStateOf(false) }
+    var reportReason by remember { mutableStateOf("") }
+    var reportDescription by remember { mutableStateOf("") }
+    var reportMessage by remember { mutableStateOf<String?>(null) }
+    var showReportCommentDialog by remember { mutableStateOf(false) }
+    var selectedCommentToReport by remember { mutableStateOf<Comment?>(null) }
+    var commentReportReason by remember { mutableStateOf("") }
+    var commentReportDescription by remember { mutableStateOf("") }
+    var commentReportMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(postId) {
         db.collection("trips").document(postId).get()
             .addOnSuccessListener { doc ->
                 try {
-                    tripData = doc.toObject(TripDoc::class.java)
-                    isLoading = false
-                    commentVm.loadCommentsForTrip(postId)
+                    val isDeleted = doc.getBoolean("deleted") ?: false
+                    if (isDeleted) {
+                        errorMessage = "Este viaje ya no está disponible"
+                        tripData = null
+                        isLoading = false
+                    } else {
+                        tripData = doc.toObject(TripDoc::class.java)
+                        isLoading = false
+                        commentVm.loadCommentsForTrip(postId)
+                    }
                 } catch (e: Exception) {
                     errorMessage = "Error al cargar el viaje: ${e.message}"
                     isLoading = false
@@ -104,6 +126,26 @@ fun PostDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                    }
+                },
+                actions = {
+                    var menuExpanded by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { menuExpanded = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Reportar viaje") },
+                                onClick = {
+                                    menuExpanded = false
+                                    showReportDialog = true
+                                }
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -318,7 +360,11 @@ fun PostDetailScreen(
                                         commentVm.deleteComment(commentId)
                                     },
                                     currentUserId = currentUser?.uid,
-                                    isAdmin = false
+                                    isAdmin = false,
+                                    onReportComment = { comment ->
+                                        selectedCommentToReport = comment
+                                        showReportCommentDialog = true
+                                    }
                                 )
                             }
                         }
@@ -326,6 +372,176 @@ fun PostDetailScreen(
                 }
             }
         }
+    }
+
+    if (showReportDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showReportDialog = false },
+            title = { Text("Reportar viaje") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (reportMessage != null) {
+                        Surface(
+                            color = UrOrange.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = reportMessage!!,
+                                modifier = Modifier.padding(12.dp),
+                                color = UrOrange
+                            )
+                        }
+                    }
+
+                    Text("Selecciona la razón del reporte:")
+                    val reasons = listOf("Spam", "Contenido inapropiado", "Estafa", "Otra razón")
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        reasons.forEach { reason ->
+                            androidx.compose.material3.Button(
+                                onClick = { reportReason = reason },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                    containerColor = if (reportReason == reason) UrOrange else MaterialTheme.colorScheme.surfaceVariant
+                                )
+                            ) {
+                                Text(reason)
+                            }
+                        }
+                    }
+
+                    androidx.compose.material3.OutlinedTextField(
+                        value = reportDescription,
+                        onValueChange = { reportDescription = it },
+                        label = { Text("Detalles adicionales (opcional)") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp),
+                        maxLines = 3
+                    )
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.Button(
+                    onClick = {
+                        if (reportReason.isNotEmpty() && currentUser != null && tripData != null) {
+                            ReportRepository().submitReport(
+                                targetType = "TRIP",
+                                targetId = postId,
+                                targetUserUid = tripData?.authorUid,
+                                tripId = postId,
+                                reporterUid = currentUser.uid,
+                                reporterName = currentUser.displayName ?: "Usuario Anónimo",
+                                reason = reportReason,
+                                description = reportDescription,
+                                onSuccess = {
+                                    reportMessage = "✓ Reporte enviado exitosamente"
+                                    reportReason = ""
+                                    reportDescription = ""
+                                },
+                                onError = { e ->
+                                    reportMessage = "Error: ${e.message}"
+                                }
+                            )
+                        } else {
+                            reportMessage = "Por favor selecciona una razón"
+                        }
+                    }
+                ) {
+                    Text("Reportar")
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showReportDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    if (showReportCommentDialog && selectedCommentToReport != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showReportCommentDialog = false },
+            title = { Text("Reportar comentario") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (commentReportMessage != null) {
+                        Surface(
+                            color = UrOrange.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = commentReportMessage!!,
+                                modifier = Modifier.padding(12.dp),
+                                color = UrOrange
+                            )
+                        }
+                    }
+
+                    Text("Selecciona la razón del reporte:")
+                    val reasons = listOf("Spam", "Contenido inapropiado", "Ofensivo", "Otra razón")
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        reasons.forEach { reason ->
+                            androidx.compose.material3.Button(
+                                onClick = { commentReportReason = reason },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                    containerColor = if (commentReportReason == reason) UrOrange else MaterialTheme.colorScheme.surfaceVariant
+                                )
+                            ) {
+                                Text(reason)
+                            }
+                        }
+                    }
+
+                    androidx.compose.material3.OutlinedTextField(
+                        value = commentReportDescription,
+                        onValueChange = { commentReportDescription = it },
+                        label = { Text("Detalles adicionales (opcional)") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp),
+                        maxLines = 3
+                    )
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.Button(
+                    onClick = {
+                        val comment = selectedCommentToReport
+                        if (commentReportReason.isNotEmpty() && currentUser != null && comment != null) {
+                            ReportRepository().submitReport(
+                                targetType = "COMMENT",
+                                targetId = comment.id,
+                                targetUserUid = comment.authorUid,
+                                tripId = postId,
+                                commentId = comment.id,
+                                reporterUid = currentUser.uid,
+                                reporterName = currentUser.displayName ?: "Usuario Anónimo",
+                                reason = commentReportReason,
+                                description = commentReportDescription,
+                                onSuccess = {
+                                    commentReportMessage = "✓ Reporte enviado exitosamente"
+                                    commentReportReason = ""
+                                    commentReportDescription = ""
+                                },
+                                onError = { e ->
+                                    commentReportMessage = "Error: ${e.message}"
+                                }
+                            )
+                        } else {
+                            commentReportMessage = "Por favor selecciona una razón"
+                        }
+                    }
+                ) {
+                    Text("Reportar")
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showReportCommentDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }
 
