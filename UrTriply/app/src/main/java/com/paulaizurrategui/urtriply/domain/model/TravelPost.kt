@@ -3,6 +3,7 @@ package com.paulaizurrategui.urtriply.domain.model
 // modelo que usa la ui para pintar posts de comunidad
 data class TravelPost(
     val id: String,
+    val authorUid: String = "",
     val destination: String,
     val days: Int,
     val budget: Double,

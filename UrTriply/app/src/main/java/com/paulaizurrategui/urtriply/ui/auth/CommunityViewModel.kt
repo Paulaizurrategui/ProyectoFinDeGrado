@@ -332,6 +332,7 @@ class CommunityViewModel : ViewModel() {
 
                         TravelPost(
                             id = doc.id,
+                            authorUid = authorUid,
                             destination = destination,
                             days = days,
                             budget = budget,

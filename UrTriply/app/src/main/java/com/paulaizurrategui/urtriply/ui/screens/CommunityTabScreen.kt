@@ -36,7 +36,11 @@ import com.paulaizurrategui.urtriply.domain.model.TravelPost
 import com.paulaizurrategui.urtriply.ui.auth.CommunityViewModel
 
 @Composable
-fun CommunityTabScreen(onPostClick: (String) -> Unit = {}, onNavigateToFindFriends: () -> Unit = {}) {
+fun CommunityTabScreen(
+    onPostClick: (String) -> Unit = {},
+    onNavigateToFindFriends: () -> Unit = {},
+    onNavigateToUserProfile: (String) -> Unit = {}
+) {
     val isCompactWidth = LocalConfiguration.current.screenWidthDp < 360
     val authViewModel = viewModel<com.paulaizurrategui.urtriply.ui.auth.AuthViewModel>()
     var isOver13 by remember { mutableStateOf<Boolean?>(null) }
@@ -85,7 +89,11 @@ fun CommunityTabScreen(onPostClick: (String) -> Unit = {}, onNavigateToFindFrien
         }
         else -> {
             // Usuario confirmó +13 años
-            CommunityScreen(onPostClick = onPostClick, onNavigateToFindFriends = onNavigateToFindFriends)
+            CommunityScreen(
+                onPostClick = onPostClick,
+                onNavigateToFindFriends = onNavigateToFindFriends,
+                onNavigateToUserProfile = onNavigateToUserProfile
+            )
         }
     }
 }
@@ -100,7 +108,8 @@ val SkyBlue = Color(0xFF87CEEB)
 fun CommunityScreen(
     viewModel: CommunityViewModel = viewModel(),
     onPostClick: (String) -> Unit = {},
-    onNavigateToFindFriends: () -> Unit = {}
+    onNavigateToFindFriends: () -> Unit = {},
+    onNavigateToUserProfile: (String) -> Unit = {}
 ) {
     val isCompactWidth = LocalConfiguration.current.screenWidthDp < 360
 
@@ -170,7 +179,8 @@ fun CommunityScreen(
                             onLikeClick = { viewModel.toggleLike(post.id) },
                             onFavoriteClick = { viewModel.toggleFavorite(post.id) },
                             onCommentClick = { onPostClick(post.id) },
-                            onCardClick = { onPostClick(post.id) }
+                            onCardClick = { onPostClick(post.id) },
+                            onAuthorClick = { if (post.authorUid.isNotBlank()) onNavigateToUserProfile(post.authorUid) }
                         )
                     }
 
@@ -380,7 +390,8 @@ fun TravelPostCard(
     onLikeClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     onCommentClick: () -> Unit,
-    onCardClick: () -> Unit
+    onCardClick: () -> Unit,
+    onAuthorClick: () -> Unit = {}
 ) {
     val authorInitial = post.authorName.firstOrNull()?.toString() ?: "?"
 
@@ -415,7 +426,9 @@ fun TravelPostCard(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                Column(modifier = Modifier.weight(1f)) {
+                Column(modifier = Modifier
+                    .weight(1f)
+                    .clickable(enabled = post.authorUid.isNotBlank(), onClick = onAuthorClick)) {
                     Text(
                         text = post.authorName,
                         fontWeight = FontWeight.SemiBold,

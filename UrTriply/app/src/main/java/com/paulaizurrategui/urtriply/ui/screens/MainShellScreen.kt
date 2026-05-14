@@ -130,6 +130,8 @@ fun MainShellScreen( // pantalla principal con navegación
                     navController.navigate("community/post/$postId")
                 }, onNavigateToFindFriends = {
                     navController.navigate("find_friends")
+                }, onNavigateToUserProfile = { userId ->
+                    navController.navigate("profile/public/$userId")
                 })
             }
 
@@ -176,6 +178,17 @@ fun MainShellScreen( // pantalla principal con navegación
 
             composable("find_friends") {
                 FindFriendsScreen(onBack = { navController.popBackStack() }) // pantalla amigos
+            }
+
+            composable(
+                route = "profile/public/{userId}",
+                arguments = listOf(navArgument("userId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
+                PublicProfileScreen(
+                    userId = userId,
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }

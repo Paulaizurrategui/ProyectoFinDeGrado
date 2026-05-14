@@ -454,6 +454,14 @@ fun PlanTabScreen(
 
                             // 3) si sale bien, lo guardo en el resultado
                             val finalPlan = if (geo != null) {
+                                val itineraryFromActivities = buildItineraryFromActivities(
+                                    destino = destino,
+                                    diasRecomendados = base.diasRecomendados,
+                                    prefs = prefs,
+                                    actividades = actividadesReales,
+                                    fallbackItinerary = base.itinerario
+                                )
+
                                 base.copy(
                                     destinoDisplayName = geo.displayName,
                                     lat = geo.lat,
@@ -462,8 +470,9 @@ fun PlanTabScreen(
                                     hotelMesSeleccionado = hoteles.firstOrNull(),
                                     apiHotelesOk = hoteles.any { it.isReal },
                                     actividadesReales = actividadesReales,
-                                    apiActividadesOk = actividadesReales.any { it.isReal }
-                                    ,vuelos = vuelosOfertas,
+                                    apiActividadesOk = actividadesReales.any { it.isReal },
+                                    itinerario = itineraryFromActivities,
+                                    vuelos = vuelosOfertas,
                                     apiVuelosOk = vuelosOfertas.any { it.isReal }
                                 )
                             } else {
@@ -762,4 +771,44 @@ private fun generateLocalProposal(
         usedFallback = true
         // los nuevos campos (destinodisplayname/lat/lon) quedan null por defecto
     )
+}
+
+private fun buildItineraryFromActivities(
+    destino: String,
+    diasRecomendados: Int,
+    prefs: Set<Preference>,
+    actividades: List<SuggestedActivity>,
+    fallbackItinerary: List<String>
+): List<String> {
+    if (diasRecomendados <= 0) return fallbackItinerary
+    if (actividades.isEmpty()) return fallbackItinerary
+
+    val grouped = actividades
+        .sortedWith(
+            compareByDescending<SuggestedActivity> { it.isReal }
+                .thenBy { it.isFree }
+                .thenBy { it.category }
+                .thenBy { it.name }
+        )
+
+    val chunks = grouped.chunked(((grouped.size + diasRecomendados - 1) / diasRecomendados).coerceAtLeast(1))
+
+    return (1..diasRecomendados).map { day ->
+        val dayActivities = chunks.getOrNull(day - 1).orEmpty()
+        val focus = when {
+            prefs.contains(Preference.CULTURA) && dayActivities.any { it.category.contains("museum", true) || it.category.contains("culture", true) || it.category.contains("historic", true) } -> "cultura y patrimonio"
+            prefs.contains(Preference.NATURALEZA) && dayActivities.any { it.category.contains("park", true) || it.category.contains("nature", true) || it.category.contains("view", true) } -> "naturaleza y miradores"
+            prefs.contains(Preference.GASTRONOMIA) && dayActivities.any { it.category.contains("food", true) || it.category.contains("gastr", true) || it.category.contains("market", true) } -> "gastronomía"
+            prefs.contains(Preference.OCIO) && dayActivities.any { it.category.contains("night", true) || it.category.contains("entertain", true) || it.category.contains("club", true) } -> "ocio"
+            else -> "recorrido libre"
+        }
+
+        val activitiesText = if (dayActivities.isNotEmpty()) {
+            dayActivities.joinToString(separator = " • ") { it.name }
+        } else {
+            "Actividad libre sugerida"
+        }
+
+        "Día $day: $focus en $destino. Actividades: $activitiesText"
+    }
 }

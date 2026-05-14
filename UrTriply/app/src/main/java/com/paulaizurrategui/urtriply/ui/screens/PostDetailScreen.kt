@@ -389,7 +389,14 @@ fun PostDetailScreen(
     if (showReportDialog) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showReportDialog = false },
-            title = { Text("Reportar viaje") },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { showReportDialog = false }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                    }
+                    Text("Reportar viaje")
+                }
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (reportMessage != null) {
@@ -480,7 +487,14 @@ fun PostDetailScreen(
     if (showReportCommentDialog && selectedCommentToReport != null) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showReportCommentDialog = false },
-            title = { Text("Reportar comentario") },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { showReportCommentDialog = false }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                    }
+                    Text("Reportar comentario")
+                }
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (commentReportMessage != null) {

@@ -3,13 +3,18 @@ package com.paulaizurrategui.urtriply.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,6 +35,7 @@ fun UrTriplyGradientScaffold(
     modifier: Modifier = Modifier,
     showHeader: Boolean = true,                // si false, quito el bloque "urtriply"
     showTitle: Boolean = title.isNotBlank(),   // si title viene vacio, no muestro titulo
+    onBack: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     // degradado de fondo comun
@@ -79,12 +85,19 @@ fun UrTriplyGradientScaffold(
 
                     // titulo opcional de pantalla
                     if (showTitle) {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF111827)
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (onBack != null) {
+                                IconButton(onClick = onBack) {
+                                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                                }
+                            }
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF111827)
+                            )
+                        }
                         Spacer(modifier = Modifier.padding(top = 14.dp))
                     }
 

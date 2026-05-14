@@ -329,7 +329,11 @@ androidx.test.espresso:espresso-core:3.5.1
 
 ### 5.1. Períodos de Desarrollo
 
-**Período Total**: 17 de marzo - 13 de mayo de 2026 (58 días calendario, ~40 días hábiles)
+**Período Total**: 17 de marzo - 13 de mayo de 2026 (58 días calendario)
+
+**Dedicación**: 4 horas diarias en horario de tarde (flexible según disponibilidad)
+
+**Cálculo de Horas**: ~50 días de trabajo efectivo × 4 horas/día = **~200 horas totales aproximadamente**
 
 #### **Fase 1: Planificación y Diseño (17 mar - 31 mar)**
 - **Duración**: 2 semanas
@@ -340,7 +344,7 @@ androidx.test.espresso:espresso-core:3.5.1
   - Evaluación de APIs disponibles
   - Configuración inicial de proyecto Android
 - **Commits**: 8
-- **Horas Estimadas**: 40h
+- **Horas Dedicadas**: 16h (4 días × 4h/día)
 
 #### **Fase 2: MVP - Backend y Autenticación (1 abr - 15 abr)**
 - **Duración**: 2 semanas
@@ -351,7 +355,7 @@ androidx.test.espresso:espresso-core:3.5.1
   - Estructura de base de datos
   - ViewModels básicos
 - **Commits**: 8
-- **Horas Estimadas**: 50h
+- **Horas Dedicadas**: 20h (5 días × 4h/día)
 
 #### **Fase 3: Generador de Viajes (16 abr - 25 abr)**
 - **Duración**: 1.5 semanas
@@ -363,7 +367,7 @@ androidx.test.espresso:espresso-core:3.5.1
   - Cálculo de presupuesto y distribución
   - Generación de itinerario
 - **Commits**: 12
-- **Horas Estimadas**: 60h
+- **Horas Dedicadas**: 40h (10 días × 4h/día)
 
 #### **Fase 4: Comunidad Social (26 abr - 7 may)**
 - **Duración**: 1.5 semanas
@@ -375,7 +379,7 @@ androidx.test.espresso:espresso-core:3.5.1
   - Panel de moderación admin
   - Búsqueda de amigos
 - **Commits**: 14
-- **Horas Estimadas**: 70h
+- **Horas Dedicadas**: 56h (14 días × 4h/día)
 
 #### **Fase 5: Pulido y Correcciones (8 may - 13 may)**
 - **Duración**: 1 semana
@@ -385,23 +389,23 @@ androidx.test.espresso:espresso-core:3.5.1
   - Traducción al inglés completa
   - Mejoras UI/UX
   - Testing
-  - Documentación final
+  - Documentación y memoria
 - **Commits**: 9
-- **Horas Estimadas**: 50h
+- **Horas Dedicadas**: 24h (6 días × 4h/día)
 
 ### 5.2. Horas por Categoría
 
 | Actividad | Horas | % |
-|-----------|-------|-----|
-| **Planificación y Análisis** | 40 | 8% |
-| **Setup y Configuración** | 30 | 6% |
-| **Frontend (Compose)** | 100 | 20% |
-| **Backend (Firestore/APIs)** | 140 | 28% |
-| **Integración de APIs** | 80 | 16% |
-| **Testing y Debugging** | 60 | 12% |
-| **Documentación** | 30 | 6% |
-| **Deploy y Optimización** | 20 | 4% |
-| **TOTAL** | **500h** | **100%** |
+|-----------|-------:|---:|
+| **Planificación y Análisis** | 16 | 8% |
+| **Setup y Configuración** | 20 | 10% |
+| **Frontend (Compose)** | 44 | 22% |
+| **Backend (Firestore/APIs)** | 56 | 28% |
+| **Integración de APIs** | 28 | 14% |
+| **Testing y Debugging** | 20 | 10% |
+| **Documentación** | 8 | 4% |
+| **Deploy y Optimización** | 8 | 4% |
+| **TOTAL** | **200h** | **100%** |
 
 ### 5.3. Hitos Clave (Entregas Parciales)
 
@@ -425,8 +429,9 @@ androidx.test.espresso:espresso-core:3.5.1
 ### 6.2. Recursos Espaciales
 
 - **Centro**: IES Gregorio Fernández (Valladolid)
-- **Aula**: Laboratorio de informática con 20 ordenadores
-- **Ambiente**: Conexión WiFi, enchufes, servicios básicos
+- **Lugar de trabajo principal**: Habitación personal (escritorio), trabajando por las tardes
+- **Aula**: Laboratorio de informática con 20 ordenadores (uso ocasional para pruebas en centro)
+- **Ambiente**: Conexión WiFi doméstica, enchufes y servicios básicos
 
 ### 6.3. Recursos Materiales y Tecnológicos
 
