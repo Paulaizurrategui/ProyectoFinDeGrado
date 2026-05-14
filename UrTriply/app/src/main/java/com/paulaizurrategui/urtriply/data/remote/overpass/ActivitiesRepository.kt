@@ -1,6 +1,7 @@
 package com.paulaizurrategui.urtriply.data.remote.overpass
 
 import android.util.Log
+import com.paulaizurrategui.urtriply.BuildConfig
 import com.paulaizurrategui.urtriply.domain.model.SuggestedActivity
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -148,6 +149,19 @@ class ActivitiesRepository {
         prefs: Set<String>,
         radiusKm: Float = 5f
     ): List<SuggestedActivity> {
+        // Si hay clave de Google Places, consultamos primero para datos comerciales fiables
+        if (BuildConfig.GOOGLE_PLACES_API_KEY.isNotBlank()) {
+            try {
+                val gp = com.paulaizurrategui.urtriply.data.remote.google.GooglePlacesRepository(BuildConfig.GOOGLE_PLACES_API_KEY)
+                val places = gp.searchNearbyAttractions(lat, lon, (radiusKm * 1000).toInt())
+                if (places.isNotEmpty()) {
+                    Log.d(TAG, "✅ Google Places devolvió ${places.size} actividades; usándolas")
+                    return places
+                }
+            } catch (e: Throwable) {
+                Log.w(TAG, "⚠️ Error consultando Google Places: ${e.message}")
+            }
+        }
         val deltaLat = radiusKm / 111f
         val deltaLon = radiusKm / (111f * kotlin.math.cos(Math.toRadians(lat)).toFloat())
 

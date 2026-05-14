@@ -18,7 +18,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        // Expose TEQUILA_API_KEY from local.properties or environment to BuildConfig
+        // Expose API keys from local.properties or environment to BuildConfig
         val localProps = Properties()
         val localFile = rootProject.file("local.properties")
         if (localFile.exists()) {
@@ -26,6 +26,9 @@ android {
         }
         val travelpayoutsToken = (localProps.getProperty("TRAVELPAYOUTS_API_TOKEN") ?: System.getenv("TRAVELPAYOUTS_API_TOKEN") ?: "").replace("\"", "\\\"")
         buildConfigField("String", "TRAVELPAYOUTS_API_TOKEN", "\"$travelpayoutsToken\"")
+
+        val googlePlacesApiKey = (localProps.getProperty("googlePlacesApiKey") ?: System.getenv("GOOGLE_PLACES_API_KEY") ?: "").replace("\"", "\\\"")
+        buildConfigField("String", "GOOGLE_PLACES_API_KEY", "\"$googlePlacesApiKey\"")
     }
 
     buildTypes {

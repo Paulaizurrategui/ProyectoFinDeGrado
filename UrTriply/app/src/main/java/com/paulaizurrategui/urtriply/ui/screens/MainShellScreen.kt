@@ -128,6 +128,8 @@ fun MainShellScreen( // pantalla principal con navegación
                 else CommunityTabScreen(onPostClick = { postId ->
                     // Navigate to post details
                     navController.navigate("community/post/$postId")
+                }, onNavigateToFindFriends = {
+                    navController.navigate("find_friends")
                 })
             }
 

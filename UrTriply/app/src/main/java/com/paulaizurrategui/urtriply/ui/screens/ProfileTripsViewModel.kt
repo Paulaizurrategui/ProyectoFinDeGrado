@@ -30,6 +30,8 @@ class ProfileTripsViewModel(
 ) : ViewModel() {
 
     private val trips = db.collection("trips")
+    private var draftsListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var publishedListener: com.google.firebase.firestore.ListenerRegistration? = null
 
     private val _uiState = MutableStateFlow(ProfileTripsUiState(isLoading = true))
     val uiState: StateFlow<ProfileTripsUiState> = _uiState
@@ -43,15 +45,29 @@ class ProfileTripsViewModel(
             return
         }
 
+        // Remove existing listeners if any
+        draftsListener?.remove()
+        publishedListener?.remove()
+        draftsListener = null
+        publishedListener = null
+
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
-        // Borradores
-        trips.whereEqualTo("authorUid", uid)
+        // Listener para borradores
+        draftsListener = trips
+            .whereEqualTo("authorUid", uid)
             .whereEqualTo("status", TripStatus.DRAFT.name)
             .orderBy("createdAt", Query.Direction.DESCENDING)
-            .get()
-            .addOnSuccessListener { snapDrafts ->
-                val drafts = snapDrafts.documents.map { d ->
+            .addSnapshotListener { snapDrafts, e ->
+                if (e != null) {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = e.message ?: "Error cargando borradores."
+                    )
+                    return@addSnapshotListener
+                }
+
+                val drafts = snapDrafts?.documents?.map { d ->
                     TripListItem(
                         id = d.id,
                         destino = d.getString("destino") ?: "(sin destino)",
@@ -59,41 +75,44 @@ class ProfileTripsViewModel(
                         createdAt = d.getTimestamp("createdAt"),
                         publishedAt = d.getTimestamp("publishedAt")
                     )
+                } ?: emptyList()
+
+                // Actualizar estado parcial; published se actualizará por su propio listener
+                _uiState.value = _uiState.value.copy(
+                    drafts = drafts,
+                    isLoading = false,
+                    errorMessage = null
+                )
+            }
+
+        // Listener para publicados
+        publishedListener = trips
+            .whereEqualTo("authorUid", uid)
+            .whereEqualTo("status", TripStatus.PUBLISHED.name)
+            .orderBy("publishedAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapPublished, e ->
+                if (e != null) {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = e.message ?: "Error cargando publicaciones."
+                    )
+                    return@addSnapshotListener
                 }
 
-                // Publicados
-                trips.whereEqualTo("authorUid", uid)
-                    .whereEqualTo("status", TripStatus.PUBLISHED.name)
-                    .orderBy("publishedAt", Query.Direction.DESCENDING)
-                    .get()
-                    .addOnSuccessListener { snapPublished ->
-                        val published = snapPublished.documents.map { d ->
-                            TripListItem(
-                                id = d.id,
-                                destino = d.getString("destino") ?: "(sin destino)",
-                                status = TripStatus.PUBLISHED,
-                                createdAt = d.getTimestamp("createdAt"),
-                                publishedAt = d.getTimestamp("publishedAt")
-                            )
-                        }
+                val published = snapPublished?.documents?.map { d ->
+                    TripListItem(
+                        id = d.id,
+                        destino = d.getString("destino") ?: "(sin destino)",
+                        status = TripStatus.PUBLISHED,
+                        createdAt = d.getTimestamp("createdAt"),
+                        publishedAt = d.getTimestamp("publishedAt")
+                    )
+                } ?: emptyList()
 
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            drafts = drafts,
-                            published = published
-                        )
-                    }
-                    .addOnFailureListener { e ->
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            errorMessage = e.message ?: "Error cargando publicaciones."
-                        )
-                    }
-            }
-            .addOnFailureListener { e ->
                 _uiState.value = _uiState.value.copy(
+                    published = published,
                     isLoading = false,
-                    errorMessage = e.message ?: "Error cargando borradores."
+                    errorMessage = null
                 )
             }
     }
@@ -155,5 +174,11 @@ class ProfileTripsViewModel(
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
+    }
+
+    override fun onCleared() {
+        draftsListener?.remove()
+        publishedListener?.remove()
+        super.onCleared()
     }
 }

@@ -38,6 +38,8 @@ class CommunityViewModel : ViewModel() {
     // bloqueos del usuario actual
     private var blockedUserIds: Set<String> = emptySet()
     private var usersWhoBlockedMe: Set<String> = emptySet()
+    // ids de usuarios que sigo
+    val followingIdsFlow = kotlinx.coroutines.flow.MutableStateFlow<Set<String>>(emptySet())
 
     init {
         // al crear el vm, cargo los bloqueos y luego escucho a quien sigo
@@ -99,6 +101,8 @@ class CommunityViewModel : ViewModel() {
             likesRepo.removeLike(postId, currentUser.uid,
                 onSuccess = {
                     errorMessage.value = null
+                    // refresh interaction state so UI and other screens reflect change
+                    loadUserInteractionStates()
                 },
                 onError = { e ->
                     // Rollback UI on error
@@ -112,6 +116,8 @@ class CommunityViewModel : ViewModel() {
             likesRepo.addLike(postId, currentUser.uid,
                 onSuccess = {
                     errorMessage.value = null
+                    // refresh interaction state so UI and other screens reflect change
+                    loadUserInteractionStates()
                 },
                 onError = { e ->
                     // Rollback UI on error
@@ -156,6 +162,8 @@ class CommunityViewModel : ViewModel() {
             favoritesRepo.removeFavorite(postId, currentUser.uid,
                 onSuccess = {
                     errorMessage.value = null
+                    // refresh interaction state so UI and other screens reflect change
+                    loadUserInteractionStates()
                 },
                 onError = { e ->
                     // Rollback UI on error
@@ -169,6 +177,8 @@ class CommunityViewModel : ViewModel() {
             favoritesRepo.addFavorite(postId, currentUser.uid,
                 onSuccess = {
                     errorMessage.value = null
+                    // refresh interaction state so UI and other screens reflect change
+                    loadUserInteractionStates()
                 },
                 onError = { e ->
                     // Rollback UI on error
@@ -226,7 +236,7 @@ class CommunityViewModel : ViewModel() {
             }
     }
 
-    // escucha cambios en /users/{uid}/following para recargar el feed
+    // escucha cambios globales en /trips para recargar el feed
     private fun observeFollowingAndLoadFeed() {
         val myUid = auth.currentUser?.uid ?: run {
             rawPosts = emptyList()
@@ -234,24 +244,21 @@ class CommunityViewModel : ViewModel() {
             return
         }
 
-        db.collection("users")
-            .document(myUid)
-            .collection("following")
+        // En lugar de escuchar todos los viajes, escuchamos la lista de usuarios que sigo
+        db.collection("users").document(myUid).collection("following")
             .addSnapshotListener { snap, e ->
                 if (e != null) {
                     rawPosts = emptyList()
                     _posts.value = emptyList()
+                    followingIdsFlow.value = emptySet()
                     return@addSnapshotListener
                 }
 
-                // ids de los usuarios a los que sigo (cada doc id = uid seguido)
-                val followingIds = snap?.documents?.map { it.id } ?: emptyList()
-
-                // si quieres incluir mis posts tambien, suma myuid aqui
-                // val authors = (followingIds + myUid).distinct()
-                val authors = followingIds.distinct()
-
-                loadPublishedTripsFromAuthors(authors)
+                val followingIds = snap?.documents?.mapNotNull { it.id } ?: emptyList()
+                // actualizo el flow para que la UI pueda reaccionar (ej. mostrar CTA)
+                followingIdsFlow.value = followingIds.toSet()
+                // cargamos los viajes publicados de los autores que sigo
+                loadPublishedTripsFromAuthors(followingIds)
             }
     }
 

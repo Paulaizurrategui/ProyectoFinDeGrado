@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,6 +34,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -44,11 +47,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -73,6 +81,7 @@ fun PostDetailScreen(
     postId: String,
     onBack: () -> Unit
 ) {
+    val isCompactWidth = LocalConfiguration.current.screenWidthDp < 360
     val db = FirebaseFirestore.getInstance()
     val auth = FirebaseAuth.getInstance()
 
@@ -228,7 +237,7 @@ fun PostDetailScreen(
 
                                     Text(
                                         text = trip.destino.ifBlank { "Destino sin nombre" },
-                                        style = MaterialTheme.typography.headlineMedium,
+                                        style = if (isCompactWidth) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.headlineMedium,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color.White
                                     )
@@ -238,15 +247,18 @@ fun PostDetailScreen(
                                             ?.let { "Publicado por $it" }
                                             ?: "Publicado por un viajero de la comunidad",
                                         color = Color.White.copy(alpha = 0.9f),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        maxLines = 2,
+                                        style = if (isCompactWidth) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
+                                        maxLines = if (isCompactWidth) 3 else 2,
                                         overflow = TextOverflow.Ellipsis
                                     )
 
-                                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                        DetailChip(Icons.Default.Euro, "€${trip.presupuestoTotal.toInt()}")
-                                        DetailChip(Icons.Default.People, "${trip.viajeros} viajeros")
-                                        DetailChip(Icons.Default.AccessTime, "${trip.diasRecomendados} días")
+                                    FlowRow(
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        DetailChip(Icons.Default.Euro, "€${trip.presupuestoTotal.toInt()}", isCompactWidth)
+                                        DetailChip(Icons.Default.People, "${trip.viajeros} viajeros", isCompactWidth)
+                                        DetailChip(Icons.Default.AccessTime, "${trip.diasRecomendados} días", isCompactWidth)
                                     }
                                 }
                             }
@@ -397,11 +409,18 @@ fun PostDetailScreen(
                     val reasons = listOf("Spam", "Contenido inapropiado", "Estafa", "Otra razón")
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         reasons.forEach { reason ->
-                            androidx.compose.material3.Button(
+                            val isSelected = reportReason == reason
+                            val borderColor by animateColorAsState(targetValue = if (isSelected) UrOrange else Color.Transparent, animationSpec = tween(220))
+                            ElevatedButton(
                                 onClick = { reportReason = reason },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .then(if (isSelected) Modifier.shadow(6.dp, RoundedCornerShape(12.dp)) else Modifier),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(2.dp, borderColor),
                                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                    containerColor = if (reportReason == reason) UrOrange else MaterialTheme.colorScheme.surfaceVariant
+                                    containerColor = if (isSelected) UrOrange else MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
                                 )
                             ) {
                                 Text(reason)
@@ -481,11 +500,18 @@ fun PostDetailScreen(
                     val reasons = listOf("Spam", "Contenido inapropiado", "Ofensivo", "Otra razón")
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         reasons.forEach { reason ->
-                            androidx.compose.material3.Button(
+                            val isSelected = commentReportReason == reason
+                            val borderColor by animateColorAsState(targetValue = if (isSelected) UrOrange else Color.Transparent, animationSpec = tween(220))
+                            ElevatedButton(
                                 onClick = { commentReportReason = reason },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .then(if (isSelected) Modifier.shadow(6.dp, RoundedCornerShape(12.dp)) else Modifier),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(2.dp, borderColor),
                                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                    containerColor = if (commentReportReason == reason) UrOrange else MaterialTheme.colorScheme.surfaceVariant
+                                    containerColor = if (isSelected) UrOrange else MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
                                 )
                             ) {
                                 Text(reason)
@@ -546,7 +572,7 @@ fun PostDetailScreen(
 }
 
 @Composable
-private fun DetailChip(icon: ImageVector, text: String) {
+private fun DetailChip(icon: ImageVector, text: String, isCompactWidth: Boolean) {
     Surface(
         shape = RoundedCornerShape(50),
         color = Color.White.copy(alpha = 0.18f)
@@ -557,7 +583,13 @@ private fun DetailChip(icon: ImageVector, text: String) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-            Text(text = text, color = Color.White, style = MaterialTheme.typography.labelMedium)
+            Text(
+                text = text,
+                color = Color.White,
+                style = if (isCompactWidth) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
@@ -585,7 +617,13 @@ private fun SummaryRow(label: String, value: String, icon: ImageVector) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(text = value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }

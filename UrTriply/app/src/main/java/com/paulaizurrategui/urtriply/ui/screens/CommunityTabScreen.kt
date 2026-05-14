@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -35,7 +36,8 @@ import com.paulaizurrategui.urtriply.domain.model.TravelPost
 import com.paulaizurrategui.urtriply.ui.auth.CommunityViewModel
 
 @Composable
-fun CommunityTabScreen(onPostClick: (String) -> Unit = {}) {
+fun CommunityTabScreen(onPostClick: (String) -> Unit = {}, onNavigateToFindFriends: () -> Unit = {}) {
+    val isCompactWidth = LocalConfiguration.current.screenWidthDp < 360
     val authViewModel = viewModel<com.paulaizurrategui.urtriply.ui.auth.AuthViewModel>()
     var isOver13 by remember { mutableStateOf<Boolean?>(null) }
     
@@ -66,13 +68,15 @@ fun CommunityTabScreen(onPostClick: (String) -> Unit = {}) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = "Acceso Restringido / Restricted Access",
-                            style = MaterialTheme.typography.headlineMedium,
+                            style = if (isCompactWidth) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
                         Text(
                             text = "Debes tener al menos 13 años para acceder a la comunidad. / You must be at least 13 years old to access the community.",
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = if (isCompactWidth) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
                             textAlign = TextAlign.Center
                         )
                     }
@@ -81,7 +85,7 @@ fun CommunityTabScreen(onPostClick: (String) -> Unit = {}) {
         }
         else -> {
             // Usuario confirmó +13 años
-            CommunityScreen(onPostClick = onPostClick)
+            CommunityScreen(onPostClick = onPostClick, onNavigateToFindFriends = onNavigateToFindFriends)
         }
     }
 }
@@ -95,13 +99,18 @@ val SkyBlue = Color(0xFF87CEEB)
 @Composable
 fun CommunityScreen(
     viewModel: CommunityViewModel = viewModel(),
-    onPostClick: (String) -> Unit = {}
+    onPostClick: (String) -> Unit = {},
+    onNavigateToFindFriends: () -> Unit = {}
 ) {
+    val isCompactWidth = LocalConfiguration.current.screenWidthDp < 360
+
     // estado del viewmodel
     val posts by viewModel.posts.collectAsState()
     val filters by viewModel.filters
     val isLoading by viewModel.isLoading
     val showFilters by viewModel.showFilters
+
+    val followingIds by viewModel.followingIdsFlow.collectAsState()
 
     // fondo suave para comunidad
     Box(
@@ -142,7 +151,11 @@ fun CommunityScreen(
                     CircularProgressIndicator(color = OrangeUrTriply)
                 }
             } else if (posts.isEmpty()) {
-                EmptyState()
+                if (followingIds.isEmpty()) {
+                    EmptyFollowingState(onNavigateToFindFriends = onNavigateToFindFriends)
+                } else {
+                    EmptyState()
+                }
             } else {
                 // lista de posts
                 LazyColumn(
@@ -153,6 +166,7 @@ fun CommunityScreen(
                     items(posts, key = { it.id }) { post ->
                         TravelPostCard(
                             post = post,
+                            isCompactWidth = isCompactWidth,
                             onLikeClick = { viewModel.toggleLike(post.id) },
                             onFavoriteClick = { viewModel.toggleFavorite(post.id) },
                             onCommentClick = { onPostClick(post.id) },
@@ -175,6 +189,8 @@ fun CommunityHeader(
     onFilterClick: () -> Unit,
     hasActiveFilters: Boolean
 ) {
+    val isCompactWidth = LocalConfiguration.current.screenWidthDp < 360
+
     // header tipo appbar
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -195,9 +211,11 @@ fun CommunityHeader(
             ) {
                 Text(
                     text = "UrTriply",
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = if (isCompactWidth) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = OrangeUrTriply
+                    color = OrangeUrTriply,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
@@ -212,12 +230,12 @@ fun CommunityHeader(
                 Column {
                     Text(
                         text = "Comunidad",
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = if (isCompactWidth) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = "Descubre viajes de otros usuarios",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = if (isCompactWidth) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
                         color = Color.Gray
                     )
                 }
@@ -358,11 +376,14 @@ fun FiltersPanel(
 @Composable
 fun TravelPostCard(
     post: TravelPost,
+    isCompactWidth: Boolean,
     onLikeClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     onCommentClick: () -> Unit,
     onCardClick: () -> Unit
 ) {
+    val authorInitial = post.authorName.firstOrNull()?.toString() ?: "?"
+
     Card(
         modifier = Modifier
             .fillMaxWidth(),
@@ -379,15 +400,16 @@ fun TravelPostCard(
                 // avatar (inicial del autor)
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
                         .clip(CircleShape)
-                        .background(OrangeUrTriply.copy(alpha = 0.2f)),
+                        .background(OrangeUrTriply.copy(alpha = 0.2f))
+                        .size(40.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = post.authorName.first().toString(),
+                        text = authorInitial,
                         fontWeight = FontWeight.Bold,
-                        color = OrangeUrTriply
+                        color = OrangeUrTriply,
+                        style = if (isCompactWidth) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodyMedium
                     )
                 }
 
@@ -420,13 +442,20 @@ fun TravelPostCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             // chips del viaje (destino / dias / presupuesto)
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 AssistChip(
                     onClick = { },
-                    label = { Text(post.destination) },
+                    label = {
+                        Text(
+                            post.destination,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
                     leadingIcon = {
                         Icon(
                             Icons.Default.Place,
@@ -443,7 +472,7 @@ fun TravelPostCard(
 
                 AssistChip(
                     onClick = { },
-                    label = { Text("${post.days} días") },
+                    label = { Text("${post.days} días", maxLines = 1) },
                     leadingIcon = {
                         Icon(
                             Icons.Default.CalendarToday,
@@ -459,7 +488,7 @@ fun TravelPostCard(
 
                 AssistChip(
                     onClick = { },
-                    label = { Text("${post.budget.toInt()}${post.currency}") },
+                    label = { Text("${post.budget.toInt()}${post.currency}", maxLines = 1) },
                     leadingIcon = {
                         Icon(
                             Icons.Default.Euro,
@@ -479,9 +508,9 @@ fun TravelPostCard(
             // descripcion (limito lineas para que no crezca infinito)
             Text(
                 text = post.description,
-                style = MaterialTheme.typography.bodyMedium,
+                style = if (isCompactWidth) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
                 color = Color.DarkGray,
-                maxLines = 3,
+                maxLines = if (isCompactWidth) 4 else 3,
                 overflow = TextOverflow.Ellipsis
             )
 
@@ -568,6 +597,42 @@ fun EmptyState() {
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.LightGray
             )
+        }
+    }
+}
+
+@Composable
+fun EmptyFollowingState(onNavigateToFindFriends: () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                Icons.Default.People,
+                contentDescription = null,
+                modifier = Modifier.size(72.dp),
+                tint = OrangeUrTriply
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Tu feed está vacío",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Sigue a tus amigos para ver sus viajes",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onNavigateToFindFriends, colors = ButtonDefaults.buttonColors(containerColor = OrangeUrTriply)) {
+                Text("Buscar amigos")
+            }
         }
     }
 }

@@ -44,8 +44,23 @@ service cloud.firestore {
       // Crear: Usuario autenticado
       allow create: if isAuthenticated() && request.resource.data.authorUid == request.auth.uid;
       
-      // Actualizar: Autor + admin
-      allow update: if isAuthenticated() && (resource.data.authorUid == request.auth.uid || isAdmin());
+      // Actualizar: Autor + admin. Además permitimos que usuarios autenticados
+      // actualicen exclusivamente los contadores `likes` y `favorites` (incrementos/decrementos).
+      allow update: if isAuthenticated() && (
+        resource.data.authorUid == request.auth.uid ||
+        isAdmin() ||
+        (
+          // Permitimos actualizaciones que únicamente afectan al/los campo(s) 'likes' y/o 'favorites'.
+          // Usamos `request.writeFields()` para admitir transform operations como FieldValue.increment().
+          (
+            request.writeFields().hasOnly(['likes'])
+          ) || (
+            request.writeFields().hasOnly(['favorites'])
+          ) || (
+            request.writeFields().hasOnly(['likes','favorites'])
+          )
+        )
+      );
       
       // Borrar: Autor + admin
       allow delete: if isAuthenticated() && (resource.data.authorUid == request.auth.uid || isAdmin());
@@ -74,16 +89,14 @@ service cloud.firestore {
     }
     
     // ===== ADMIN: Acceso a colecciones completas =====
-    // Admin puede leer/escribir en cualquier usuario para moderación
+    // Admin puede leer/escribir en cualquier usuario para moderación.
+    // También permitimos que el propio usuario lea/escriba su documento.
     match /users/{userId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAdmin() || isUserOrAdmin(userId);
     }
     
-    // Admin puede leer todos los trips para moderación
-    match /trips/{tripId} {
-      allow read: if isAdmin();
-      allow update, delete: if isAdmin();
-    }
+    // Admin puede leer todos los trips para moderación (subcolecciones y permisos específicos
+    // se definen más arriba en el bloque principal /trips/{tripId}).
     
     // Admin puede leer/borrar comentarios para moderación
     match /trips/{tripId}/comments/{commentId} {

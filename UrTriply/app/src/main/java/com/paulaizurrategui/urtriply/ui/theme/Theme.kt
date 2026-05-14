@@ -13,34 +13,48 @@ import androidx.compose.ui.platform.LocalContext
 
 // Esquema de colores para modo oscuro (adaptado a UrTriply) - MEJORADO
 private val DarkColorScheme = darkColorScheme(
-    primary = UrOrange,
-    onPrimary = Color.White,
+    primary = UrOrangeSoft,
+    onPrimary = Color(0xFF1C1206),
+    primaryContainer = Color(0xFF5B2B00),
+    onPrimaryContainer = Color(0xFFFFDCC4),
 
-    secondary = UrSky,
-    onSecondary = Color.White,
+    secondary = UrSkySoftDark,
+    onSecondary = Color(0xFF062033),
+    secondaryContainer = Color(0xFF12304A),
+    onSecondaryContainer = Color(0xFFD7F0FF),
 
-    tertiary = UrCream,
-    onTertiary = Color(0xFF1A1A1A),
+    tertiary = UrCreamDark,
+    onTertiary = Color(0xFF2C2208),
+    tertiaryContainer = Color(0xFF4A3A12),
+    onTertiaryContainer = Color(0xFFFFEFC8),
 
-    background = Color(0xFF121212),  // Más claro para mejor contraste
-    onBackground = Color(0xFFE8E8E8),  // Texto muy claro
+    background = UrNightBackground,
+    onBackground = UrNightText,
 
-    surface = Color(0xFF1E1E1E),     // Más visible
-    onSurface = Color(0xFFF5F5F5),   // Blanco casi puro
+    surface = UrNightSurface,
+    onSurface = UrNightText,
+    surfaceVariant = UrNightSurface2,
+    onSurfaceVariant = UrNightTextMuted,
 
-    surfaceVariant = Color(0xFF2A2A2A),   // Más claro
-    onSurfaceVariant = Color(0xFFD0D0D0),  // Gris claro
+    surfaceContainer = UrNightSurface2,
+    surfaceContainerHigh = UrNightSurface3,
+    surfaceContainerHighest = UrNightSurface3,
 
-    outline = Color(0xFF505050),  // Líneas más visibles
+    outline = UrNightOutline,
+    outlineVariant = Color(0xFF263246),
 
-    error = Color(0xFFFF6B6B),   // Rojo más vívido
+    inverseSurface = Color(0xFFEAF0FF),
+    inverseOnSurface = Color(0xFF111827),
+    inversePrimary = UrOrange,
+
+    error = Color(0xFFFF8A80),
     onError = Color.White,
-    
-    // Removed duplicate tertiary parameter
-    // onTertiary = Color(0xFF1A1A1A), // This line is removed
-    
-    errorContainer = Color(0xFF8B0000),  // Rojo más oscuro para fondo
-    onErrorContainer = Color(0xFFFFB3B3)
+
+    errorContainer = Color(0xFF6B1B1B),
+    onErrorContainer = Color(0xFFFFD7D7),
+
+    scrim = Color(0xFF000000),
+    surfaceTint = UrOrangeSoft
 )
 
 // Esquema de colores para modo claro (UrTriply)
