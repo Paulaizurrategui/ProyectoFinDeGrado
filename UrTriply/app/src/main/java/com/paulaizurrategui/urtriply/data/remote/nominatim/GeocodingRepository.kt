@@ -88,7 +88,7 @@ class GeocodingRepository {
                 lastError = e
                 Log.e(TAG, "Error geocoding '$query' (attempt ${attempt + 1}/3): ${e.message}")
                 if (attempt < 2) {
-                    delay(500) // Espera antes de reintentar
+                    delay(150) // Espera antes de reintentar (reducido)
                 }
             }
         }

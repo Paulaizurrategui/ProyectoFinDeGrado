@@ -48,10 +48,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.ui.theme.UrCream
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -71,6 +74,8 @@ fun EditTripScreen(
     tripId: String,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
+
     // firestore
     val db = remember { FirebaseFirestore.getInstance() }
     val trips = remember { db.collection("trips") }
@@ -147,7 +152,7 @@ fun EditTripScreen(
                 loading = false
             }
             .addOnFailureListener { e ->
-                error = e.message ?: "No se pudo cargar el viaje."
+                error = e.message ?: context.getString(R.string.edit_trip_loading_error)
                 loading = false
             }
     }
@@ -175,11 +180,11 @@ fun EditTripScreen(
                     TextButton(
                         onClick = onBack,
                         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                    ) { Text("← Volver") }
+                    ) { Text(stringResource(R.string.edit_trip_back)) }
 
                     // titulo
                     Text(
-                        text = "Editar viaje",
+                        text = stringResource(R.string.edit_trip_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold
                     )
@@ -195,12 +200,12 @@ fun EditTripScreen(
                     ) {
                         Column(Modifier.padding(14.dp)) {
                             Text(
-                                text = "Actualiza los datos del viaje",
+                                text = stringResource(R.string.edit_trip_intro_title),
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                text = "Puedes editar destino, presupuesto, fechas y preferencias.",
+                                text = stringResource(R.string.edit_trip_intro_body),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -223,7 +228,7 @@ fun EditTripScreen(
                             ) {
                                 CircularProgressIndicator(strokeWidth = 2.dp)
                                 Spacer(Modifier.size(12.dp))
-                                Text("Cargando viaje...")
+                                Text(stringResource(R.string.edit_trip_loading))
                             }
                         }
 
@@ -274,7 +279,7 @@ fun EditTripScreen(
                             OutlinedTextField(
                                 value = presupuestoText,
                                 onValueChange = { presupuestoText = it.replace(",", ".") }, // permito coma y la convierto
-                                label = { Text("EUR") },
+                                label = { Text(stringResource(R.string.edit_trip_currency)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp)
@@ -285,7 +290,7 @@ fun EditTripScreen(
                             OutlinedTextField(
                                 value = viajerosText,
                                 onValueChange = { viajerosText = it.filter(Char::isDigit) }, // solo numeros
-                                label = { Text("Número de viajeros") },
+                                label = { Text(stringResource(R.string.edit_trip_travelers)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 shape = RoundedCornerShape(12.dp)
@@ -438,9 +443,9 @@ fun EditTripScreen(
                         if (saving) {
                             CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.size(12.dp))
-                            Text("Guardando…", fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.edit_trip_saving), fontWeight = FontWeight.Bold)
                         } else {
-                            Text("Guardar cambios", fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.edit_trip_save_changes), fontWeight = FontWeight.Bold)
                         }
                     }
 
@@ -468,9 +473,9 @@ fun EditTripScreen(
                     TextButton(onClick = {
                         fechaInicioMillis = state.selectedDateMillis
                         showStartPicker = false
-                    }) { Text("OK") }
+                    }) { Text(stringResource(R.string.edit_trip_ok)) }
                 },
-                dismissButton = { TextButton(onClick = { showStartPicker = false }) { Text("Cancelar") } }
+                dismissButton = { TextButton(onClick = { showStartPicker = false }) { Text(stringResource(R.string.edit_trip_cancel)) } }
             ) { DatePicker(state = state) }
         }
 
@@ -483,9 +488,9 @@ fun EditTripScreen(
                     TextButton(onClick = {
                         fechaFinMillis = state.selectedDateMillis
                         showEndPicker = false
-                    }) { Text("OK") }
+                    }) { Text(stringResource(R.string.edit_trip_ok)) }
                 },
-                dismissButton = { TextButton(onClick = { showEndPicker = false }) { Text("Cancelar") } }
+                dismissButton = { TextButton(onClick = { showEndPicker = false }) { Text(stringResource(R.string.edit_trip_cancel)) } }
             ) { DatePicker(state = state) }
         }
     }
@@ -528,7 +533,7 @@ private fun DateRowField(
         }
 
         // boton para abrir el datepicker
-        TextButton(onClick = onClick) { Text("Seleccionar") }
+        TextButton(onClick = onClick) { Text(stringResource(R.string.edit_trip_select)) }
     }
 }
 
@@ -547,8 +552,8 @@ private fun DestinationDropdown(
             value = selected,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Destino (capital europea)") },
-            trailingIcon = { Text("▼") },
+            label = { Text(stringResource(R.string.edit_trip_destination_label)) },
+            trailingIcon = { Text(stringResource(R.string.edit_trip_dropdown)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
@@ -566,7 +571,7 @@ private fun DestinationDropdown(
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Elige destino") },
+            title = { Text(stringResource(R.string.edit_trip_choose_destination)) },
             text = {
                 LazyColumn {
                     items(destinos) { option ->
@@ -586,7 +591,7 @@ private fun DestinationDropdown(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showDialog = false }) { Text("Cerrar") } }
+            confirmButton = { TextButton(onClick = { showDialog = false }) { Text(stringResource(R.string.edit_trip_close)) } }
         )
     }
 }

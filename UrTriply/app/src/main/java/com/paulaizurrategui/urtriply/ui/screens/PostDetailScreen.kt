@@ -57,15 +57,18 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.domain.model.Comment
 import com.paulaizurrategui.urtriply.data.trips.TripDoc
 import com.paulaizurrategui.urtriply.ui.components.CommentSection
+import com.paulaizurrategui.urtriply.ui.auth.CommunityViewModel
 import com.paulaizurrategui.urtriply.ui.theme.UrOrange
 import com.paulaizurrategui.urtriply.data.reports.ReportRepository
 import com.paulaizurrategui.urtriply.ui.theme.UrSky
@@ -92,6 +95,7 @@ fun PostDetailScreen(
     val commentVm = remember { CommentViewModel() }
     val comments by commentVm.comments.collectAsState()
     val currentUser = auth.currentUser
+    val communityVm: CommunityViewModel = viewModel()
     
     var showReportDialog by remember { mutableStateOf(false) }
     var reportReason by remember { mutableStateOf("") }
@@ -102,6 +106,10 @@ fun PostDetailScreen(
     var commentReportReason by remember { mutableStateOf("") }
     var commentReportDescription by remember { mutableStateOf("") }
     var commentReportMessage by remember { mutableStateOf<String?>(null) }
+    var showBlockDialog by remember { mutableStateOf(false) }
+    var blockTargetUid by remember { mutableStateOf<String?>(null) }
+    var blockReason by remember { mutableStateOf("") }
+    var blockMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(postId) {
         db.collection("trips").document(postId).get()
@@ -131,27 +139,36 @@ fun PostDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Ver más") },
+                title = { Text(stringResource(R.string.post_detail_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
                     var menuExpanded by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = { menuExpanded = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
+                            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.post_detail_action_options))
                         }
                         DropdownMenu(
                             expanded = menuExpanded,
                             onDismissRequest = { menuExpanded = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Reportar viaje") },
+                                text = { Text(stringResource(R.string.post_detail_report_trip)) },
                                 onClick = {
                                     menuExpanded = false
                                     showReportDialog = true
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.block_user)) },
+                                onClick = {
+                                    menuExpanded = false
+                                    // target author UID
+                                    blockTargetUid = tripData?.authorUid
+                                    showBlockDialog = true
                                 }
                             )
                         }
@@ -190,9 +207,9 @@ fun PostDetailScreen(
                             modifier = Modifier.padding(20.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(text = errorMessage!!, style = MaterialTheme.typography.bodyMedium)
+                                Text(text = errorMessage!!, style = MaterialTheme.typography.bodyMedium)
                             Spacer(Modifier.height(16.dp))
-                            androidx.compose.material3.Button(onClick = onBack) { Text("Volver") }
+                            androidx.compose.material3.Button(onClick = onBack) { Text(stringResource(R.string.back)) }
                         }
                     }
                 }
@@ -227,7 +244,7 @@ fun PostDetailScreen(
                                         color = Color.White.copy(alpha = 0.18f)
                                     ) {
                                         Text(
-                                            text = "Viaje publicado por un amigo",
+                                            text = stringResource(R.string.post_detail_published_friend),
                                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                                             color = Color.White,
                                             style = MaterialTheme.typography.labelLarge,
@@ -244,8 +261,8 @@ fun PostDetailScreen(
 
                                     Text(
                                         text = trip.authorEmail?.takeIf { it.isNotBlank() }
-                                            ?.let { "Publicado por $it" }
-                                            ?: "Publicado por un viajero de la comunidad",
+                                            ?.let { stringResource(R.string.post_detail_published_by, it) }
+                                            ?: stringResource(R.string.post_detail_published_community),
                                         color = Color.White.copy(alpha = 0.9f),
                                         style = if (isCompactWidth) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
                                         maxLines = if (isCompactWidth) 3 else 2,
@@ -274,15 +291,15 @@ fun PostDetailScreen(
                         ) {
                             Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Text(
-                                    text = "Resumen del plan",
+                                    text = stringResource(R.string.post_detail_summary),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
 
-                                SummaryRow("Salida", trip.fechaInicioMillis?.let { dateFormat.format(Date(it)) } ?: "Sin fecha", Icons.Default.CalendarToday)
-                                SummaryRow("Vuelta", trip.fechaFinMillis?.let { dateFormat.format(Date(it)) } ?: "Sin fecha", Icons.Default.CalendarToday)
-                                SummaryRow("Origen", "Madrid", Icons.Default.LocationOn)
-                                SummaryRow("Estado", trip.status.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }, Icons.Default.AccessTime)
+                                SummaryRow(stringResource(R.string.post_detail_departure), trip.fechaInicioMillis?.let { dateFormat.format(Date(it)) } ?: "Sin fecha", Icons.Default.CalendarToday)
+                                SummaryRow(stringResource(R.string.post_detail_return), trip.fechaFinMillis?.let { dateFormat.format(Date(it)) } ?: "Sin fecha", Icons.Default.CalendarToday)
+                                SummaryRow(stringResource(R.string.post_detail_origin), "Madrid", Icons.Default.LocationOn)
+                                SummaryRow(stringResource(R.string.post_detail_status), trip.status.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }, Icons.Default.AccessTime)
                             }
                         }
                     }
@@ -295,7 +312,7 @@ fun PostDetailScreen(
                         ) {
                             Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Text(
-                                    text = "Itinerario",
+                                    text = stringResource(R.string.post_detail_itinerary),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -335,7 +352,7 @@ fun PostDetailScreen(
                                     }
                                 } else {
                                     Text(
-                                        text = "Este viaje todavía no incluye itinerario detallado.",
+                                        text = stringResource(R.string.post_detail_no_itinerary),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
@@ -352,7 +369,7 @@ fun PostDetailScreen(
                         ) {
                             Column(modifier = Modifier.padding(18.dp)) {
                                 Text(
-                                    text = "Comentarios",
+                                    text = stringResource(R.string.post_detail_comments),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -377,6 +394,10 @@ fun PostDetailScreen(
                                         selectedCommentToReport = comment
                                         showReportCommentDialog = true
                                     }
+                                    ,onBlockUser = { authorUid ->
+                                        blockTargetUid = authorUid
+                                        showBlockDialog = true
+                                    }
                                 )
                             }
                         }
@@ -392,9 +413,9 @@ fun PostDetailScreen(
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = { showReportDialog = false }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
-                    Text("Reportar viaje")
+                    Text(stringResource(R.string.post_detail_report_trip))
                 }
             },
             text = {
@@ -412,7 +433,7 @@ fun PostDetailScreen(
                         }
                     }
 
-                    Text("Selecciona la razón del reporte:")
+                    Text(stringResource(R.string.post_detail_select_reason))
                     val reasons = listOf("Spam", "Contenido inapropiado", "Estafa", "Otra razón")
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         reasons.forEach { reason ->
@@ -438,7 +459,7 @@ fun PostDetailScreen(
                     androidx.compose.material3.OutlinedTextField(
                         value = reportDescription,
                         onValueChange = { reportDescription = it },
-                        label = { Text("Detalles adicionales (opcional)") },
+                        label = { Text(stringResource(R.string.post_detail_optional_details)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(80.dp),
@@ -473,12 +494,12 @@ fun PostDetailScreen(
                         }
                     }
                 ) {
-                    Text("Reportar")
+                    Text(stringResource(R.string.post_detail_report_submit))
                 }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = { showReportDialog = false }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.post_detail_report_cancel))
                 }
             }
         )
@@ -490,9 +511,9 @@ fun PostDetailScreen(
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = { showReportCommentDialog = false }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
-                    Text("Reportar comentario")
+                    Text(stringResource(R.string.post_detail_report_comment))
                 }
             },
             text = {
@@ -510,7 +531,7 @@ fun PostDetailScreen(
                         }
                     }
 
-                    Text("Selecciona la razón del reporte:")
+                    Text(stringResource(R.string.post_detail_select_reason))
                     val reasons = listOf("Spam", "Contenido inapropiado", "Ofensivo", "Otra razón")
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         reasons.forEach { reason ->
@@ -536,7 +557,7 @@ fun PostDetailScreen(
                     androidx.compose.material3.OutlinedTextField(
                         value = commentReportDescription,
                         onValueChange = { commentReportDescription = it },
-                        label = { Text("Detalles adicionales (opcional)") },
+                        label = { Text(stringResource(R.string.post_detail_optional_details)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(80.dp),
@@ -573,12 +594,80 @@ fun PostDetailScreen(
                         }
                     }
                 ) {
-                    Text("Reportar")
+                    Text(stringResource(R.string.post_detail_report_submit))
                 }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = { showReportCommentDialog = false }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.post_detail_report_cancel))
+                }
+            }
+        )
+    }
+
+    // Block user dialog (used for post author or comment author)
+    if (showBlockDialog && blockTargetUid != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showBlockDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { showBlockDialog = false }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
+                    }
+                    Text(stringResource(R.string.block_user))
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (blockMessage != null) {
+                        Surface(
+                            color = UrOrange.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = blockMessage!!,
+                                modifier = Modifier.padding(12.dp),
+                                color = UrOrange
+                            )
+                        }
+                    }
+
+                    Text(stringResource(R.string.block_reason))
+
+                    androidx.compose.material3.OutlinedTextField(
+                        value = blockReason,
+                        onValueChange = { blockReason = it },
+                        label = { Text(stringResource(R.string.block_reason)) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp),
+                        maxLines = 3
+                    )
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.Button(
+                    onClick = {
+                        val target = blockTargetUid
+                        if (target != null && currentUser != null) {
+                            communityVm.blockUser(target,
+                                onSuccess = {
+                                    blockMessage = "✓ Usuario bloqueado"
+                                    blockReason = ""
+                                },
+                                onError = { e -> blockMessage = "Error: ${e.message}" }
+                            )
+                        } else {
+                            blockMessage = "Necesitas iniciar sesión"
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.block_user))
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showBlockDialog = false }) {
+                    Text(stringResource(R.string.post_detail_report_cancel))
                 }
             }
         )

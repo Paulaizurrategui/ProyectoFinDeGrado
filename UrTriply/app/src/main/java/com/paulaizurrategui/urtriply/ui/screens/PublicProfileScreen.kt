@@ -50,14 +50,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.request.CachePolicy
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.domain.model.TravelPost
 import com.paulaizurrategui.urtriply.domain.model.UserDoc
 import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
@@ -172,9 +178,9 @@ fun PublicProfileScreen(
             uiState.errorMessage != null -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(uiState.errorMessage ?: "Error")
+                        Text(uiState.errorMessage ?: stringResource(R.string.public_profile_error))
                         Spacer(Modifier.height(12.dp))
-                        androidx.compose.material3.Button(onClick = onBack) { Text("Volver") }
+                        androidx.compose.material3.Button(onClick = onBack) { Text(stringResource(R.string.public_profile_back)) }
                     }
                 }
             }
@@ -204,12 +210,19 @@ fun PublicProfileScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         if (!user.photoUrl.isNullOrBlank()) {
+                                            val ctx = LocalContext.current
                                             AsyncImage(
-                                                model = user.photoUrl,
+                                                model = ImageRequest.Builder(ctx)
+                                                    .data(user.photoUrl)
+                                                    .crossfade(true)
+                                                    .memoryCachePolicy(CachePolicy.ENABLED)
+                                                    .diskCachePolicy(CachePolicy.ENABLED)
+                                                    .build(),
                                                 contentDescription = user.displayName,
                                                 modifier = Modifier
                                                     .size(76.dp)
-                                                    .clip(CircleShape)
+                                                    .clip(CircleShape),
+                                                contentScale = ContentScale.Crop
                                             )
                                         } else {
                                             Text(
@@ -265,11 +278,11 @@ fun PublicProfileScreen(
                                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                 ) {
                                     Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Text("Campos del perfil", fontWeight = FontWeight.SemiBold)
-                                        ProfileFieldRow("Nombre", user.displayName)
-                                        ProfileFieldRow("Email", user.email)
-                                        ProfileFieldRow("Foto", if (user.photoUrl.isNullOrBlank()) "No añadida" else "Añadida")
-                                        ProfileFieldRow("Verificación +13", if (user.isOver13Confirmed) "Sí" else "No")
+                                        Text(stringResource(R.string.public_profile_fields_title), fontWeight = FontWeight.SemiBold)
+                                        ProfileFieldRow(stringResource(R.string.public_profile_field_name), user.displayName)
+                                        ProfileFieldRow(stringResource(R.string.public_profile_field_email), user.email)
+                                        ProfileFieldRow(stringResource(R.string.public_profile_field_photo), if (user.photoUrl.isNullOrBlank()) stringResource(R.string.public_profile_field_no) else stringResource(R.string.public_profile_field_yes))
+                                        ProfileFieldRow(stringResource(R.string.public_profile_field_age), if (user.isOver13Confirmed) stringResource(R.string.public_profile_field_yes) else stringResource(R.string.public_profile_field_no))
                                     }
                                 }
                             }
@@ -279,12 +292,12 @@ fun PublicProfileScreen(
                     item {
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
-                                text = "Viajes publicados",
+                                text = stringResource(R.string.public_profile_trips_title),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Publicaciones visibles de este usuario",
+                                text = stringResource(R.string.public_profile_trips_subtitle),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -298,7 +311,7 @@ fun PublicProfileScreen(
                                 shape = RoundedCornerShape(20.dp)
                             ) {
                                 Column(modifier = Modifier.padding(18.dp)) {
-                                    Text("Todavía no tiene viajes publicados.")
+                                    Text(stringResource(R.string.public_profile_no_trips))
                                 }
                             }
                         }
@@ -330,8 +343,8 @@ private fun PublicProfileTripCard(trip: TravelPost) {
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(trip.destination, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-            Text("${trip.days} días • ${trip.budget.toInt()}${trip.currency}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(trip.description.ifBlank { "Sin descripción" }, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Text(stringResource(R.string.public_profile_trip_summary, trip.days, trip.budget.toInt(), trip.currency), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(trip.description.ifBlank { stringResource(R.string.comments_empty) }, maxLines = 3, overflow = TextOverflow.Ellipsis)
         }
     }
 }

@@ -90,43 +90,72 @@ fun ProfileTabScreen(
     val favoritesVm: com.paulaizurrategui.urtriply.ui.viewmodels.ProfileFavoritesViewModel = viewModel()
     val favorites by favoritesVm.favorites.collectAsState()
     val likes by favoritesVm.likes.collectAsState()
-    val favoritesLoading by favoritesVm.isLoading.collectAsState()
+    val favoritesLoading by favoritesVm.favoritesLoading.collectAsState()
+    val likesLoading by favoritesVm.likesLoading.collectAsState()
 
     var confirmDeleteId by remember { mutableStateOf<String?>(null) }
+    var confirmRemoveFavoriteId by remember { mutableStateOf<String?>(null) }
+    var confirmRemoveLikeId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         tripsVm.loadMyTrips()
-        favoritesVm.loadFavoritesAndLikes()
-    }
-
-    // Reload favorites/likes when user returns to profile
-    LaunchedEffect(true) {
-        // This will be called whenever the profile tab gains focus
-        favoritesVm.loadFavoritesAndLikes()
+        favoritesVm.refreshAll()
     }
 
     if (tripsState.errorMessage != null) {
         AlertDialog(
             onDismissRequest = { tripsVm.clearError() },
-            title = { Text("Error") },
+            title = { Text(stringResource(R.string.profile_error_title)) },
             text = { Text(tripsState.errorMessage ?: "") },
-            confirmButton = { TextButton(onClick = { tripsVm.clearError() }) { Text("OK") } }
+            confirmButton = { TextButton(onClick = { tripsVm.clearError() }) { Text(stringResource(R.string.profile_ok)) } }
         )
     }
 
     if (confirmDeleteId != null) {
         AlertDialog(
             onDismissRequest = { confirmDeleteId = null },
-            title = { Text("Eliminar viaje") },
-            text = { Text("¿Seguro que quieres eliminar este viaje? Esta acción no se puede deshacer.") },
+            title = { Text(stringResource(R.string.profile_delete_trip)) },
+            text = { Text(stringResource(R.string.profile_delete_confirm)) },
             confirmButton = {
                 TextButton(onClick = {
                     val id = confirmDeleteId
                     confirmDeleteId = null
                     if (id != null) tripsVm.deleteTrip(id)
-                }) { Text("Eliminar") }
+                }) { Text(stringResource(R.string.profile_delete_trip_confirm_button)) }
             },
-            dismissButton = { TextButton(onClick = { confirmDeleteId = null }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { confirmDeleteId = null }) { Text(stringResource(R.string.profile_cancel)) } }
+        )
+    }
+
+    if (confirmRemoveFavoriteId != null) {
+        AlertDialog(
+            onDismissRequest = { confirmRemoveFavoriteId = null },
+            title = { Text(stringResource(R.string.profile_remove_favorite_title)) },
+            text = { Text(stringResource(R.string.profile_remove_favorite_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    val id = confirmRemoveFavoriteId
+                    confirmRemoveFavoriteId = null
+                    if (id != null) favoritesVm.removeFavorite(id)
+                }) { Text(stringResource(R.string.profile_remove_confirm)) }
+            },
+            dismissButton = { TextButton(onClick = { confirmRemoveFavoriteId = null }) { Text(stringResource(R.string.profile_cancel)) } }
+        )
+    }
+
+    if (confirmRemoveLikeId != null) {
+        AlertDialog(
+            onDismissRequest = { confirmRemoveLikeId = null },
+            title = { Text(stringResource(R.string.profile_remove_like_title)) },
+            text = { Text(stringResource(R.string.profile_remove_like_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    val id = confirmRemoveLikeId
+                    confirmRemoveLikeId = null
+                    if (id != null) favoritesVm.removeLike(id)
+                }) { Text(stringResource(R.string.profile_remove_confirm)) }
+            },
+            dismissButton = { TextButton(onClick = { confirmRemoveLikeId = null }) { Text(stringResource(R.string.profile_cancel)) } }
         )
     }
 
@@ -240,14 +269,17 @@ fun ProfileTabScreen(
                     onClick = onNavigateToFindFriends,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Gestionar amigos")
+                    Text(stringResource(R.string.profile_manage_friends))
                 }
             }
 
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     Button(
-                        onClick = { tripsVm.loadMyTrips() },
+                        onClick = {
+                            tripsVm.loadMyTrips()
+                            favoritesVm.refreshAll()
+                        },
                         enabled = !tripsState.isLoading,
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -257,15 +289,15 @@ fun ProfileTabScreen(
                     ) {
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text(if (tripsState.isLoading) "Cargando..." else "Recargar")
+                        Text(if (tripsState.isLoading) stringResource(R.string.profile_refreshing) else stringResource(R.string.profile_refresh))
                     }
                 }
             }
 
             // NUEVA SECCIÓN: Favoritos
-            item { SectionTitle("Mis Favoritos", "Viajes que marcaste como favoritos") }
+            item { SectionTitle(stringResource(R.string.profile_favorites_title), stringResource(R.string.profile_favorites_subtitle)) }
             if (favorites.isEmpty() && !favoritesLoading) {
-                item { EmptyStateCard("Aún no tienes favoritos. Marca viajes como favoritos en la comunidad.") }
+                item { EmptyStateCard(stringResource(R.string.profile_favorites_empty)) }
             } else if (favoritesLoading) {
                 item { 
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -280,7 +312,7 @@ fun ProfileTabScreen(
                         status = TripStatus.PUBLISHED,
                         onEdit = { },
                         onPublish = null,
-                        onDelete = { favoritesVm.removeFavorite(trip.id) },
+                        onDelete = { confirmRemoveFavoriteId = trip.id },
                         actionsEnabled = true,
                         showEditAction = false,
                         showPublishAction = false
@@ -289,10 +321,10 @@ fun ProfileTabScreen(
             }
 
             // NUEVA SECCIÓN: Me Gusta
-            item { SectionTitle("Mis Me Gusta", "Viajes que likeaste") }
-            if (likes.isEmpty() && !favoritesLoading) {
-                item { EmptyStateCard("Aún no tienes me gusta. Dale like a viajes en la comunidad.") }
-            } else if (favoritesLoading) {
+            item { SectionTitle(stringResource(R.string.profile_likes_title), stringResource(R.string.profile_likes_subtitle)) }
+            if (likes.isEmpty() && !likesLoading) {
+                item { EmptyStateCard(stringResource(R.string.profile_likes_empty)) }
+            } else if (likesLoading) {
                 item { 
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
@@ -306,7 +338,7 @@ fun ProfileTabScreen(
                         status = TripStatus.PUBLISHED,
                         onEdit = { },
                         onPublish = null,
-                        onDelete = { favoritesVm.removeLike(trip.id) },
+                        onDelete = { confirmRemoveLikeId = trip.id },
                         actionsEnabled = true,
                         showEditAction = false,
                         showPublishAction = false
@@ -314,10 +346,10 @@ fun ProfileTabScreen(
                 }
             }
 
-            item { SectionTitle("Borradores", "Tus viajes guardados sin publicar") }
+            item { SectionTitle(stringResource(R.string.profile_drafts_title), stringResource(R.string.profile_drafts_subtitle)) }
 
             if (tripsState.drafts.isEmpty()) {
-                item { EmptyStateCard("Aún no tienes borradores. Crea un viaje y guárdalo para editarlo luego.") }
+                item { EmptyStateCard(stringResource(R.string.profile_drafts_empty)) }
             } else {
                 items(tripsState.drafts, key = { it.id }) { trip ->
                     TripCard(
@@ -331,10 +363,10 @@ fun ProfileTabScreen(
                 }
             }
 
-            item { SectionTitle("Publicaciones", "Tus viajes publicados en la comunidad") }
+            item { SectionTitle(stringResource(R.string.profile_published_title), stringResource(R.string.profile_published_subtitle)) }
 
             if (tripsState.published.isEmpty()) {
-                item { EmptyStateCard("Aún no tienes publicaciones. Publica un borrador para que aparezca aquí.") }
+                item { EmptyStateCard(stringResource(R.string.profile_published_empty)) }
             } else {
                 items(tripsState.published, key = { it.id }) { trip ->
                     TripCard(
@@ -376,12 +408,12 @@ fun ProfileTabScreen(
                             Spacer(Modifier.size(10.dp))
                             Column {
                                 Text(
-                                    text = "Cerrar sesión",
+                                    text = stringResource(R.string.profile_logout_title),
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onErrorContainer
                                 )
                                 Text(
-                                    text = "Saldrás de tu cuenta en este dispositivo",
+                                    text = stringResource(R.string.profile_logout_body),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.85f)
                                 )
@@ -393,7 +425,7 @@ fun ProfileTabScreen(
                             onLoggedOut()
                         }) {
                             Text(
-                                text = "Salir",
+                                text = stringResource(R.string.profile_logout_action),
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.error
                             )
@@ -508,7 +540,7 @@ private fun TripCard(
         TripStatus.DRAFT -> MaterialTheme.colorScheme.onSecondaryContainer
         TripStatus.PUBLISHED -> MaterialTheme.colorScheme.onTertiaryContainer
     }
-    val chipText = if (status == TripStatus.DRAFT) "Borrador" else "Publicado"
+    val chipText = if (status == TripStatus.DRAFT) stringResource(R.string.profile_status_draft) else stringResource(R.string.profile_status_published)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -541,7 +573,7 @@ private fun TripCard(
                 IconButton(onClick = onDelete, enabled = actionsEnabled) {
                     Icon(
                         imageVector = Icons.Default.DeleteOutline,
-                        contentDescription = "Eliminar",
+                            contentDescription = stringResource(R.string.profile_delete_trip),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -562,7 +594,7 @@ private fun TripCard(
                     ) {
                         Icon(imageVector = Icons.Default.Edit, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
-                        Text("Editar")
+                        Text(stringResource(R.string.profile_edit_button))
                     }
                 }
 
@@ -580,7 +612,7 @@ private fun TripCard(
                         Icon(imageVector = Icons.Default.Publish, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
                         Text(
-                            text = "Publicar",
+                            text = stringResource(R.string.trip_publish),
                             fontSize = MaterialTheme.typography.labelMedium.fontSize
                         )
                     }

@@ -30,8 +30,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import com.google.firebase.auth.FirebaseAuth
 import com.paulaizurrategui.urtriply.ui.components.CommentSection
 import com.paulaizurrategui.urtriply.ui.viewmodels.CommentViewModel
@@ -48,6 +50,7 @@ import com.paulaizurrategui.urtriply.domain.model.SuggestedActivity
 import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
 import com.paulaizurrategui.urtriply.ui.theme.UrOrange
 import java.text.NumberFormat
+import com.paulaizurrategui.urtriply.R
 import androidx.compose.runtime.remember as rememberRuntime
 
 @Composable
@@ -57,8 +60,8 @@ fun PlanResultScreen(
     onRequireLogin: () -> Unit
 ) {
     val r = PlanResultStore.lastResult
-    val vm = remember { PlanResultViewModel() }
-    val commentVm = remember { CommentViewModel() }
+    val vm: PlanResultViewModel = viewModel()
+    val commentVm: CommentViewModel = viewModel()
     val uiState by vm.uiState.collectAsState()
     val comments by commentVm.comments.collectAsState()
     val currentUser = FirebaseAuth.getInstance().currentUser
@@ -75,9 +78,9 @@ fun PlanResultScreen(
     if (dialogText != null) {
         AlertDialog(
             onDismissRequest = { vm.clearMessages() },
-            title = { Text(if (uiState.errorMessage != null) "Error" else "Aviso") },
+            title = { Text(if (uiState.errorMessage != null) stringResource(R.string.dialog_error_title) else stringResource(R.string.plan_result_warning_title)) },
             text = { Text(dialogText) },
-            confirmButton = { TextButton(onClick = { vm.clearMessages() }) { Text("OK") } }
+            confirmButton = { TextButton(onClick = { vm.clearMessages() }) { Text(stringResource(R.string.plan_result_ok)) } }
         )
     }
 
@@ -90,11 +93,11 @@ fun PlanResultScreen(
         if (r == null) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Text(
-                    text = "No hay ninguna propuesta generada. Vuelve al formulario y crea una nueva.",
+                    text = stringResource(R.string.plan_result_empty_state),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(Modifier.height(12.dp))
-                Button(onClick = onBack) { Text("Volver") }
+                Button(onClick = onBack) { Text(stringResource(R.string.plan_result_back)) }
             }
             return@UrTriplyGradientScaffold
         }
@@ -116,7 +119,7 @@ fun PlanResultScreen(
                         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
                         contentPadding = ButtonDefaults.TextButtonContentPadding
                     ) {
-                        Text("← Volver", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.plan_result_back_arrow), fontWeight = FontWeight.SemiBold)
                     }
                     Spacer(Modifier.weight(1f))
                 }
@@ -143,9 +146,9 @@ fun PlanResultScreen(
                         ) {
                             Text(
                                 text = when {
-                                    uiState.isSaving -> "Guardando..."
-                                    isPublished -> "Guardado"
-                                    else -> "Guardar borrador"
+                                    uiState.isSaving -> stringResource(R.string.plan_result_saving)
+                                    isPublished -> stringResource(R.string.plan_result_saved)
+                                    else -> stringResource(R.string.trip_save_draft)
                                 },
                                 maxLines = 1,
                                 fontSize = 12.sp
@@ -164,9 +167,9 @@ fun PlanResultScreen(
                         ) {
                             Text(
                                 when {
-                                    uiState.isSaving -> "Publicando..."
-                                    isPublished -> "Ya publicado"
-                                    else -> "Publicar"
+                                    uiState.isSaving -> stringResource(R.string.plan_result_publishing)
+                                    isPublished -> stringResource(R.string.plan_result_published)
+                                    else -> stringResource(R.string.trip_publish)
                                 },
                                 fontWeight = FontWeight.Bold
                             )
@@ -181,7 +184,7 @@ fun PlanResultScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        Text("Compartir")
+                        Text(stringResource(R.string.plan_result_share))
                     }
                 }
             }
@@ -215,7 +218,7 @@ fun PlanResultScreen(
                                 .padding(horizontal = 16.dp, vertical = 18.dp)
                         ) {
                             Text(
-                                text = "Viaje a ${r.destino}",
+                                text = stringResource(R.string.plan_result_trip_title, r.destino),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.ExtraBold
                             )
@@ -224,14 +227,14 @@ fun PlanResultScreen(
                             // debug para comprobar api (si no quieres esto luego, lo quitas)
                             if (r.destinoDisplayName != null && r.lat != null && r.lon != null) {
                                 Text(
-                                    text = "api ok: ${r.destinoDisplayName} (${r.lat}, ${r.lon})",
+                                    text = stringResource(R.string.plan_result_api_ok, r.destinoDisplayName ?: "", r.lat ?: 0.0, r.lon ?: 0.0),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(Modifier.height(6.dp))
                             } else {
                                 Text(
-                                    text = "api: sin datos (fallback)",
+                                    text = stringResource(R.string.plan_result_api_fallback),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -239,7 +242,7 @@ fun PlanResultScreen(
                             }
 
                             Text(
-                                text = "Duración recomendada: ${r.diasRecomendados} días",
+                                text = stringResource(R.string.plan_result_duration, r.diasRecomendados),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodyMedium
                             )
@@ -254,7 +257,7 @@ fun PlanResultScreen(
                                 )
                             ) {
                                 Text(
-                                    text = "Precios estimados. Pueden variar según fechas, disponibilidad y proveedor. Verifica siempre el enlace antes de reservar.",
+                                    text = stringResource(R.string.plan_result_pricing_note),
                                     modifier = Modifier.padding(14.dp),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onTertiaryContainer
@@ -263,7 +266,7 @@ fun PlanResultScreen(
 
                             Spacer(Modifier.height(12.dp))
 
-                            SectionTitle("Actividades recomendadas reales")
+                            SectionTitle(stringResource(R.string.plan_result_section_activities))
                             Spacer(Modifier.height(8.dp))
                             RealActivitiesBlock(
                                 activities = r.actividadesReales,
@@ -272,7 +275,7 @@ fun PlanResultScreen(
 
                             Spacer(Modifier.height(14.dp))
 
-                            SectionTitle("Alojamiento recomendado")
+                            SectionTitle(stringResource(R.string.plan_result_section_hotel))
                             Spacer(Modifier.height(8.dp))
                             HotelsBlock(
                                 hoteles = r.hoteles,
@@ -281,7 +284,7 @@ fun PlanResultScreen(
 
                             Spacer(Modifier.height(14.dp))
 
-                            SectionTitle("Ofertas de vuelo")
+                            SectionTitle(stringResource(R.string.plan_result_section_flights))
                             Spacer(Modifier.height(8.dp))
                             FlightsBlock(
                                 flights = r.vuelos,
@@ -292,7 +295,7 @@ fun PlanResultScreen(
 
                             // Comments section (only if trip is published)
                             if (isPublished && r.tripId != null) {
-                                SectionTitle("Comentarios")
+                                SectionTitle(stringResource(R.string.plan_result_section_comments))
                                 Spacer(Modifier.height(8.dp))
                                 CommentSection(
                                     tripId = r.tripId ?: "",
@@ -337,7 +340,7 @@ private fun SectionTitle(title: String) {
 @Composable
 private fun BudgetCards(categorias: Map<String, Double>) {
     if (categorias.isEmpty()) {
-        Text("No hay datos de presupuesto.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.plan_result_no_budget), color = MaterialTheme.colorScheme.onSurfaceVariant)
         return
     }
 
@@ -397,7 +400,7 @@ private fun BudgetCards(categorias: Map<String, Double>) {
 @Composable
 private fun ItineraryCards(itinerario: List<String>) {
     if (itinerario.isEmpty()) {
-        Text("No hay itinerario.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.plan_result_no_itinerary), color = MaterialTheme.colorScheme.onSurfaceVariant)
         return
     }
 
@@ -432,20 +435,20 @@ private fun ActivitiesBlock(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text("Gratis", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.plan_result_free_label), fontWeight = FontWeight.Bold)
             if (gratis.isEmpty()) {
-                Text("—", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.plan_result_empty_dash), color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
-                gratis.forEach { Text("• $it") }
+                gratis.forEach { Text(stringResource(R.string.plan_result_bullet, it)) }
             }
 
             Divider()
 
-            Text("De pago", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.plan_result_paid_label), fontWeight = FontWeight.Bold)
             if (pago.isEmpty()) {
-                Text("—", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.plan_result_empty_dash), color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
-                pago.forEach { Text("• $it") }
+                pago.forEach { Text(stringResource(R.string.plan_result_bullet, it)) }
             }
         }
     }
@@ -460,7 +463,7 @@ private fun HotelsBlock(
 
     if (realHotels.isEmpty()) {
         Text(
-            text = "No hay alojamiento real disponible para este destino.",
+            text = stringResource(R.string.plan_result_no_hotels),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         return
@@ -521,13 +524,13 @@ private fun ActivityCard(activity: SuggestedActivity) {
             )
 
             Text(
-                text = if (activity.isFree) "Gratis" else "€${String.format("%.0f", activity.price)}",
+                text = if (activity.isFree) stringResource(R.string.plan_result_activity_price_free) else stringResource(R.string.plan_result_activity_price, String.format("%.0f", activity.price)),
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary
             )
 
             Text(
-                text = "Datos reales",
+                text = stringResource(R.string.plan_result_real_data),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -537,7 +540,7 @@ private fun ActivityCard(activity: SuggestedActivity) {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(activity.bookingUrl))
                     context.startActivity(intent)
                 }) {
-                    Text("Ver enlace")
+                    Text(stringResource(R.string.plan_result_link))
                 }
             }
         }
@@ -570,13 +573,13 @@ private fun HotelCard(hotel: Hotel) {
                         maxLines = 1,
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
-                    if (hotel.stars != null) {
-                        Text(
-                            text = "${hotel.stars} estrellas",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                        if (hotel.stars != null) {
+                            Text(
+                                text = stringResource(R.string.plan_result_stars, hotel.stars),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                 }
 
                 Text(
@@ -587,14 +590,14 @@ private fun HotelCard(hotel: Hotel) {
             }
 
             Text(
-                text = "Datos reales",
+                text = stringResource(R.string.plan_result_real_data),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             if (hotel.totalPrice != null) {
                 Text(
-                    text = "Total estimado: €${String.format("%.0f", hotel.totalPrice)}",
+                    text = stringResource(R.string.plan_result_total_estimated, hotel.totalPrice ?: 0.0),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -605,7 +608,7 @@ private fun HotelCard(hotel: Hotel) {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(hotel.bookingUrl))
                     context.startActivity(intent)
                 }) {
-                    Text("Ver enlace de reserva")
+                    Text(stringResource(R.string.plan_result_reservation_link))
                 }
             }
         }
@@ -650,20 +653,23 @@ private fun FlightCard(flight: com.paulaizurrategui.urtriply.domain.model.Flight
         ) {
             Text(text = "${flight.origin} → ${flight.destination}", fontWeight = FontWeight.Bold)
 
-            Text(text = "Salida: ${flight.departureDate} ${if (flight.returnDate != null) " • Vuelta: ${flight.returnDate}" else ""}")
+            Text(text = stringResource(R.string.plan_result_flight_departure, flight.departureDate, ""))
+            if (flight.returnDate != null) {
+                Text(text = stringResource(R.string.plan_result_flight_return, flight.returnDate))
+            }
 
-            Text(text = "Duración: ${flight.durationMinutes} min • ${flight.carrier}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(text = stringResource(R.string.plan_result_flight_duration, flight.durationMinutes, flight.carrier), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-            Text(text = "Precio: ${flight.currency} ${String.format("%.2f", flight.price)}", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+            Text(text = stringResource(R.string.plan_result_flight_price, flight.currency, String.format("%.2f", flight.price)), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
 
-            Text(text = "Datos reales", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(text = stringResource(R.string.plan_result_real_data), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             if (flight.bookingUrl != null) {
                 TextButton(onClick = {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(flight.bookingUrl))
                     context.startActivity(intent)
                 }) {
-                    Text("Reservar")
+                    Text(stringResource(R.string.plan_result_flight_book))
                 }
             }
         }

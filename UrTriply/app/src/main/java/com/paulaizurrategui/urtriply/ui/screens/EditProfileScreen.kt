@@ -33,12 +33,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.ui.theme.UrCream
 
 @Composable
@@ -65,13 +68,14 @@ fun EditProfileScreen(
 
     // scroll para pantallas pequeñas
     val scroll = rememberScrollState()
+    val context = LocalContext.current
 
     // cargo el doc de users/{uid} al abrir
     LaunchedEffect(user?.uid) {
         val uid = user?.uid
         if (uid == null) {
             // si no hay sesion, no puedo editar
-            error = "No hay sesión."
+            error = context.getString(R.string.edit_profile_no_session)
             loading = false
             return@LaunchedEffect
         }
@@ -89,7 +93,7 @@ fun EditProfileScreen(
             }
             .addOnFailureListener { e ->
                 // si falla, dejo editar igualmente
-                error = e.message ?: "No se pudo cargar el perfil."
+                error = e.message ?: context.getString(R.string.edit_profile_load_error)
                 loading = false
             }
     }
@@ -107,14 +111,14 @@ fun EditProfileScreen(
                     onClick = {
                         val u = auth.currentUser
                         if (u == null) {
-                            error = "No hay sesión."
+                            error = context.getString(R.string.edit_profile_no_session)
                             return@Button
                         }
 
                         // validacion simple del nombre
                         val trimmedName = name.trim()
                         if (trimmedName.isBlank()) {
-                            error = "El nombre no puede estar vacío."
+                            error = context.getString(R.string.edit_profile_empty_name)
                             return@Button
                         }
 
@@ -128,7 +132,7 @@ fun EditProfileScreen(
                                 .build()
                         ).addOnFailureListener { e ->
                             saving = false
-                            error = e.message ?: "No se pudo guardar el nombre."
+                            error = e.message ?: context.getString(R.string.edit_profile_name_error)
                         }.addOnSuccessListener {
                             // 2) guardo extras en firestore (merge para no pisar otros campos)
                             val uid = u.uid
@@ -147,7 +151,7 @@ fun EditProfileScreen(
                                 }
                                 .addOnFailureListener { e ->
                                     saving = false
-                                    error = e.message ?: "No se pudo guardar el perfil."
+                                    error = e.message ?: context.getString(R.string.edit_profile_save_error)
                                 }
                         }
                     },
@@ -162,9 +166,9 @@ fun EditProfileScreen(
                     if (saving) {
                         CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.size(12.dp))
-                        Text("Guardando…", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.edit_profile_saving), fontWeight = FontWeight.Bold)
                     } else {
-                        Text("Guardar", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.edit_profile_save), fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -195,11 +199,11 @@ fun EditProfileScreen(
                             contentColor = MaterialTheme.colorScheme.primary
                         )
                     ) {
-                        Text("← Volver")
+                        Text(stringResource(R.string.edit_profile_back))
                     }
                     Spacer(Modifier.size(8.dp))
                     Text(
-                        text = "Editar perfil",
+                        text = stringResource(R.string.edit_profile_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold
                     )
@@ -218,13 +222,13 @@ fun EditProfileScreen(
                 ) {
                     Column(Modifier.padding(14.dp)) {
                         Text(
-                            text = "Personaliza tu perfil",
+                            text = stringResource(R.string.edit_profile_tip_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "Estos datos se usarán para mostrar tu perfil en la app.",
+                            text = stringResource(R.string.edit_profile_tip_body),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -248,11 +252,11 @@ fun EditProfileScreen(
                     ) {
                         // texto mientras carga
                         if (loading) {
-                            Text("Cargando...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.edit_profile_loading), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
 
                         // campo nombre
-                        FieldLabel("Nombre")
+                        FieldLabel(stringResource(R.string.edit_profile_name))
                         OutlinedTextField(
                             value = name,
                             onValueChange = { name = it },
@@ -263,7 +267,7 @@ fun EditProfileScreen(
                         )
 
                         // campo bio
-                        FieldLabel("Bio")
+                        FieldLabel(stringResource(R.string.edit_profile_bio))
                         OutlinedTextField(
                             value = bio,
                             onValueChange = { bio = it },
@@ -274,7 +278,7 @@ fun EditProfileScreen(
                         )
 
                         // campo ciudad
-                        FieldLabel("Ciudad")
+                        FieldLabel(stringResource(R.string.edit_profile_city))
                         OutlinedTextField(
                             value = city,
                             onValueChange = { city = it },
@@ -285,7 +289,7 @@ fun EditProfileScreen(
                         )
 
                         // campo instagram
-                        FieldLabel("Instagram (opcional)")
+                        FieldLabel(stringResource(R.string.edit_profile_instagram))
                         OutlinedTextField(
                             value = instagram,
                             onValueChange = { instagram = it },
@@ -293,7 +297,7 @@ fun EditProfileScreen(
                             singleLine = true,
                             enabled = !saving,
                             shape = RoundedCornerShape(12.dp),
-                            placeholder = { Text("@usuario o url") }
+                            placeholder = { Text(stringResource(R.string.edit_profile_instagram_placeholder)) }
                         )
 
                         // bloque de error

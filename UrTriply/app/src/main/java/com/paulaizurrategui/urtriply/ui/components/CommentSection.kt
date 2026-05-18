@@ -11,6 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +24,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
 import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.domain.model.Comment
 import com.paulaizurrategui.urtriply.ui.theme.UrOrange
@@ -36,7 +40,8 @@ fun CommentSection(
     onDeleteComment: (String) -> Unit,
     currentUserId: String?,
     isAdmin: Boolean = false,
-    onReportComment: ((Comment) -> Unit)? = null
+    onReportComment: ((Comment) -> Unit)? = null,
+    onBlockUser: ((String) -> Unit)? = null
 ) {
     var newCommentText by remember { mutableStateOf("") }
 
@@ -129,7 +134,8 @@ fun CommentSection(
                         comment = comment,
                         onDelete = { onDeleteComment(comment.id) },
                         canDelete = currentUserId == comment.authorUid || isAdmin,
-                        onReport = { onReportComment?.invoke(comment) }
+                        onReport = { onReportComment?.invoke(comment) },
+                        onBlock = { authorUid -> onBlockUser?.invoke(authorUid) }
                     )
                 }
             }
@@ -142,7 +148,8 @@ fun CommentCard(
     comment: Comment,
     onDelete: () -> Unit,
     canDelete: Boolean,
-    onReport: (() -> Unit)? = null
+    onReport: (() -> Unit)? = null,
+    onBlock: ((String) -> Unit)? = null
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
@@ -173,13 +180,20 @@ fun CommentCard(
                 ) {
                     // Avatar
                     if (comment.authorAvatar != null) {
+                        val ctx = LocalContext.current
                         AsyncImage(
-                            model = comment.authorAvatar,
+                            model = ImageRequest.Builder(ctx)
+                                .data(comment.authorAvatar)
+                                .crossfade(true)
+                                .memoryCachePolicy(CachePolicy.ENABLED)
+                                .diskCachePolicy(CachePolicy.ENABLED)
+                                .build(),
                             contentDescription = comment.authorName,
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(CircleShape),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Crop,
+                            placeholder = null
                         )
                     } else {
                         Surface(
@@ -215,12 +229,12 @@ fun CommentCard(
                                 val now = System.currentTimeMillis()
                                 val diff = now - it.seconds * 1000
                                 when {
-                                    diff < 60000 -> "Hace unos segundos"
-                                    diff < 3600000 -> "Hace ${diff / 60000} min"
-                                    diff < 86400000 -> "Hace ${diff / 3600000} h"
-                                    else -> "Hace ${diff / 86400000} d"
+                                    diff < 60000 -> stringResource(R.string.time_just_now)
+                                    diff < 3600000 -> stringResource(R.string.time_minutes_ago, diff / 60000)
+                                    diff < 86400000 -> stringResource(R.string.time_hours_ago, diff / 3600000)
+                                    else -> stringResource(R.string.time_days_ago, diff / 86400000)
                                 }
-                            } ?: "Hace poco",
+                            } ?: stringResource(R.string.time_soon),
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -234,7 +248,7 @@ fun CommentCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Eliminar comentario",
+                            contentDescription = stringResource(R.string.comment_delete_icon),
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(18.dp)
                         )
@@ -248,8 +262,22 @@ fun CommentCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Flag,
-                            contentDescription = "Reportar comentario",
+                            contentDescription = stringResource(R.string.comment_report_icon),
                             tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+
+                if (onBlock != null) {
+                    IconButton(
+                        onClick = { onBlock(comment.authorUid) },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Block,
+                            contentDescription = stringResource(R.string.block_user),
+                            tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -271,8 +299,8 @@ fun CommentCard(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Eliminar comentario") },
-            text = { Text("¿Estás seguro de que quieres eliminar este comentario?") },
+            title = { Text(stringResource(R.string.comment_delete_title)) },
+            text = { Text(stringResource(R.string.comment_delete_body)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -283,12 +311,12 @@ fun CommentCard(
                         containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Eliminar")
+                    Text(stringResource(R.string.comment_delete_action))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.comment_cancel_action))
                 }
             }
         )

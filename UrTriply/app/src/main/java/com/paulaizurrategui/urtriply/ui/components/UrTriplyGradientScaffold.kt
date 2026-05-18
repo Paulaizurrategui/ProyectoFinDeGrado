@@ -88,7 +88,7 @@ fun UrTriplyGradientScaffold(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (onBack != null) {
                                 IconButton(onClick = onBack) {
-                                    Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                                    Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                                 }
                             }
                             Text(

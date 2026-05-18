@@ -60,6 +60,66 @@ class CommunityViewModel : ViewModel() {
         applyFilters()
     }
 
+    // Block a user (add to /users/{myUid}/blocks/{userToBlockUid} and update user's blockedBy list)
+    fun blockUser(userToBlockUid: String, onSuccess: () -> Unit = {}, onError: (Exception) -> Unit = {}) {
+        val myUid = auth.currentUser?.uid ?: run {
+            onError(Exception("No session"))
+            return
+        }
+
+        val blockData = mapOf(
+            "createdAt" to com.google.firebase.Timestamp.now()
+        )
+
+        db.collection("users").document(myUid).collection("blocks")
+            .document(userToBlockUid)
+            .set(blockData)
+            .addOnSuccessListener {
+                // add myUid to target user's blockedByUserIds array
+                db.collection("users").document(userToBlockUid)
+                    .update(mapOf(
+                        "blockedByUserIds" to com.google.firebase.firestore.FieldValue.arrayUnion(myUid)
+                    ))
+                    .addOnSuccessListener {
+                        // refresh local blocked list and feed
+                        blockedUserIds = blockedUserIds + userToBlockUid
+                        applyFilters()
+                        onSuccess()
+                    }
+                    .addOnFailureListener { e ->
+                        onError(e)
+                    }
+            }
+            .addOnFailureListener { e ->
+                onError(e)
+            }
+    }
+
+    // Unblock a user
+    fun unblockUser(userToUnblockUid: String, onSuccess: () -> Unit = {}, onError: (Exception) -> Unit = {}) {
+        val myUid = auth.currentUser?.uid ?: run {
+            onError(Exception("No session"))
+            return
+        }
+
+        db.collection("users").document(myUid).collection("blocks")
+            .document(userToUnblockUid)
+            .delete()
+            .addOnSuccessListener {
+                db.collection("users").document(userToUnblockUid)
+                    .update(mapOf(
+                        "blockedByUserIds" to com.google.firebase.firestore.FieldValue.arrayRemove(myUid)
+                    ))
+                    .addOnSuccessListener {
+                        blockedUserIds = blockedUserIds - userToUnblockUid
+                        applyFilters()
+                        onSuccess()
+                    }
+                    .addOnFailureListener { e -> onError(e) }
+            }
+            .addOnFailureListener { e -> onError(e) }
+    }
+
     // like local + persistir en firestore
     fun toggleLike(postId: String) {
         val currentUser = auth.currentUser
@@ -279,11 +339,11 @@ class CommunityViewModel : ViewModel() {
         var pending = chunks.size
 
         chunks.forEach { chunk ->
-            db.collection("trips")
+                db.collection("trips")
                 .whereEqualTo("status", "PUBLISHED")
                 .whereIn("authorUid", chunk)
-                // limit initial query size to reduce startup latency and reads
-                .limit(50)
+                // reduce initial query size to improve startup latency
+                .limit(20)
                 .get()
                 .addOnSuccessListener { snap ->
                     val mapped = snap.documents.mapNotNull { doc ->

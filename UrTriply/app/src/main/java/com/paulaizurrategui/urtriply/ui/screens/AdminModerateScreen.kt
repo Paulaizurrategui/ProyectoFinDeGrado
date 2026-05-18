@@ -13,10 +13,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.domain.model.Report
 import com.paulaizurrategui.urtriply.ui.theme.UrOrange
 import com.paulaizurrategui.urtriply.ui.viewmodels.AdminViewModel
@@ -39,7 +41,7 @@ fun AdminModerateScreen(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "No tienes acceso a este panel",
+                text = stringResource(R.string.admin_access_message),
                 fontSize = 18.sp,
                 color = MaterialTheme.colorScheme.error
             )
@@ -55,14 +57,14 @@ fun AdminModerateScreen(
     ) {
         // Header
         Text(
-            text = "Panel de Moderación",
+            text = stringResource(R.string.admin_title),
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
         Text(
-            text = "Reportes pendientes: ${reports.size}",
+            text = stringResource(R.string.admin_pending_reports, reports.size),
             fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 16.dp)
@@ -113,7 +115,7 @@ fun AdminModerateScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No hay reportes pendientes",
+                    text = stringResource(R.string.admin_no_reports),
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -176,12 +178,15 @@ fun ReportCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Reporte #${report.id.take(8)}",
+                        text = stringResource(R.string.admin_report_label, report.id.take(8)),
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
                     )
                     Text(
-                        text = "Tipo: ${if (report.targetType == "TRIP") "Viaje" else "Comentario"}",
+                        text = stringResource(
+                            R.string.admin_report_type,
+                            if (report.targetType == "TRIP") stringResource(R.string.admin_type_trip) else stringResource(R.string.admin_type_comment)
+                        ),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -192,7 +197,7 @@ fun ReportCard(
                     modifier = Modifier.padding(start = 8.dp)
                 ) {
                     Text(
-                        text = "ABIERTO",
+                        text = stringResource(R.string.admin_status_open),
                         color = androidx.compose.ui.graphics.Color.White,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
@@ -206,13 +211,13 @@ fun ReportCard(
             // Report details
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Reportado por: ${report.reporterName}",
+                    text = stringResource(R.string.admin_reported_by, report.reporterName),
                     fontSize = 12.sp,
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
 
                 Text(
-                    text = "Razón: ${report.reason}",
+                    text = stringResource(R.string.admin_reason, report.reason),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 4.dp)
@@ -220,14 +225,14 @@ fun ReportCard(
 
                 if (report.description.isNotEmpty()) {
                     Text(
-                        text = "Descripción: ${report.description}",
+                        text = stringResource(R.string.admin_description, report.description),
                         fontSize = 12.sp,
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
                 }
 
                 Text(
-                    text = "Target ID: ${report.targetId.take(12)}",
+                    text = stringResource(R.string.admin_target_id, report.targetId.take(12)),
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -257,7 +262,7 @@ fun ReportCard(
                             .size(16.dp)
                             .padding(end = 4.dp)
                     )
-                    Text("Eliminar", fontSize = 12.sp)
+                    Text(stringResource(R.string.admin_delete), fontSize = 12.sp)
                 }
 
                 Button(
@@ -277,7 +282,7 @@ fun ReportCard(
                             .size(16.dp)
                             .padding(end = 4.dp)
                     )
-                    Text("Resolver", fontSize = 12.sp)
+                    Text(stringResource(R.string.admin_resolve), fontSize = 12.sp)
                 }
 
                 Button(
@@ -297,7 +302,7 @@ fun ReportCard(
                             .size(16.dp)
                             .padding(end = 4.dp)
                     )
-                    Text("Bloquear", fontSize = 12.sp)
+                    Text(stringResource(R.string.admin_block), fontSize = 12.sp)
                 }
             }
         }
@@ -307,17 +312,17 @@ fun ReportCard(
     if (showResolutionDialog) {
         AlertDialog(
             onDismissRequest = { showResolutionDialog = false },
-            title = { Text("Resolver reporte") },
+            title = { Text(stringResource(R.string.admin_resolve_report_title)) },
             text = {
                 Column {
                     Text(
-                        text = "¿Qué acción deseas tomar?",
+                        text = stringResource(R.string.admin_action_question),
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
                     OutlinedTextField(
                         value = resolutionText,
                         onValueChange = { resolutionText = it },
-                        label = { Text("Notas (opcional)") },
+                        label = { Text(stringResource(R.string.admin_notes_optional)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(min = 60.dp),
@@ -344,12 +349,12 @@ fun ReportCard(
                         selectedAction = null
                     }
                 ) {
-                    Text("Confirmar")
+                    Text(stringResource(R.string.admin_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showResolutionDialog = false }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.admin_cancel))
                 }
             }
         )

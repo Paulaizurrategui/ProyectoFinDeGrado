@@ -127,7 +127,7 @@ class HotelsRepository {
                 lastError = e
                 Log.e(TAG, "Error searching hotels (attempt ${attempt + 1}/2): ${e.message}")
                 if (attempt < 1) {
-                    delay(500)
+                    delay(150)
                 }
             }
         }

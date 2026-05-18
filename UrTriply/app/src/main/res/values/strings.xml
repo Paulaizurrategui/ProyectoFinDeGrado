@@ -78,13 +78,14 @@
     <string name="guest_hint_body">Puedes generar propuestas sin cuenta, pero para guardar borradores o usar la comunidad tendrás que iniciar sesión.</string>
     <string name="home_logged_in_ok">Sesión iniciada. Ya puedes usar todas las funciones.</string>
 
-    <string name="plan_title">Planificar viaje</string>
     <string name="plan_placeholder_body">Aquí irá el formulario: destino, presupuesto total (EUR), nº viajeros, rango de fechas y preferencias.</string>
     <string name="plan_guest_note">En modo invitado podrás generar propuestas, pero no podrás guardarlas.</string>
     <string name="plan_auth_note">Al iniciar sesión podrás guardar borradores y publicar viajes.</string>
 
     <string name="community_title">Comunidad</string>
     <string name="community_placeholder_body">Aquí verás publicaciones de otros viajeros (solo usuarios registrados).</string>
+    <string name="community_access_restricted">Acceso Restringido / Restricted Access</string>
+    <string name="community_access_age_required">Debes tener al menos 13 años para acceder a la comunidad. / You must be at least 13 years old to access the community.</string>
 
     <string name="profile_title">Perfil</string>
     <string name="profile_email">Email: %1$s</string>
@@ -110,7 +111,7 @@
 
     <!-- Admin Panel -->
     <string name="admin_panel">Panel Admin</string>
-    <string name="admin_description">Gestionar reportes y usuarios</string>
+    <string name="admin_panel_description">Gestionar reportes y usuarios</string>
     <string name="admin_access_denied">Acceso Restringido</string>
     <string name="admin_access_denied_body">Solo administradores pueden acceder a esta sección.</string>
     <string name="admin_reports_title">Reportes</string>
@@ -136,6 +137,8 @@
 
     <!-- Blocking -->
     <string name="block_user">Bloquear usuario</string>
+    <string name="block_success">Usuario bloqueado</string>
+    <string name="block_error">Error al bloquear usuario</string>
     <string name="block_reason">Razón del bloqueo</string>
     <string name="block_confirm">¿Bloquear a este usuario?</string>
     <string name="unblock_user">Desbloquear usuario</string>
@@ -149,6 +152,269 @@
     <string name="profile_delete_trip">Eliminar viaje</string>
     <string name="profile_delete_confirm">¿Eliminar este viaje? Esta acción no se puede deshacer.</string>
     <string name="profile_see_more">Ver más</string>
+    <string name="profile_error_title">Error</string>
+    <string name="profile_ok">OK</string>
+    <string name="profile_delete_trip_confirm_button">Eliminar</string>
+    <string name="profile_cancel">Cancelar</string>
+    <string name="profile_remove_favorite_title">Quitar de favoritos</string>
+    <string name="profile_remove_favorite_body">¿Seguro que quieres quitar este viaje de tus guardados?</string>
+    <string name="profile_remove_like_title">Quitar me gusta</string>
+    <string name="profile_remove_like_body">¿Seguro que quieres quitar este viaje de tu lista de me gusta?</string>
+    <string name="profile_remove_confirm">Quitar</string>
+    <string name="profile_manage_friends">Gestionar amigos</string>
+    <string name="profile_following_count">Siguiendo: %1$d</string>
+    <string name="profile_refresh">Recargar</string>
+    <string name="profile_refreshing">Cargando...</string>
+    <string name="profile_favorites_title">Mis Favoritos</string>
+    <string name="profile_favorites_subtitle">Viajes que marcaste como favoritos</string>
+    <string name="profile_favorites_empty">Aún no tienes favoritos. Marca viajes como favoritos en la comunidad.</string>
+    <string name="profile_likes_title">Mis Me Gusta</string>
+    <string name="profile_likes_subtitle">Viajes que likeaste</string>
+    <string name="profile_likes_empty">Aún no tienes me gusta. Dale like a viajes en la comunidad.</string>
+    <string name="profile_drafts_title">Borradores</string>
+    <string name="profile_drafts_subtitle">Tus viajes guardados sin publicar</string>
+    <string name="profile_drafts_empty">Aún no tienes borradores. Crea un viaje y guárdalo para editarlo luego.</string>
+    <string name="profile_published_title">Publicaciones</string>
+    <string name="profile_published_subtitle">Tus viajes publicados en la comunidad</string>
+    <string name="profile_published_empty">Aún no tienes publicaciones. Publica un borrador para que aparezca aquí.</string>
+    <string name="profile_logout_title">Cerrar sesión</string>
+    <string name="profile_logout_body">Saldrás de tu cuenta en este dispositivo</string>
+    <string name="profile_logout_action">Salir</string>
+    <string name="profile_panel_admin_title">Panel Admin</string>
+    <string name="profile_panel_admin_subtitle">Gestionar reportes y usuarios</string>
+    <string name="profile_account">Mi cuenta</string>
+    <string name="profile_edit_button">Editar perfil</string>
+    <string name="profile_more">Ver más</string>
+
+    <!-- Post Detail -->
+    <string name="post_detail_title">Ver más</string>
+    <string name="post_detail_report_trip">Reportar viaje</string>
+    <string name="post_detail_report_comment">Reportar comentario</string>
+    <string name="post_detail_select_reason">Selecciona la razón del reporte:</string>
+    <string name="post_detail_optional_details">Detalles adicionales (opcional)</string>
+    <string name="post_detail_report_submit">Reportar</string>
+    <string name="post_detail_report_cancel">Cancelar</string>
+    <string name="post_detail_action_options">Opciones</string>
+    <string name="post_detail_published_friend">Viaje publicado por un amigo</string>
+    <string name="post_detail_published_by">Publicado por %1$s</string>
+    <string name="post_detail_published_community">Publicado por un viajero de la comunidad</string>
+    <string name="post_detail_summary">Resumen del plan</string>
+    <string name="post_detail_departure">Salida</string>
+    <string name="post_detail_return">Vuelta</string>
+    <string name="post_detail_origin">Origen</string>
+    <string name="post_detail_status">Estado</string>
+    <string name="post_detail_itinerary">Itinerario</string>
+    <string name="post_detail_no_itinerary">Este viaje todavía no incluye itinerario detallado.</string>
+    <string name="post_detail_comments">Comentarios</string>
+
+    <!-- Public Profile -->
+    <string name="public_profile_title">Perfil público</string>
+    <string name="public_profile_loading">Cargando perfil público...</string>
+    <string name="public_profile_error">No se pudo cargar el perfil público</string>
+    <string name="public_profile_back">Volver</string>
+    <string name="public_profile_no_trips">Todavía no tiene viajes publicados.</string>
+    <string name="public_profile_trips_title">Viajes publicados</string>
+    <string name="public_profile_trips_subtitle">Publicaciones visibles de este usuario</string>
+    <string name="public_profile_fields_title">Campos del perfil</string>
+    <string name="public_profile_field_name">Nombre</string>
+    <string name="public_profile_field_email">Email</string>
+    <string name="public_profile_field_photo">Foto</string>
+    <string name="public_profile_field_age">Verificación +13</string>
+    <string name="public_profile_field_yes">Sí</string>
+    <string name="public_profile_field_no">No</string>
+
+    <!-- Comments / Time -->
+    <string name="comment_delete_title">Eliminar comentario</string>
+    <string name="comment_delete_body">¿Estás seguro de que quieres eliminar este comentario?</string>
+    <string name="comment_delete_action">Eliminar</string>
+    <string name="comment_cancel_action">Cancelar</string>
+    <string name="comment_delete_icon">Eliminar comentario</string>
+    <string name="comment_report_icon">Reportar comentario</string>
+    <string name="time_just_now">Hace unos segundos</string>
+    <string name="time_minutes_ago">Hace %1$d min</string>
+    <string name="time_hours_ago">Hace %1$d h</string>
+    <string name="time_days_ago">Hace %1$d d</string>
+    <string name="time_soon">Hace poco</string>
+
+    <!-- Find Friends -->
+    <string name="friends_title">Encontrar Amigos</string>
+    <string name="friends_back_profile">Volver al perfil</string>
+    <string name="friends_search_placeholder">Busca por nombre o email...</string>
+    <string name="friends_search_icon">Buscar</string>
+    <string name="friends_empty">No se han encontrado aventureros.</string>
+    <string name="friends_no_name">Sin nombre</string>
+    <string name="friends_following">Siguiendo</string>
+    <string name="friends_follow">Seguir</string>
+
+    <!-- Edit Profile -->
+    <string name="edit_profile_title">Editar perfil</string>
+    <string name="edit_profile_saving">Guardando…</string>
+    <string name="edit_profile_save">Guardar</string>
+    <string name="edit_profile_back">← Volver</string>
+    <string name="edit_profile_loading">Cargando...</string>
+    <string name="edit_profile_no_session">No hay sesión.</string>
+    <string name="edit_profile_empty_name">El nombre no puede estar vacío.</string>
+    <string name="edit_profile_name_error">No se pudo guardar el nombre.</string>
+    <string name="edit_profile_load_error">No se pudo cargar el perfil.</string>
+    <string name="edit_profile_save_error">No se pudo guardar el perfil.</string>
+    <string name="edit_profile_tip_title">Personaliza tu perfil</string>
+    <string name="edit_profile_tip_body">Estos datos se usarán para mostrar tu perfil en la app.</string>
+    <string name="edit_profile_name">Nombre</string>
+    <string name="edit_profile_bio">Bio</string>
+    <string name="edit_profile_city">Ciudad</string>
+    <string name="edit_profile_instagram">Instagram (opcional)</string>
+    <string name="edit_profile_instagram_placeholder">@usuario o url</string>
+
+    <!-- Admin -->
+    <string name="admin_access_message">No tienes acceso a este panel</string>
+    <string name="admin_title">Panel de Moderación</string>
+    <string name="admin_pending_reports">Reportes pendientes: %1$d</string>
+    <string name="admin_no_reports">No hay reportes pendientes</string>
+    <string name="admin_report_label">Reporte #%1$s</string>
+    <string name="admin_type_trip">Viaje</string>
+    <string name="admin_type_comment">Comentario</string>
+    <string name="admin_report_type">Tipo: %1$s</string>
+    <string name="admin_status_open">ABIERTO</string>
+    <string name="admin_reported_by">Reportado por: %1$s</string>
+    <string name="admin_reason">Razón: %1$s</string>
+    <string name="admin_description">Descripción: %1$s</string>
+    <string name="admin_target_id">Target ID: %1$s</string>
+    <string name="admin_delete">Eliminar</string>
+    <string name="admin_resolve">Resolver</string>
+    <string name="admin_block">Bloquear</string>
+    <string name="admin_resolve_report_title">Resolver reporte</string>
+    <string name="admin_action_question">¿Qué acción deseas tomar?</string>
+    <string name="admin_notes_optional">Notas (opcional)</string>
+    <string name="admin_confirm">Confirmar</string>
+    <string name="admin_cancel">Cancelar</string>
+
+    <!-- Edit Trip -->
+    <string name="edit_trip_back">← Volver</string>
+    <string name="edit_trip_loading">Cargando viaje...</string>
+    <string name="edit_trip_currency">EUR</string>
+    <string name="edit_trip_travelers">Número de viajeros</string>
+    <string name="edit_trip_saving">Guardando…</string>
+    <string name="edit_trip_save_changes">Guardar cambios</string>
+    <string name="edit_trip_ok">OK</string>
+    <string name="edit_trip_cancel">Cancelar</string>
+    <string name="edit_trip_select">Seleccionar</string>
+    <string name="edit_trip_destination_label">Destino (capital europea)</string>
+    <string name="edit_trip_dropdown">▼</string>
+    <string name="edit_trip_choose_destination">Elige destino</string>
+    <string name="edit_trip_close">Cerrar</string>
+
+    <!-- Community -->
+    <string name="community_filters">Filtros</string>
+    <string name="community_filters_panel">Filtrar publicaciones</string>
+    <string name="community_destination_label">Destino</string>
+    <string name="community_destination_placeholder">Ej: Barcelona, París...</string>
+    <string name="community_max_budget_label">Presupuesto máximo (€)</string>
+    <string name="community_max_budget_placeholder">Ej: 1000</string>
+    <string name="community_clear">Limpiar</string>
+    <string name="community_apply">Aplicar</string>
+    <string name="community_save">Guardar</string>
+    <string name="community_like">Me gusta</string>
+    <string name="community_comments">Comentarios</string>
+    <string name="community_search_friends">Buscar amigos</string>
+    <string name="community_view_more">Ver más</string>
+    <string name="community_no_posts_found">No se encontraron publicaciones</string>
+    <string name="community_try_other_filters">Intenta con otros filtros</string>
+    <string name="community_empty_feed_title">Tu feed está vacío</string>
+    <string name="community_empty_feed_subtitle">Sigue a tus amigos para ver sus viajes</string>
+    <string name="community_days_format">%1$d días</string>
+    <string name="community_budget_format">%1$d%2$s</string>
+
+    <!-- Plan Tab -->
+    <string name="plan_budget_total">Presupuesto total</string>
+    <string name="plan_travelers">Número de viajeros</string>
+    <string name="plan_dates">Fechas</string>
+    <string name="plan_title">Planificar viaje</string>
+    <string name="plan_origin_fixed">Origen fijo</string>
+    <string name="plan_origin_madrid">Madrid (MAD)</string>
+    <string name="plan_budget_travelers_title">Presupuesto y viajeros</string>
+    <string name="plan_budget_travelers_subtitle">Ajusta la propuesta al tamaño del grupo</string>
+    <string name="plan_budget_hint">Presupuesto aproximado para todo el viaje</string>
+    <string name="plan_start_date">Fecha de inicio</string>
+    <string name="plan_end_date">Fecha de fin</string>
+    <string name="plan_preferences">Preferencias</string>
+    <string name="plan_preferences_subtitle">Selecciona al menos una</string>
+    <string name="plan_flight_route">Ruta de vuelo</string>
+    <string name="plan_route_outbound">Madrid (MAD) → %1$s (%2$s)</string>
+    <string name="plan_route_return">Vuelta: %1$s (%2$s) → Madrid (MAD)</string>
+    <string name="plan_generating">Generando...</string>
+    <string name="plan_generate">Generar propuesta</string>
+    <string name="plan_ok">OK</string>
+    <string name="plan_cancel">Cancelar</string>
+    <string name="plan_select">Seleccionar</string>
+    <string name="plan_destination_label">Destino (capital europea)</string>
+    <string name="plan_destination_input_label">Destino (capital europea)</string>
+    <string name="plan_choose_destination">Elige destino</string>
+    <string name="plan_close">Cerrar</string>
+    <string name="plan_currency">EUR</string>
+
+    <!-- Plan Result -->
+    <string name="plan_result_ok">OK</string>
+    <string name="plan_result_back">Volver</string>
+    <string name="plan_result_back_arrow">← Volver</string>
+    <string name="plan_result_share">Compartir</string>
+    <string name="plan_result_warning_title">Aviso</string>
+    <string name="plan_result_empty_state">No hay ninguna propuesta generada. Vuelve al formulario y crea una nueva.</string>
+    <string name="plan_result_saving">Guardando...</string>
+    <string name="plan_result_saved">Guardado</string>
+    <string name="plan_result_publishing">Publicando...</string>
+    <string name="plan_result_published">Ya publicado</string>
+    <string name="plan_result_trip_title">Viaje a %1$s</string>
+    <string name="plan_result_api_ok">api ok: %1$s (%2$.6f, %3$.6f)</string>
+    <string name="plan_result_api_fallback">api: sin datos (fallback)</string>
+    <string name="plan_result_duration">Duración recomendada: %1$d días</string>
+    <string name="plan_result_pricing_note">Precios estimados. Pueden variar según fechas, disponibilidad y proveedor. Verifica siempre el enlace antes de reservar.</string>
+    <string name="plan_result_section_activities">Actividades recomendadas reales</string>
+    <string name="plan_result_section_hotel">Alojamiento recomendado</string>
+    <string name="plan_result_section_flights">Ofertas de vuelo</string>
+    <string name="plan_result_section_comments">Comentarios</string>
+    <string name="plan_result_no_itinerary">No hay itinerario.</string>
+    <string name="plan_result_no_hotels">No hay alojamiento real disponible para este destino.</string>
+    <string name="plan_result_real_data">Datos reales</string>
+    <string name="plan_result_link">Ver enlace</string>
+    <string name="plan_result_reservation_link">Ver enlace de reserva</string>
+    <string name="plan_result_free_label">Gratis</string>
+    <string name="plan_result_paid_label">De pago</string>
+    <string name="plan_result_empty_dash">—</string>
+    <string name="plan_result_stars">%1$d estrellas</string>
+    <string name="plan_result_total_estimated">Total estimado: €%1$.0f</string>
+    <string name="plan_result_activity_price">€ %1$s</string>
+    <string name="plan_result_activity_price_free">Gratis</string>
+    <string name="plan_result_flight_departure">Salida: %1$s %2$s</string>
+    <string name="plan_result_flight_return"> • Vuelta: %1$s</string>
+    <string name="plan_result_flight_duration">Duración: %1$d min • %2$s</string>
+    <string name="plan_result_flight_price">Precio: %1$s %2$s</string>
+    <string name="plan_result_flight_book">Reservar</string>
+    <string name="plan_result_no_budget">No hay datos de presupuesto.</string>
+    <string name="plan_result_free">Gratis</string>
+    <string name="plan_result_paid">De pago</string>
+    <string name="plan_result_bullet">• %1$s</string>
+
+    <!-- VM messages -->
+    <string name="plan_result_draft_saved">Borrador guardado.</string>
+    <string name="plan_result_draft_already_saved">Borrador ya guardado.</string>
+    <string name="plan_result_error_save_draft">Error al guardar borrador.</string>
+    <string name="plan_result_error_publish">Error al publicar.</string>
+
+    <!-- Edit Trip -->
+    <string name="edit_trip_title">Editar viaje</string>
+    <string name="edit_trip_intro_title">Actualiza los datos del viaje</string>
+    <string name="edit_trip_intro_body">Puedes editar destino, presupuesto, fechas y preferencias.</string>
+    <string name="edit_trip_field_destination">Destino</string>
+    <string name="edit_trip_field_budget">Presupuesto</string>
+    <string name="edit_trip_field_travelers">Viajeros</string>
+    <string name="edit_trip_field_start">Fecha de inicio</string>
+    <string name="edit_trip_field_end">Fecha de fin</string>
+    <string name="edit_trip_field_prefs">Preferencias</string>
+    <string name="edit_trip_loading_error">No se pudo cargar el viaje.</string>
+    <string name="edit_trip_save_error">No se pudo guardar el viaje.</string>
+
+    <!-- Public Profile -->
+    <string name="public_profile_trip_summary">%1$d días • %2$d%3$s</string>
 
     <!-- Trip Actions -->
     <string name="trip_save_draft">Guardar borrador</string>
@@ -157,4 +423,6 @@
     <string name="trip_saving">Guardando...</string>
     <string name="trip_already_published">Ya publicado</string>
     <string name="trip_share">Compartir</string>
+    <string name="profile_status_draft">Borrador</string>
+    <string name="profile_status_published">Publicado</string>
 </resources>

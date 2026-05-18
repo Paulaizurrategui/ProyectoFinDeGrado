@@ -71,7 +71,7 @@ fun CommunityTabScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "Acceso Restringido / Restricted Access",
+                            text = stringResource(R.string.community_access_restricted),
                             style = if (isCompactWidth) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             maxLines = 2,
@@ -79,7 +79,7 @@ fun CommunityTabScreen(
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
                         Text(
-                            text = "Debes tener al menos 13 años para acceder a la comunidad. / You must be at least 13 years old to access the community.",
+                            text = stringResource(R.string.community_access_age_required),
                             style = if (isCompactWidth) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
                             textAlign = TextAlign.Center
                         )
@@ -267,7 +267,7 @@ fun CommunityHeader(
                     ) {
                         Icon(
                             Icons.Default.FilterList,
-                            contentDescription = "Filtros",
+                            contentDescription = stringResource(R.string.community_filters),
                             tint = if (hasActiveFilters) OrangeUrTriply else Color.Gray
                         )
                     }
@@ -303,7 +303,7 @@ fun FiltersPanel(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Filtrar publicaciones",
+                text = stringResource(R.string.community_filters_panel),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -312,8 +312,8 @@ fun FiltersPanel(
             OutlinedTextField(
                 value = destinationText,
                 onValueChange = { destinationText = it },
-                label = { Text("Destino") },
-                placeholder = { Text("Ej: Barcelona, París...") },
+                label = { Text(stringResource(R.string.community_destination_label)) },
+                placeholder = { Text(stringResource(R.string.community_destination_placeholder)) },
                 leadingIcon = {
                     Icon(Icons.Default.Place, contentDescription = null, tint = OrangeUrTriply)
                 },
@@ -329,8 +329,8 @@ fun FiltersPanel(
             OutlinedTextField(
                 value = budgetText,
                 onValueChange = { budgetText = it.filter { c -> c.isDigit() } },
-                label = { Text("Presupuesto máximo (€)") },
-                placeholder = { Text("Ej: 1000") },
+                label = { Text(stringResource(R.string.community_max_budget_label)) },
+                placeholder = { Text(stringResource(R.string.community_max_budget_placeholder)) },
                 leadingIcon = {
                     Icon(Icons.Default.Euro, contentDescription = null, tint = OrangeUrTriply)
                 },
@@ -359,7 +359,7 @@ fun FiltersPanel(
                         contentColor = Color.Gray
                     )
                 ) {
-                    Text("Limpiar")
+                    Text(stringResource(R.string.community_clear))
                 }
 
                 Button(
@@ -376,7 +376,7 @@ fun FiltersPanel(
                         containerColor = OrangeUrTriply
                     )
                 ) {
-                    Text("Aplicar")
+                    Text(stringResource(R.string.community_apply))
                 }
             }
         }
@@ -446,7 +446,7 @@ fun TravelPostCard(
                     Icon(
                         imageVector = if (post.isFavorite) Icons.Filled.Bookmark
                         else Icons.Outlined.BookmarkBorder,
-                        contentDescription = "Guardar",
+                        contentDescription = stringResource(R.string.community_save),
                         tint = if (post.isFavorite) OrangeUrTriply else Color.Gray
                     )
                 }
@@ -485,7 +485,7 @@ fun TravelPostCard(
 
                 AssistChip(
                     onClick = { },
-                    label = { Text("${post.days} días", maxLines = 1) },
+                    label = { Text(stringResource(R.string.community_days_format, post.days), maxLines = 1) },
                     leadingIcon = {
                         Icon(
                             Icons.Default.CalendarToday,
@@ -546,7 +546,7 @@ fun TravelPostCard(
                     Icon(
                         imageVector = if (post.isLiked) Icons.Filled.Favorite
                         else Icons.Outlined.FavoriteBorder,
-                        contentDescription = "Me gusta",
+                        contentDescription = stringResource(R.string.community_like),
                         tint = if (post.isLiked) Color.Red else Color.Gray,
                         modifier = Modifier.size(24.dp)
                     )
@@ -558,7 +558,7 @@ fun TravelPostCard(
                 ) {
                     Icon(
                         Icons.Outlined.ChatBubbleOutline,
-                        contentDescription = "Comentarios",
+                        contentDescription = stringResource(R.string.community_comments),
                         tint = Color.Gray,
                         modifier = Modifier.size(24.dp)
                     )
@@ -566,7 +566,7 @@ fun TravelPostCard(
 
                 TextButton(onClick = onCardClick) {
                     Text(
-                        text = "Ver más",
+                        text = stringResource(R.string.community_view_more),
                         color = OrangeUrTriply,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -601,12 +601,12 @@ fun EmptyState() {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "No se encontraron publicaciones",
+                text = stringResource(R.string.community_no_posts_found),
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.Gray
             )
             Text(
-                text = "Intenta con otros filtros",
+                text = stringResource(R.string.community_try_other_filters),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.LightGray
             )
@@ -632,19 +632,19 @@ fun EmptyFollowingState(onNavigateToFindFriends: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Tu feed está vacío",
+                text = stringResource(R.string.community_empty_feed_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Sigue a tus amigos para ver sus viajes",
+                text = stringResource(R.string.community_empty_feed_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.Gray
             )
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = onNavigateToFindFriends, colors = ButtonDefaults.buttonColors(containerColor = OrangeUrTriply)) {
-                Text("Buscar amigos")
+                Text(stringResource(R.string.community_search_friends))
             }
         }
     }

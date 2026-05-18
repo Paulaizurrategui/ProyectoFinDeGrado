@@ -34,67 +34,58 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
 
 @Composable
 fun FindFriendsScreen(onBack: () -> Unit) {
-    // vm de la pantalla (busqueda + follow)
     val vm: FindFriendsViewModel = viewModel()
-
-    // ui state observable
     val state by vm.uiState.collectAsState()
-
-    // texto de busqueda
     var query by remember { mutableStateOf("") }
 
-    // scaffold con estilo comun (card + degradado)
-    UrTriplyGradientScaffold(title = "Encontrar Amigos") {
+    UrTriplyGradientScaffold(title = stringResource(R.string.friends_title)) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // volver al perfil
             TextButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = null)
+                Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                 Spacer(Modifier.padding(horizontal = 2.dp))
-                Text("Volver al perfil", fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.friends_back_profile), fontWeight = FontWeight.SemiBold)
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // input de busqueda
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Busca por nombre o email...") },
+                placeholder = { Text(stringResource(R.string.friends_search_placeholder)) },
                 shape = RoundedCornerShape(16.dp),
                 singleLine = true,
                 trailingIcon = {
-                    // boton buscar
                     IconButton(onClick = { vm.searchUsers(query) }) {
-                        Icon(Icons.Default.Search, contentDescription = "Buscar")
+                        Icon(Icons.Default.Search, contentDescription = stringResource(R.string.friends_search_icon))
                     }
                 }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // estados: cargando / vacio
             if (state.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
             } else if (state.users.isEmpty() && query.isNotEmpty()) {
                 Text(
-                    "No se han encontrado aventureros.",
+                    stringResource(R.string.friends_empty),
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
             }
 
-            // lista de usuarios encontrados
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(state.users, key = { it.uid }) { user ->
                     val isFollowing = state.followingIds.contains(user.uid)
@@ -108,22 +99,23 @@ fun FindFriendsScreen(onBack: () -> Unit) {
                             modifier = Modifier.padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // nombre + email
                             Column(Modifier.weight(1f)) {
-                                Text(user.displayName.ifBlank { "Sin nombre" }, fontWeight = FontWeight.Bold)
+                                Text(
+                                    user.displayName.ifBlank { stringResource(R.string.friends_no_name) },
+                                    fontWeight = FontWeight.Bold
+                                )
                                 if (user.email.isNotBlank()) {
                                     Text(user.email, style = MaterialTheme.typography.bodySmall)
                                 }
                             }
 
-                            // boton seguir / siguiendo
                             Button(
                                 onClick = { vm.toggleFollow(user) },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (isFollowing) Color.Gray else MaterialTheme.colorScheme.primary
                                 )
                             ) {
-                                Text(if (isFollowing) "Siguiendo" else "Seguir")
+                                Text(if (isFollowing) stringResource(R.string.friends_following) else stringResource(R.string.friends_follow))
                             }
                         }
                     }

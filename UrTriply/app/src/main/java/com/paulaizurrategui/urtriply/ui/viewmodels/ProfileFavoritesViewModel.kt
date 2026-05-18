@@ -21,8 +21,6 @@ class ProfileFavoritesViewModel : ViewModel() {
     private var favoritesListener: ListenerRegistration? = null
     private var likesGeneration = 0
     private var favoritesGeneration = 0
-    private var likesReady = false
-    private var favoritesReady = false
 
     private val _favorites = MutableStateFlow<List<SimpleTripData>>(emptyList())
     val favorites: StateFlow<List<SimpleTripData>> = _favorites
@@ -30,85 +28,107 @@ class ProfileFavoritesViewModel : ViewModel() {
     private val _likes = MutableStateFlow<List<SimpleTripData>>(emptyList())
     val likes: StateFlow<List<SimpleTripData>> = _likes
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
+    private val _favoritesLoading = MutableStateFlow(false)
+    val favoritesLoading: StateFlow<Boolean> = _favoritesLoading
 
-    fun loadFavoritesAndLikes() {
+    private val _likesLoading = MutableStateFlow(false)
+    val likesLoading: StateFlow<Boolean> = _likesLoading
+
+    fun loadFavorites() {
         val uid = auth.currentUser?.uid ?: return
 
-        likesListener?.remove()
         favoritesListener?.remove()
-        likesListener = null
         favoritesListener = null
-        likesReady = false
-        favoritesReady = false
-        likesGeneration++
         favoritesGeneration++
-        _isLoading.value = true
-
-        likesListener = db.collectionGroup("likes")
-            .whereEqualTo("uid", uid)
-            .addSnapshotListener { snap, e ->
-                likesReady = true
-                if (e != null) {
-                    _likes.value = emptyList()
-                    finishLoadingIfReady()
-                    return@addSnapshotListener
-                }
-
-                val tripIds = snap?.documents
-                    ?.mapNotNull { it.reference.parent.parent?.id }
-                    ?.toSet()
-                    ?: emptySet()
-
-                val generation = likesGeneration
-                loadTripDetails(tripIds) { list ->
-                    if (generation == likesGeneration) {
-                        _likes.value = list
-                        finishLoadingIfReady()
-                    }
-                }
-            }
+        _favoritesLoading.value = true
 
         favoritesListener = db.collectionGroup("favorites")
             .whereEqualTo("uid", uid)
             .addSnapshotListener { snap, e ->
-                favoritesReady = true
                 if (e != null) {
                     _favorites.value = emptyList()
-                    finishLoadingIfReady()
+                    _favoritesLoading.value = false
                     return@addSnapshotListener
                 }
 
                 val tripIds = snap?.documents
                     ?.mapNotNull { it.reference.parent.parent?.id }
-                    ?.toSet()
+                    ?.distinct()
                     ?: emptySet()
 
                 val generation = favoritesGeneration
                 loadTripDetails(tripIds) { list ->
                     if (generation == favoritesGeneration) {
                         _favorites.value = list
-                        finishLoadingIfReady()
+                        _favoritesLoading.value = false
                     }
                 }
             }
     }
 
+    fun loadLikes() {
+        val uid = auth.currentUser?.uid ?: return
+
+        likesListener?.remove()
+        likesListener = null
+        likesGeneration++
+        _likesLoading.value = true
+
+        likesListener = db.collectionGroup("likes")
+            .whereEqualTo("uid", uid)
+            .addSnapshotListener { snap, e ->
+                if (e != null) {
+                    _likes.value = emptyList()
+                    _likesLoading.value = false
+                    return@addSnapshotListener
+                }
+
+                val tripIds = snap?.documents
+                    ?.mapNotNull { it.reference.parent.parent?.id }
+                    ?.distinct()
+                    ?: emptySet()
+
+                val generation = likesGeneration
+                loadTripDetails(tripIds) { list ->
+                    if (generation == likesGeneration) {
+                        _likes.value = list
+                        _likesLoading.value = false
+                    }
+                }
+            }
+    }
+
+    fun refreshAll() {
+        loadFavorites()
+        loadLikes()
+    }
+
     fun removeLike(tripId: String) {
         val uid = auth.currentUser?.uid ?: return
+        val previousLikes = _likes.value
+        _likes.value = previousLikes.filterNot { it.id == tripId }
         db.collection("trips").document(tripId).collection("likes").document(uid)
             .delete()
+            .addOnFailureListener {
+                _likes.value = previousLikes
+                loadLikes()
+            }
     }
 
     fun removeFavorite(tripId: String) {
         val uid = auth.currentUser?.uid ?: return
+        val previousFavorites = _favorites.value
+        _favorites.value = previousFavorites.filterNot { it.id == tripId }
         db.collection("trips").document(tripId).collection("favorites").document(uid)
             .delete()
+            .addOnFailureListener {
+                _favorites.value = previousFavorites
+                loadFavorites()
+            }
     }
 
     private fun loadTripDetails(
-        tripIds: Set<String>,
+        tripIds: Collection<String>,
         onResult: (List<SimpleTripData>) -> Unit
     ) {
         if (tripIds.isEmpty()) {
@@ -138,12 +158,6 @@ class ProfileFavoritesViewModel : ViewModel() {
                         onResult(results)
                     }
                 }
-        }
-    }
-
-    private fun finishLoadingIfReady() {
-        if (likesReady && favoritesReady) {
-            _isLoading.value = false
         }
     }
 

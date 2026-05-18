@@ -1,6 +1,7 @@
 package com.paulaizurrategui.urtriply.ui.screens
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.paulaizurrategui.urtriply.data.trips.TripStatus
 import com.paulaizurrategui.urtriply.data.trips.TripsRepository
@@ -17,9 +18,15 @@ data class PlanResultUiState(
 )
 
 class PlanResultViewModel(
+    application: Application,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val repo: TripsRepository = TripsRepository()
-) : ViewModel() {
+) : AndroidViewModel(application) {
+
+    // Secondary constructor required for AndroidViewModelFactory to instantiate via reflection
+    constructor(application: Application) : this(application, FirebaseAuth.getInstance(), TripsRepository())
+
+    private val app = application
 
     private val _uiState = MutableStateFlow(PlanResultUiState())
     val uiState: StateFlow<PlanResultUiState> = _uiState
@@ -45,14 +52,14 @@ class PlanResultViewModel(
         }
 
         val user = auth.currentUser ?: run {
-            _uiState.value = _uiState.value.copy(errorMessage = "Necesitas iniciar sesión.")
+            _uiState.value = _uiState.value.copy(errorMessage = app.getString(com.paulaizurrategui.urtriply.R.string.login_required_body))
             draftLock.set(false)
             return
         }
 
         // 2) Si ya está publicado, no guardamos como borrador
         if (_uiState.value.currentStatus == TripStatus.PUBLISHED) {
-            _uiState.value = _uiState.value.copy(successMessage = "Este viaje ya está publicado.")
+            _uiState.value = _uiState.value.copy(successMessage = app.getString(com.paulaizurrategui.urtriply.R.string.plan_result_published))
             draftLock.set(false)
             return
         }
@@ -60,7 +67,7 @@ class PlanResultViewModel(
         // 3) Si ya hay un borrador guardado, NO creamos otro (evita duplicados)
         val existingId = _uiState.value.lastSavedTripId
         if (!existingId.isNullOrBlank()) {
-            _uiState.value = _uiState.value.copy(successMessage = "Borrador ya guardado.")
+            _uiState.value = _uiState.value.copy(successMessage = app.getString(com.paulaizurrategui.urtriply.R.string.plan_result_draft_already_saved))
             draftLock.set(false)
             return
         }
@@ -75,7 +82,7 @@ class PlanResultViewModel(
             onSuccess = { id ->
                 _uiState.value = _uiState.value.copy(
                     isSaving = false,
-                    successMessage = "Borrador guardado.",
+                    successMessage = app.getString(com.paulaizurrategui.urtriply.R.string.plan_result_draft_saved),
                     lastSavedTripId = id,
                     currentStatus = TripStatus.DRAFT
                 )
@@ -84,7 +91,7 @@ class PlanResultViewModel(
             onError = { e ->
                 _uiState.value = _uiState.value.copy(
                     isSaving = false,
-                    errorMessage = e.message ?: "Error al guardar borrador."
+                    errorMessage = e.message ?: app.getString(com.paulaizurrategui.urtriply.R.string.plan_result_error_save_draft)
                 )
                 draftLock.set(false)
             }
@@ -96,13 +103,13 @@ class PlanResultViewModel(
         if (_uiState.value.isSaving) return
 
         val user = auth.currentUser ?: run {
-            _uiState.value = _uiState.value.copy(errorMessage = "Necesitas iniciar sesión.")
+            _uiState.value = _uiState.value.copy(errorMessage = app.getString(com.paulaizurrategui.urtriply.R.string.login_required_body))
             return
         }
 
         // Si ya está publicado, bloqueamos
         if (_uiState.value.currentStatus == TripStatus.PUBLISHED) {
-            _uiState.value = _uiState.value.copy(successMessage = "Ya está publicado.")
+            _uiState.value = _uiState.value.copy(successMessage = app.getString(com.paulaizurrategui.urtriply.R.string.plan_result_published))
             return
         }
 
@@ -118,14 +125,14 @@ class PlanResultViewModel(
                     PlanResultStore.lastResult = PlanResultStore.lastResult?.copy(tripId = existingId)
                     _uiState.value = _uiState.value.copy(
                         isSaving = false,
-                        successMessage = "Viaje publicado.",
+                        successMessage = app.getString(com.paulaizurrategui.urtriply.R.string.plan_result_published),
                         currentStatus = TripStatus.PUBLISHED
                     )
                 },
                 onError = { e ->
                     _uiState.value = _uiState.value.copy(
                         isSaving = false,
-                        errorMessage = e.message ?: "Error al publicar."
+                        errorMessage = e.message ?: app.getString(com.paulaizurrategui.urtriply.R.string.plan_result_error_publish)
                     )
                 }
             )
@@ -141,7 +148,7 @@ class PlanResultViewModel(
                     PlanResultStore.lastResult = PlanResultStore.lastResult?.copy(tripId = id)
                     _uiState.value = _uiState.value.copy(
                         isSaving = false,
-                        successMessage = "Viaje publicado.",
+                        successMessage = app.getString(com.paulaizurrategui.urtriply.R.string.plan_result_published),
                         lastSavedTripId = id,
                         currentStatus = TripStatus.PUBLISHED
                     )
@@ -149,7 +156,7 @@ class PlanResultViewModel(
                 onError = { e ->
                     _uiState.value = _uiState.value.copy(
                         isSaving = false,
-                        errorMessage = e.message ?: "Error al publicar."
+                        errorMessage = e.message ?: app.getString(com.paulaizurrategui.urtriply.R.string.plan_result_error_publish)
                     )
                 }
             )

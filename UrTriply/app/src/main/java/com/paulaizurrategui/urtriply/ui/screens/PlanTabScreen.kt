@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -60,6 +61,10 @@ import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withTimeoutOrNull
+import com.paulaizurrategui.urtriply.R
 
 private enum class Preference(val label: String) {
     CULTURA("Cultura"),
@@ -91,7 +96,7 @@ fun PlanTabScreen(
     isGuest: Boolean,
     onNavigateToResult: () -> Unit
 ) {
-    UrTriplyGradientScaffold(title = "Planificar") {
+    UrTriplyGradientScaffold(title = stringResource(R.string.plan_title)) {
         val destinos = listOf(
             "París (Francia)",
             "Londres (Reino Unido)",
@@ -155,7 +160,7 @@ fun PlanTabScreen(
                 ) {
                     Column(Modifier.padding(14.dp)) {
                         Text(
-                            text = "Planifica tu viaje",
+                            text = stringResource(R.string.plan_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.ExtraBold
                         )
@@ -174,7 +179,7 @@ fun PlanTabScreen(
                 Spacer(Modifier.height(14.dp))
 
                 // destino
-                SectionTitle(title = "Destino", subtitle = "Elige la capital europea que quieres visitar")
+                    SectionTitle(title = stringResource(R.string.plan_destination_label), subtitle = stringResource(R.string.plan_choose_destination))
                 Spacer(Modifier.height(8.dp))
                 DestinationDropdown(
                     destinos = destinos,
@@ -190,12 +195,12 @@ fun PlanTabScreen(
                 ) {
                     Column(Modifier.padding(14.dp)) {
                         Text(
-                            text = "Origen fijo",
+                            text = stringResource(R.string.plan_origin_fixed),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Madrid (MAD)",
+                            text = stringResource(R.string.plan_origin_madrid),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -205,7 +210,7 @@ fun PlanTabScreen(
                 Spacer(Modifier.height(14.dp))
 
                 // presupuesto y viajeros
-                SectionTitle(title = "Presupuesto y viajeros", subtitle = "Ajusta la propuesta al tamaño del grupo")
+                SectionTitle(title = stringResource(R.string.plan_budget_travelers_title), subtitle = stringResource(R.string.plan_budget_travelers_subtitle))
                 Spacer(Modifier.height(8.dp))
 
                 Card(
@@ -218,15 +223,15 @@ fun PlanTabScreen(
                         OutlinedTextField(
                             value = presupuestoText,
                             onValueChange = { presupuestoText = it.replace(",", ".") },
-                            label = { Text("Presupuesto total") },
-                            trailingIcon = { Text("EUR", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            label = { Text(stringResource(R.string.plan_budget_total)) },
+                            trailingIcon = { Text(stringResource(R.string.plan_currency), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp)
                         )
 
                         Text(
-                            text = "Presupuesto aproximado para todo el viaje",
+                            text = stringResource(R.string.plan_budget_hint),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -234,7 +239,7 @@ fun PlanTabScreen(
                         OutlinedTextField(
                             value = viajerosText,
                             onValueChange = { viajerosText = it.filter(Char::isDigit) },
-                            label = { Text("Número de viajeros") },
+                            label = { Text(stringResource(R.string.plan_travelers)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp)
@@ -254,15 +259,15 @@ fun PlanTabScreen(
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("Fechas", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.plan_dates), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
 
                         DateRowField(
-                            label = "Fecha de inicio",
+                            label = stringResource(R.string.plan_start_date),
                             value = formatDate(fechaInicioMillis),
                             onClick = { showStartPicker = true }
                         )
                         DateRowField(
-                            label = "Fecha de fin",
+                            label = stringResource(R.string.plan_end_date),
                             value = formatDate(fechaFinMillis),
                             onClick = { showEndPicker = true }
                         )
@@ -272,7 +277,7 @@ fun PlanTabScreen(
                 Spacer(Modifier.height(14.dp))
 
                 // preferencias
-                SectionTitle(title = "Preferencias", subtitle = "Selecciona al menos una")
+                SectionTitle(title = stringResource(R.string.plan_preferences), subtitle = stringResource(R.string.plan_preferences_subtitle))
                 Spacer(Modifier.height(8.dp))
 
                 Card(
@@ -321,18 +326,18 @@ fun PlanTabScreen(
                 ) {
                     Column(Modifier.padding(14.dp)) {
                         Text(
-                            text = "Ruta de vuelo",
+                            text = stringResource(R.string.plan_flight_route),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "Madrid (MAD) → $queryCity ($destinationIata)",
+                            text = stringResource(R.string.plan_route_outbound, queryCity, destinationIata),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "Vuelta: $queryCity ($destinationIata) → Madrid (MAD)",
+                            text = stringResource(R.string.plan_route_return, queryCity, destinationIata),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -391,9 +396,6 @@ fun PlanTabScreen(
                         isLoading = true
 
                         scope.launch {
-                            // delay solo para que se vea el loader
-                            delay(900)
-
                             // 1) genero local (fallback)
                             val base = generateLocalProposal(
                                 destino = destino,
@@ -404,53 +406,72 @@ fun PlanTabScreen(
                                 prefs = prefs
                             )
 
-                            // 2) geocoding real (b: solo parte antes del parentesis)
+                            // 2) geocoding real (se necesita para hoteles/actividades)
                             val geo = geocodingRepo.geocode(queryCity)
 
-                            val hoteles: List<Hotel> = if (geo != null) {
-                                try {
-                                    hotelsRepo.searchHotels(
-                                        lat = geo.lat,
-                                        lon = geo.lon,
-                                        checkInDate = fechaInicioMillis,
-                                        checkOutDate = fechaFinMillis
-                                    )
-                                } catch (e: Throwable) {
-                                    Log.e("PlanTabScreen", "Error loading hotels for $queryCity", e)
-                                    emptyList()
-                                }
-                            } else {
-                                emptyList()
-                            }
+                            // 3) Parallelizar búsquedas remotas para reducir tiempo total
+                            var hoteles: List<Hotel>
+                            var actividadesReales: List<SuggestedActivity>
+                            var vuelosOfertas: List<com.paulaizurrategui.urtriply.domain.model.FlightOffer>
 
-                            val actividadesReales: List<SuggestedActivity> = if (geo != null) {
-                                try {
-                                    val preferenceNames = prefs.map { it.label }.toSet()
-                                    activitiesRepo.searchActivities(
-                                        lat = geo.lat,
-                                        lon = geo.lon,
-                                        prefs = preferenceNames
-                                    )
-                                } catch (e: Throwable) {
-                                    Log.e("PlanTabScreen", "Error loading activities for $queryCity", e)
-                                    emptyList()
-                                }
-                            } else {
-                                emptyList()
-                            }
+                            try {
+                                val resultTriple = withTimeoutOrNull(6000L) {
+                                    coroutineScope {
+                                        val hotelesDeferred = async {
+                                            if (geo == null) return@async emptyList<Hotel>()
+                                            try {
+                                                hotelsRepo.searchHotels(
+                                                    lat = geo.lat,
+                                                    lon = geo.lon,
+                                                    checkInDate = fechaInicioMillis,
+                                                    checkOutDate = fechaFinMillis
+                                                )
+                                            } catch (e: Throwable) {
+                                                emptyList()
+                                            }
+                                        }
 
-                            val vuelosOfertas: List<com.paulaizurrategui.urtriply.domain.model.FlightOffer> = try {
-                                flightsRepo.searchFlights(
-                                    origin = effectiveOriginIata,
-                                    destination = destinationIata,
-                                    dateFrom = dateFormat.format(Date(fechaInicioMillis!!)),
-                                    dateTo = dateFormat.format(Date(fechaFinMillis!!)),
-                                    limit = 6
-                                )
+                                        val actividadesDeferred = async {
+                                            if (geo == null) return@async emptyList<SuggestedActivity>()
+                                            try {
+                                                activitiesRepo.searchActivities(
+                                                    lat = geo.lat,
+                                                    lon = geo.lon,
+                                                    prefs = prefs.map { it.label.lowercase(Locale.getDefault()) }.toSet()
+                                                )
+                                            } catch (e: Throwable) {
+                                                emptyList()
+                                            }
+                                        }
+
+                                        val vuelosDeferred = async {
+                                            try {
+                                                flightsRepo.searchFlights(
+                                                    origin = effectiveOriginIata,
+                                                    destination = destinationIata,
+                                                    dateFrom = formatDate(fechaInicioMillis),
+                                                    dateTo = formatDate(fechaFinMillis)
+                                                )
+                                            } catch (e: Throwable) {
+                                                emptyList()
+                                            }
+                                        }
+
+                                        Triple(hotelesDeferred.await(), actividadesDeferred.await(), vuelosDeferred.await())
+                                    }
+                                } ?: Triple(emptyList<Hotel>(), emptyList<SuggestedActivity>(), emptyList())
+
+                                hoteles = resultTriple.first
+                                actividadesReales = resultTriple.second
+                                vuelosOfertas = resultTriple.third
                             } catch (e: Throwable) {
-                                Log.e("PlanTabScreen", "Error loading flights for $queryCity", e)
-                                emptyList()
+                                Log.e("PlanTabScreen", "Error parallel searches", e)
+                                hoteles = emptyList()
+                                actividadesReales = emptyList()
+                                vuelosOfertas = emptyList()
                             }
+
+
 
                             // 3) si sale bien, lo guardo en el resultado
                             val finalPlan = if (geo != null) {
@@ -494,9 +515,9 @@ fun PlanTabScreen(
                 ) {
                     if (isLoading) {
                         CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(end = 12.dp))
-                        Text("Generando...")
+                        Text(stringResource(R.string.plan_generating))
                     } else {
-                        Text("Generar propuesta", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.plan_generate), fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -521,9 +542,9 @@ fun PlanTabScreen(
                     TextButton(onClick = {
                         fechaInicioMillis = state.selectedDateMillis
                         showStartPicker = false
-                    }) { Text("OK") }
+                    }) { Text(stringResource(R.string.plan_ok)) }
                 },
-                dismissButton = { TextButton(onClick = { showStartPicker = false }) { Text("Cancelar") } }
+                dismissButton = { TextButton(onClick = { showStartPicker = false }) { Text(stringResource(R.string.plan_cancel)) } }
             ) { DatePicker(state = state) }
         }
 
@@ -535,9 +556,9 @@ fun PlanTabScreen(
                     TextButton(onClick = {
                         fechaFinMillis = state.selectedDateMillis
                         showEndPicker = false
-                    }) { Text("OK") }
+                    }) { Text(stringResource(R.string.plan_ok)) }
                 },
-                dismissButton = { TextButton(onClick = { showEndPicker = false }) { Text("Cancelar") } }
+                dismissButton = { TextButton(onClick = { showEndPicker = false }) { Text(stringResource(R.string.plan_cancel)) } }
             ) { DatePicker(state = state) }
         }
     }
@@ -584,7 +605,7 @@ private fun DateRowField(
             Spacer(Modifier.height(2.dp))
             Text(text = value, fontWeight = FontWeight.SemiBold)
         }
-        TextButton(onClick = onClick) { Text("Seleccionar") }
+        TextButton(onClick = onClick) { Text(stringResource(R.string.plan_select)) }
     }
 }
 
@@ -597,12 +618,12 @@ private fun DestinationDropdown(
     var showDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxWidth()) {
-        OutlinedTextField(
+            OutlinedTextField(
             value = selected,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Destino (capital europea)") },
-            trailingIcon = { Text("▼") },
+            label = { Text(stringResource(R.string.plan_destination_input_label)) },
+            trailingIcon = { Text(stringResource(R.string.edit_trip_dropdown)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
@@ -618,7 +639,7 @@ private fun DestinationDropdown(
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Elige destino") },
+            title = { Text(stringResource(R.string.plan_choose_destination)) },
             text = {
                 LazyColumn {
                     items(destinos) { option ->
@@ -639,7 +660,7 @@ private fun DestinationDropdown(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showDialog = false }) { Text("Cerrar") }
+                TextButton(onClick = { showDialog = false }) { Text(stringResource(R.string.plan_close)) }
             }
         )
     }
