@@ -60,6 +60,7 @@ fun PlanResultScreen(
     onRequireLogin: () -> Unit
 ) {
     val r = PlanResultStore.lastResult
+    val context = LocalContext.current
     val vm: PlanResultViewModel = viewModel()
     val commentVm: CommentViewModel = viewModel()
     val uiState by vm.uiState.collectAsState()
@@ -179,7 +180,15 @@ fun PlanResultScreen(
                     Spacer(Modifier.height(10.dp))
 
                     OutlinedButton(
-                        onClick = { /* TODO: Compartir */ },
+                        onClick = {
+                            val shareText = buildShareText(r)
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, shareText)
+                                putExtra(Intent.EXTRA_SUBJECT, "Mi propuesta de viaje a ${r.destino}")
+                            }
+                            context.startActivity(Intent.createChooser(shareIntent, "Compartir propuesta"))
+                        },
                         enabled = !uiState.isSaving,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp)
@@ -674,4 +683,54 @@ private fun FlightCard(flight: com.paulaizurrategui.urtriply.domain.model.Flight
             }
         }
     }
+}
+
+/**
+ * Construye un texto con los detalles de la propuesta para compartir
+ */
+private fun buildShareText(proposal: PlanResult): String {
+    val sb = StringBuilder()
+    sb.append("🌍 Mi propuesta de viaje a ${proposal.destino}\n\n")
+    
+    sb.append("📋 DETALLES:\n")
+    sb.append("• Destino: ${proposal.destino}\n")
+    sb.append("• Duración: ${proposal.diasRecomendados} días\n")
+    sb.append("• Viajeros: ${proposal.viajeros}\n")
+    sb.append("• Presupuesto total: €${String.format("%.2f", proposal.presupuestoTotal)}\n\n")
+    
+    if (proposal.presupuestoCategorias.isNotEmpty()) {
+        sb.append("💰 PRESUPUESTO POR CATEGORÍA:\n")
+        proposal.presupuestoCategorias.forEach { (categoria, cantidad) ->
+            sb.append("• $categoria: €${String.format("%.2f", cantidad)}\n")
+        }
+        sb.append("\n")
+    }
+    
+    if (proposal.itinerario.isNotEmpty()) {
+        sb.append("📅 ITINERARIO:\n")
+        proposal.itinerario.forEach { dia ->
+            sb.append("• $dia\n")
+        }
+        sb.append("\n")
+    }
+    
+    if (proposal.actividadesGratis.isNotEmpty()) {
+        sb.append("🎉 ACTIVIDADES GRATIS:\n")
+        proposal.actividadesGratis.forEach { actividad ->
+            sb.append("• $actividad\n")
+        }
+        sb.append("\n")
+    }
+    
+    if (proposal.actividadesPago.isNotEmpty()) {
+        sb.append("🎫 ACTIVIDADES DE PAGO:\n")
+        proposal.actividadesPago.forEach { actividad ->
+            sb.append("• $actividad\n")
+        }
+        sb.append("\n")
+    }
+    
+    sb.append("Generado con UrTriply ✈️\n")
+    
+    return sb.toString()
 }

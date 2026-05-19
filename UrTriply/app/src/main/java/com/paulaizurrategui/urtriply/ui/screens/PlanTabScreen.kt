@@ -63,7 +63,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.supervisorScope
 import com.paulaizurrategui.urtriply.R
 
 private enum class Preference(val label: String) {
@@ -396,114 +399,109 @@ fun PlanTabScreen(
                         isLoading = true
 
                         scope.launch {
-                            // 1) genero local (fallback)
-                            val base = generateLocalProposal(
-                                destino = destino,
-                                presupuestoTotal = presupuesto,
-                                viajeros = viajeros,
-                                fechaInicioMillis = fechaInicioMillis,
-                                fechaFinMillis = fechaFinMillis,
-                                prefs = prefs
-                            )
-
-                            // 2) geocoding real (se necesita para hoteles/actividades)
-                            val geo = geocodingRepo.geocode(queryCity)
-
-                            // 3) Parallelizar búsquedas remotas para reducir tiempo total
-                            var hoteles: List<Hotel>
-                            var actividadesReales: List<SuggestedActivity>
-                            var vuelosOfertas: List<com.paulaizurrategui.urtriply.domain.model.FlightOffer>
-
                             try {
-                                val resultTriple = withTimeoutOrNull(6000L) {
-                                    coroutineScope {
-                                        val hotelesDeferred = async {
-                                            if (geo == null) return@async emptyList<Hotel>()
-                                            try {
+                                // 1) genero local (fallback inmediato)
+                                val base = generateLocalProposal(
+                                    destino = destino,
+                                    presupuestoTotal = presupuesto,
+                                    viajeros = viajeros,
+                                    fechaInicioMillis = fechaInicioMillis,
+                                    fechaFinMillis = fechaFinMillis,
+                                    prefs = prefs
+                                )
+
+                                // 2) geocoding en IO para no bloquear la UI
+                                val geo = withContext(Dispatchers.IO) {
+                                    geocodingRepo.geocode(queryCity)
+                                }
+
+                                // 3) búsquedas paralelas supervisadas con reintentos/backoff y timeout por llamada
+                                val preferenceNames = prefs.map { it.label.lowercase(Locale.getDefault()) }.toSet()
+
+                                val (hoteles, actividadesReales, vuelosOfertas) = supervisorScope {
+                                    val hotelesDeferred = async(Dispatchers.IO) {
+                                        if (geo == null) return@async emptyList<Hotel>()
+                                        val result = retryWithBackoff(times = 3, initialDelay = 500) {
+                                            // treat timeout as failure so retryWithBackoff can retry
+                                            withTimeoutOrNull(10000L) {
                                                 hotelsRepo.searchHotels(
                                                     lat = geo.lat,
                                                     lon = geo.lon,
                                                     checkInDate = fechaInicioMillis,
                                                     checkOutDate = fechaFinMillis
                                                 )
-                                            } catch (e: Throwable) {
-                                                emptyList()
-                                            }
+                                            } ?: throw RuntimeException("timeout")
                                         }
+                                        result ?: emptyList()
+                                    }
 
-                                        val actividadesDeferred = async {
-                                            if (geo == null) return@async emptyList<SuggestedActivity>()
-                                            try {
+                                    val actividadesDeferred = async(Dispatchers.IO) {
+                                        if (geo == null) return@async emptyList<SuggestedActivity>()
+                                        val result = retryWithBackoff(times = 3, initialDelay = 600) {
+                                            withTimeoutOrNull(15000L) {
                                                 activitiesRepo.searchActivities(
                                                     lat = geo.lat,
                                                     lon = geo.lon,
-                                                    prefs = prefs.map { it.label.lowercase(Locale.getDefault()) }.toSet()
+                                                    prefs = preferenceNames
                                                 )
-                                            } catch (e: Throwable) {
-                                                emptyList()
-                                            }
+                                            } ?: throw RuntimeException("timeout")
                                         }
+                                        result ?: emptyList()
+                                    }
 
-                                        val vuelosDeferred = async {
-                                            try {
+                                    val vuelosDeferred = async(Dispatchers.IO) {
+                                        val result = retryWithBackoff(times = 2, initialDelay = 400) {
+                                            withTimeoutOrNull(8000L) {
                                                 flightsRepo.searchFlights(
                                                     origin = effectiveOriginIata,
                                                     destination = destinationIata,
                                                     dateFrom = formatDate(fechaInicioMillis),
                                                     dateTo = formatDate(fechaFinMillis)
                                                 )
-                                            } catch (e: Throwable) {
-                                                emptyList()
-                                            }
+                                            } ?: throw RuntimeException("timeout")
                                         }
-
-                                        Triple(hotelesDeferred.await(), actividadesDeferred.await(), vuelosDeferred.await())
+                                        result ?: emptyList()
                                     }
-                                } ?: Triple(emptyList<Hotel>(), emptyList<SuggestedActivity>(), emptyList())
 
-                                hoteles = resultTriple.first
-                                actividadesReales = resultTriple.second
-                                vuelosOfertas = resultTriple.third
+                                    Triple(hotelesDeferred.await(), actividadesDeferred.await(), vuelosDeferred.await())
+                                }
+
+                                // 4) si sale bien, lo guardo en el resultado
+                                val finalPlan = if (geo != null) {
+                                    val itineraryFromActivities = withContext(Dispatchers.Default) {
+                                        buildItineraryFromActivities(
+                                            destino = destino,
+                                            diasRecomendados = base.diasRecomendados,
+                                            prefs = prefs,
+                                            actividades = actividadesReales,
+                                            fallbackItinerary = base.itinerario
+                                        )
+                                    }
+
+                                    base.copy(
+                                        destinoDisplayName = geo.displayName,
+                                        lat = geo.lat,
+                                        lon = geo.lon,
+                                        hoteles = hoteles,
+                                        hotelMesSeleccionado = hoteles.firstOrNull(),
+                                        apiHotelesOk = hoteles.any { it.isReal },
+                                        actividadesReales = actividadesReales,
+                                        apiActividadesOk = actividadesReales.any { it.isReal },
+                                        itinerario = itineraryFromActivities,
+                                        vuelos = vuelosOfertas,
+                                        apiVuelosOk = vuelosOfertas.any { it.isReal }
+                                    )
+                                } else {
+                                    base
+                                }
+
+                                PlanResultStore.lastResult = finalPlan
+                                onNavigateToResult()
                             } catch (e: Throwable) {
-                                Log.e("PlanTabScreen", "Error parallel searches", e)
-                                hoteles = emptyList()
-                                actividadesReales = emptyList()
-                                vuelosOfertas = emptyList()
+                                Log.e("PlanTabScreen", "Error generating proposal", e)
+                            } finally {
+                                isLoading = false
                             }
-
-
-
-                            // 3) si sale bien, lo guardo en el resultado
-                            val finalPlan = if (geo != null) {
-                                val itineraryFromActivities = buildItineraryFromActivities(
-                                    destino = destino,
-                                    diasRecomendados = base.diasRecomendados,
-                                    prefs = prefs,
-                                    actividades = actividadesReales,
-                                    fallbackItinerary = base.itinerario
-                                )
-
-                                base.copy(
-                                    destinoDisplayName = geo.displayName,
-                                    lat = geo.lat,
-                                    lon = geo.lon,
-                                    hoteles = hoteles,
-                                    hotelMesSeleccionado = hoteles.firstOrNull(),
-                                    apiHotelesOk = hoteles.any { it.isReal },
-                                    actividadesReales = actividadesReales,
-                                    apiActividadesOk = actividadesReales.any { it.isReal },
-                                    itinerario = itineraryFromActivities,
-                                    vuelos = vuelosOfertas,
-                                    apiVuelosOk = vuelosOfertas.any { it.isReal }
-                                )
-                            } else {
-                                base
-                            }
-
-                            PlanResultStore.lastResult = finalPlan
-
-                            isLoading = false
-                            onNavigateToResult()
                         }
                     },
                     enabled = !isLoading,
@@ -831,5 +829,33 @@ private fun buildItineraryFromActivities(
         }
 
         "Día $day: $focus en $destino. Actividades: $activitiesText"
+    }
+}
+
+/**
+ * Retry with exponential backoff. Returns null if all attempts fail.
+ */
+private suspend fun <T> retryWithBackoff(
+    times: Int = 3,
+    initialDelay: Long = 400,
+    factor: Double = 2.0,
+    maxDelay: Long = 5000,
+    block: suspend () -> T?
+): T? {
+    var currentDelay = initialDelay
+    repeat(times - 1) {
+        try {
+            return block()
+        } catch (e: Exception) {
+            Log.w("PlanTabScreen", "Call failed, retrying in ${currentDelay}ms", e)
+            delay(currentDelay)
+            currentDelay = (currentDelay * factor).toLong().coerceAtMost(maxDelay)
+        }
+    }
+    return try {
+        block()
+    } catch (e: Exception) {
+        Log.e("PlanTabScreen", "Final attempt failed", e)
+        null
     }
 }

@@ -8,6 +8,9 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.platform.LocalContext
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.res.stringResource
@@ -186,9 +189,13 @@ fun LoginScreen( // pantalla de login
                 Spacer(modifier = Modifier.height(10.dp))
 
                 val orange = Color(0xFFFF8A00) // color boton
+                val ctx = LocalContext.current
 
                 Button( // boton login
                     onClick = {
+                        Log.d("LoginScreen", "Login button clicked: email=$email")
+                        Toast.makeText(ctx, "Login pressed", Toast.LENGTH_SHORT).show()
+
                         localErrorText = null // limpio error
 
                         // valido email

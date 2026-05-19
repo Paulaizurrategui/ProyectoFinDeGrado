@@ -18,15 +18,12 @@ data class PlanResultUiState(
 )
 
 class PlanResultViewModel(
-    application: Application,
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val repo: TripsRepository = TripsRepository()
+    application: Application
 ) : AndroidViewModel(application) {
 
-    // Secondary constructor required for AndroidViewModelFactory to instantiate via reflection
-    constructor(application: Application) : this(application, FirebaseAuth.getInstance(), TripsRepository())
-
     private val app = application
+    private val auth = FirebaseAuth.getInstance()
+    private val repo = TripsRepository()
 
     private val _uiState = MutableStateFlow(PlanResultUiState())
     val uiState: StateFlow<PlanResultUiState> = _uiState
