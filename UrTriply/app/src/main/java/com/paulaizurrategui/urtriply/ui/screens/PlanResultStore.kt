@@ -13,6 +13,17 @@ object PlanResultStore {
     var lastResult: PlanResult? = null
 }
 
+data class ItineraryActivityLink(
+    val name: String = "",
+    val bookingUrl: String? = null
+)
+
+data class ItineraryDay(
+    val dayLabel: String = "",
+    val summary: String = "",
+    val activities: List<ItineraryActivityLink> = emptyList()
+)
+
 /**
  * Modelo de datos que representa la propuesta generada (Pantalla 5).
  *
@@ -27,6 +38,7 @@ data class PlanResult(
     val diasRecomendados: Int,                     // Estimación de duración recomendada
     val presupuestoCategorias: Map<String, Double>,// Distribución por categorías
     val itinerario: List<String>,                  // Lista de días: "Día 1: ..."
+    val itineraryByDay: List<ItineraryDay> = emptyList(),
     val actividadesGratis: List<String>,           // Actividades gratis sugeridas
     val actividadesPago: List<String>,             // Actividades de pago sugeridas
     val usedFallback: Boolean,                      // true si se usó estimación/fallback (sin APIs reales)

@@ -181,13 +181,13 @@ fun PlanResultScreen(
 
                     OutlinedButton(
                         onClick = {
-                            val shareText = buildShareText(r)
+                            val shareText = buildShareText(context, r)
                             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
                                 putExtra(Intent.EXTRA_TEXT, shareText)
-                                putExtra(Intent.EXTRA_SUBJECT, "Mi propuesta de viaje a ${r.destino}")
+                                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.plan_result_share_subject, r.destino))
                             }
-                            context.startActivity(Intent.createChooser(shareIntent, "Compartir propuesta"))
+                            context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.plan_result_share_chooser)))
                         },
                         enabled = !uiState.isSaving,
                         modifier = Modifier.fillMaxWidth(),
@@ -275,11 +275,11 @@ fun PlanResultScreen(
 
                             Spacer(Modifier.height(12.dp))
 
-                            SectionTitle(stringResource(R.string.plan_result_section_activities))
+                            SectionTitle(stringResource(R.string.plan_result_section_itinerary))
                             Spacer(Modifier.height(8.dp))
-                            RealActivitiesBlock(
-                                activities = r.actividadesReales,
-                                apiOk = r.apiActividadesOk
+                            ItineraryCards(
+                                itineraryByDay = r.itineraryByDay,
+                                itinerario = r.itinerario
                             )
 
                             Spacer(Modifier.height(14.dp))
@@ -407,13 +407,56 @@ private fun BudgetCards(categorias: Map<String, Double>) {
 }
 
 @Composable
-private fun ItineraryCards(itinerario: List<String>) {
-    if (itinerario.isEmpty()) {
+private fun ItineraryCards(
+    itineraryByDay: List<ItineraryDay>,
+    itinerario: List<String>
+) {
+    if (itineraryByDay.isEmpty() && itinerario.isEmpty()) {
         Text(stringResource(R.string.plan_result_no_itinerary), color = MaterialTheme.colorScheme.onSurfaceVariant)
         return
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (itineraryByDay.isNotEmpty()) {
+            val context = LocalContext.current
+            itineraryByDay.forEach { day ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(day.dayLabel.ifBlank { stringResource(R.string.plan_result_day_label, 1) }, fontWeight = FontWeight.Bold)
+                        Text(day.summary, fontWeight = FontWeight.SemiBold)
+
+                        if (day.activities.isNotEmpty()) {
+                            Text(
+                                text = stringResource(R.string.plan_result_activity_links_title),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                day.activities.forEach { activity ->
+                                    if (!activity.bookingUrl.isNullOrBlank()) {
+                                        TextButton(onClick = {
+                                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(activity.bookingUrl)))
+                                        }) {
+                                            Text(activity.name)
+                                        }
+                                    } else {
+                                        Text(activity.name, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return
+        }
+
         itinerario.forEach { item ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -494,7 +537,7 @@ private fun RealActivitiesBlock(
 
     if (realActivities.isEmpty()) {
         Text(
-            text = "No hay actividades reales disponibles para este destino.",
+            text = stringResource(R.string.plan_result_no_activities),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         return
@@ -592,7 +635,7 @@ private fun HotelCard(hotel: Hotel) {
                 }
 
                 Text(
-                    text = "€${String.format("%.0f", hotel.pricePerNight)}/noche",
+                    text = stringResource(R.string.plan_result_price_per_night, String.format("%.0f", hotel.pricePerNight)),
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -633,7 +676,7 @@ private fun FlightsBlock(
 
     if (realFlights.isEmpty()) {
         Text(
-            text = "No hay ofertas de vuelo reales para este destino.",
+            text = stringResource(R.string.plan_result_no_flights),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         return
@@ -688,49 +731,46 @@ private fun FlightCard(flight: com.paulaizurrategui.urtriply.domain.model.Flight
 /**
  * Construye un texto con los detalles de la propuesta para compartir
  */
-private fun buildShareText(proposal: PlanResult): String {
+private fun buildShareText(context: android.content.Context, proposal: PlanResult): String {
     val sb = StringBuilder()
-    sb.append("🌍 Mi propuesta de viaje a ${proposal.destino}\n\n")
-    
-    sb.append("📋 DETALLES:\n")
-    sb.append("• Destino: ${proposal.destino}\n")
-    sb.append("• Duración: ${proposal.diasRecomendados} días\n")
-    sb.append("• Viajeros: ${proposal.viajeros}\n")
-    sb.append("• Presupuesto total: €${String.format("%.2f", proposal.presupuestoTotal)}\n\n")
-    
+    sb.append(context.getString(R.string.plan_result_share_intro, proposal.destino)).append("\n\n")
+
+    sb.append(context.getString(R.string.plan_result_share_details)).append("\n")
+    sb.append(context.getString(R.string.plan_result_share_destination, proposal.destino)).append("\n")
+    sb.append(context.getString(R.string.plan_result_share_duration, proposal.diasRecomendados)).append("\n")
+    sb.append(context.getString(R.string.plan_result_share_travelers, proposal.viajeros)).append("\n")
+    sb.append(context.getString(R.string.plan_result_share_total_budget, proposal.presupuestoTotal)).append("\n\n")
+
     if (proposal.presupuestoCategorias.isNotEmpty()) {
-        sb.append("💰 PRESUPUESTO POR CATEGORÍA:\n")
+        sb.append(context.getString(R.string.plan_result_share_budget_section)).append("\n")
         proposal.presupuestoCategorias.forEach { (categoria, cantidad) ->
             sb.append("• $categoria: €${String.format("%.2f", cantidad)}\n")
         }
         sb.append("\n")
     }
     
-    if (proposal.itinerario.isNotEmpty()) {
-        sb.append("📅 ITINERARIO:\n")
+    if (proposal.itineraryByDay.isNotEmpty()) {
+        sb.append(context.getString(R.string.plan_result_share_itinerary_section)).append("\n")
+        proposal.itineraryByDay.forEach { day ->
+            sb.append("• ${day.dayLabel} ${day.summary}\n")
+            day.activities.forEach { activity ->
+                sb.append("   - ${activity.name}")
+                activity.bookingUrl?.takeIf { it.isNotBlank() }?.let { url ->
+                    sb.append(" ($url)")
+                }
+                sb.append("\n")
+            }
+        }
+        sb.append("\n")
+    } else if (proposal.itinerario.isNotEmpty()) {
+        sb.append(context.getString(R.string.plan_result_share_itinerary_section)).append("\n")
         proposal.itinerario.forEach { dia ->
             sb.append("• $dia\n")
         }
         sb.append("\n")
     }
     
-    if (proposal.actividadesGratis.isNotEmpty()) {
-        sb.append("🎉 ACTIVIDADES GRATIS:\n")
-        proposal.actividadesGratis.forEach { actividad ->
-            sb.append("• $actividad\n")
-        }
-        sb.append("\n")
-    }
-    
-    if (proposal.actividadesPago.isNotEmpty()) {
-        sb.append("🎫 ACTIVIDADES DE PAGO:\n")
-        proposal.actividadesPago.forEach { actividad ->
-            sb.append("• $actividad\n")
-        }
-        sb.append("\n")
-    }
-    
-    sb.append("Generado con UrTriply ✈️\n")
+    sb.append(context.getString(R.string.plan_result_share_generated_with)).append("\n")
     
     return sb.toString()
 }

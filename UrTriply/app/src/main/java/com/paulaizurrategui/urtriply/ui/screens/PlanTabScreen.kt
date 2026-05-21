@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import android.util.Log
 
@@ -69,11 +70,11 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.supervisorScope
 import com.paulaizurrategui.urtriply.R
 
-private enum class Preference(val label: String) {
-    CULTURA("Cultura"),
-    OCIO("Ocio nocturno"),
-    NATURALEZA("Naturaleza"),
-    GASTRONOMIA("Gastronomía")
+private enum class Preference(val labelRes: Int, val key: String) {
+    CULTURA(R.string.plan_pref_culture, "cultura"),
+    OCIO(R.string.plan_pref_night, "ocio nocturno"),
+    NATURALEZA(R.string.plan_pref_nature, "naturaleza"),
+    GASTRONOMIA(R.string.plan_pref_food, "gastronomia")
 }
 
 private fun destinationToIata(destination: String): String {
@@ -100,17 +101,18 @@ fun PlanTabScreen(
     onNavigateToResult: () -> Unit
 ) {
     UrTriplyGradientScaffold(title = stringResource(R.string.plan_title)) {
+        val context = LocalContext.current
         val destinos = listOf(
-            "París (Francia)",
-            "Londres (Reino Unido)",
-            "Roma (Italia)",
-            "Ámsterdam (Países Bajos)",
-            "Atenas (Grecia)",
-            "Lisboa (Portugal)",
-            "Berlín (Alemania)",
-            "Praga (República Checa)",
-            "Viena (Austria)",
-            "Dublín (Irlanda)"
+            stringResource(R.string.plan_dest_paris),
+            stringResource(R.string.plan_dest_london),
+            stringResource(R.string.plan_dest_rome),
+            stringResource(R.string.plan_dest_amsterdam),
+            stringResource(R.string.plan_dest_athens),
+            stringResource(R.string.plan_dest_lisbon),
+            stringResource(R.string.plan_dest_berlin),
+            stringResource(R.string.plan_dest_prague),
+            stringResource(R.string.plan_dest_vienna),
+            stringResource(R.string.plan_dest_dublin)
         )
 
         // --- estado formulario ---
@@ -169,10 +171,8 @@ fun PlanTabScreen(
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = if (isGuest)
-                                "Modo invitado: puedes generar propuestas, pero para guardar/publicar necesitarás iniciar sesión."
-                            else
-                                "Completa el formulario para generar una propuesta ajustada a tu presupuesto.",
+                            text = if (isGuest) stringResource(R.string.plan_guest_notice)
+                            else stringResource(R.string.plan_form_hint),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -301,7 +301,7 @@ fun PlanTabScreen(
                                         onClick = {
                                             prefs = if (prefs.contains(pref)) prefs - pref else prefs + pref
                                         },
-                                        label = { Text(pref.label) }
+                                        label = { Text(stringResource(pref.labelRes)) }
                                     )
                                 }
                             }
@@ -312,7 +312,7 @@ fun PlanTabScreen(
                                         onClick = {
                                             prefs = if (prefs.contains(pref)) prefs - pref else prefs + pref
                                         },
-                                        label = { Text(pref.label) }
+                                        label = { Text(stringResource(pref.labelRes)) }
                                     )
                                 }
                             }
@@ -367,6 +367,13 @@ fun PlanTabScreen(
                     Spacer(Modifier.height(10.dp))
                 }
 
+                val errorBudgetText = stringResource(R.string.plan_error_budget)
+                val errorTravelersText = stringResource(R.string.plan_error_travelers)
+                val errorDatesText = stringResource(R.string.plan_error_dates)
+                val errorDateOrderText = stringResource(R.string.plan_error_date_order)
+                val errorPreferencesText = stringResource(R.string.plan_error_preferences)
+                val preferenceNames = prefs.map { it.key }.toSet()
+
                 // boton generar
                 Button(
                     onClick = {
@@ -376,23 +383,23 @@ fun PlanTabScreen(
                         val viajeros = viajerosText.toIntOrNull()
 
                         if (presupuesto == null || presupuesto <= 0) {
-                            localError = "Introduce un presupuesto válido (> 0)."
+                            localError = errorBudgetText
                             return@Button
                         }
                         if (viajeros == null || viajeros <= 0) {
-                            localError = "Introduce un número de viajeros válido (> 0)."
+                            localError = errorTravelersText
                             return@Button
                         }
                         if (fechaInicioMillis == null || fechaFinMillis == null) {
-                            localError = "Selecciona fecha de inicio y fin."
+                            localError = errorDatesText
                             return@Button
                         }
                         if (fechaFinMillis!! < fechaInicioMillis!!) {
-                            localError = "La fecha fin no puede ser anterior a la fecha inicio."
+                            localError = errorDateOrderText
                             return@Button
                         }
                         if (prefs.isEmpty()) {
-                            localError = "Selecciona al menos una preferencia."
+                            localError = errorPreferencesText
                             return@Button
                         }
 
@@ -402,6 +409,7 @@ fun PlanTabScreen(
                             try {
                                 // 1) genero local (fallback inmediato)
                                 val base = generateLocalProposal(
+                                    context = context,
                                     destino = destino,
                                     presupuestoTotal = presupuesto,
                                     viajeros = viajeros,
@@ -416,8 +424,6 @@ fun PlanTabScreen(
                                 }
 
                                 // 3) búsquedas paralelas supervisadas con reintentos/backoff y timeout por llamada
-                                val preferenceNames = prefs.map { it.label.lowercase(Locale.getDefault()) }.toSet()
-
                                 val (hoteles, actividadesReales, vuelosOfertas) = supervisorScope {
                                     val hotelesDeferred = async(Dispatchers.IO) {
                                         if (geo == null) return@async emptyList<Hotel>()
@@ -468,8 +474,9 @@ fun PlanTabScreen(
 
                                 // 4) si sale bien, lo guardo en el resultado
                                 val finalPlan = if (geo != null) {
-                                    val itineraryFromActivities = withContext(Dispatchers.Default) {
+                                    val itineraryByDay = withContext(Dispatchers.Default) {
                                         buildItineraryFromActivities(
+                                            context = context,
                                             destino = destino,
                                             diasRecomendados = base.diasRecomendados,
                                             prefs = prefs,
@@ -477,6 +484,7 @@ fun PlanTabScreen(
                                             fallbackItinerary = base.itinerario
                                         )
                                     }
+                                    val itineraryStrings = itineraryByDay.map { it.summary }
 
                                     base.copy(
                                         destinoDisplayName = geo.displayName,
@@ -487,7 +495,8 @@ fun PlanTabScreen(
                                         apiHotelesOk = hoteles.any { it.isReal },
                                         actividadesReales = actividadesReales,
                                         apiActividadesOk = actividadesReales.any { it.isReal },
-                                        itinerario = itineraryFromActivities,
+                                        itinerario = itineraryStrings,
+                                        itineraryByDay = itineraryByDay,
                                         vuelos = vuelosOfertas,
                                         apiVuelosOk = vuelosOfertas.any { it.isReal }
                                     )
@@ -702,6 +711,7 @@ private fun VerticalScrollbar(
  * Cumple RF-13 / RF-14 de forma estimada.
  */
 private fun generateLocalProposal(
+    context: android.content.Context,
     destino: String,
     presupuestoTotal: Double,
     viajeros: Int,
@@ -746,29 +756,33 @@ private fun generateLocalProposal(
         .coerceAtMost(diasDisponibles)
         .coerceIn(2, 10)
 
-    val itinerario = (1..diasRecomendados).map { day ->
+    val itineraryByDay = (1..diasRecomendados).map { day ->
         val focus = when {
-            prefs.contains(Preference.CULTURA) && day % 2 == 1 -> "museos y casco histórico"
-            prefs.contains(Preference.NATURALEZA) && day % 3 == 0 -> "parques y miradores"
-            prefs.contains(Preference.GASTRONOMIA) -> "ruta gastronómica"
-            prefs.contains(Preference.OCIO) -> "zona de ocio nocturno"
-            else -> "paseo libre"
+            prefs.contains(Preference.CULTURA) && day % 2 == 1 -> context.getString(R.string.plan_local_focus_culture)
+            prefs.contains(Preference.NATURALEZA) && day % 3 == 0 -> context.getString(R.string.plan_local_focus_nature)
+            prefs.contains(Preference.GASTRONOMIA) -> context.getString(R.string.plan_local_focus_food)
+            prefs.contains(Preference.OCIO) -> context.getString(R.string.plan_local_focus_night)
+            else -> context.getString(R.string.plan_local_focus_free)
         }
-        "Día $day: $focus en $destino"
+        val summary = context.getString(R.string.plan_local_itinerary_day, day, focus, destino)
+        ItineraryDay(
+            dayLabel = context.getString(R.string.plan_result_day_label, day),
+            summary = summary
+        )
     }
 
     val actividadesGratis = buildList {
-        if (prefs.contains(Preference.CULTURA)) add("Free walking tour (propina) + plazas principales")
-        if (prefs.contains(Preference.NATURALEZA)) add("Parque urbano principal + miradores")
-        if (prefs.contains(Preference.GASTRONOMIA)) add("Mercado local (ambiente y degustación barata)")
-        if (prefs.contains(Preference.OCIO)) add("Barrio con ambiente nocturno")
+        if (prefs.contains(Preference.CULTURA)) add(context.getString(R.string.plan_local_free_walking_tour))
+        if (prefs.contains(Preference.NATURALEZA)) add(context.getString(R.string.plan_local_urban_park))
+        if (prefs.contains(Preference.GASTRONOMIA)) add(context.getString(R.string.plan_local_market))
+        if (prefs.contains(Preference.OCIO)) add(context.getString(R.string.plan_local_nightlife_neighborhood))
     }.distinct()
 
     val actividadesPago = buildList {
-        if (prefs.contains(Preference.CULTURA)) add("Entrada a museo emblemático")
-        if (prefs.contains(Preference.NATURALEZA)) add("Excursión de medio día fuera de la ciudad")
-        if (prefs.contains(Preference.GASTRONOMIA)) add("Tour gastronómico o cena típica")
-        if (prefs.contains(Preference.OCIO)) add("Club / espectáculo local")
+        if (prefs.contains(Preference.CULTURA)) add(context.getString(R.string.plan_local_museum_entry))
+        if (prefs.contains(Preference.NATURALEZA)) add(context.getString(R.string.plan_local_day_trip))
+        if (prefs.contains(Preference.GASTRONOMIA)) add(context.getString(R.string.plan_local_food_tour))
+        if (prefs.contains(Preference.OCIO)) add(context.getString(R.string.plan_local_club))
     }.distinct()
 
     return PlanResult(
@@ -779,12 +793,13 @@ private fun generateLocalProposal(
         fechaFinMillis = fechaFinMillis,
         diasRecomendados = diasRecomendados,
         presupuestoCategorias = linkedMapOf(
-            "Transporte (vuelos MAD)" to transporte,
-            "Alojamiento" to alojamiento,
-            "Comidas" to comidas,
-            "Actividades" to actividades
+            context.getString(R.string.plan_local_budget_transport) to transporte,
+            context.getString(R.string.plan_local_budget_lodging) to alojamiento,
+            context.getString(R.string.plan_local_budget_meals) to comidas,
+            context.getString(R.string.plan_local_budget_activities) to actividades
         ),
-        itinerario = itinerario,
+        itinerario = itineraryByDay.map { it.summary },
+        itineraryByDay = itineraryByDay,
         actividadesGratis = actividadesGratis,
         actividadesPago = actividadesPago,
         usedFallback = true
@@ -793,14 +808,22 @@ private fun generateLocalProposal(
 }
 
 private fun buildItineraryFromActivities(
+    context: android.content.Context,
     destino: String,
     diasRecomendados: Int,
     prefs: Set<Preference>,
     actividades: List<SuggestedActivity>,
     fallbackItinerary: List<String>
-): List<String> {
-    if (diasRecomendados <= 0) return fallbackItinerary
-    if (actividades.isEmpty()) return fallbackItinerary
+): List<ItineraryDay> {
+    fun fallbackDays(): List<ItineraryDay> = fallbackItinerary.mapIndexed { index, summary ->
+        ItineraryDay(
+            dayLabel = context.getString(R.string.plan_result_day_label, index + 1),
+            summary = summary
+        )
+    }
+
+    if (diasRecomendados <= 0) return fallbackDays()
+    if (actividades.isEmpty()) return fallbackDays()
 
     val grouped = actividades
         .sortedWith(
@@ -815,20 +838,29 @@ private fun buildItineraryFromActivities(
     return (1..diasRecomendados).map { day ->
         val dayActivities = chunks.getOrNull(day - 1).orEmpty()
         val focus = when {
-            prefs.contains(Preference.CULTURA) && dayActivities.any { it.category.contains("museum", true) || it.category.contains("culture", true) || it.category.contains("historic", true) } -> "cultura y patrimonio"
-            prefs.contains(Preference.NATURALEZA) && dayActivities.any { it.category.contains("park", true) || it.category.contains("nature", true) || it.category.contains("view", true) } -> "naturaleza y miradores"
-            prefs.contains(Preference.GASTRONOMIA) && dayActivities.any { it.category.contains("food", true) || it.category.contains("gastr", true) || it.category.contains("market", true) } -> "gastronomía"
-            prefs.contains(Preference.OCIO) && dayActivities.any { it.category.contains("night", true) || it.category.contains("entertain", true) || it.category.contains("club", true) } -> "ocio"
-            else -> "recorrido libre"
+            prefs.contains(Preference.CULTURA) && dayActivities.any { it.category.contains("museum", true) || it.category.contains("culture", true) || it.category.contains("historic", true) } -> context.getString(R.string.plan_local_focus_culture)
+            prefs.contains(Preference.NATURALEZA) && dayActivities.any { it.category.contains("park", true) || it.category.contains("nature", true) || it.category.contains("view", true) } -> context.getString(R.string.plan_local_focus_nature)
+            prefs.contains(Preference.GASTRONOMIA) && dayActivities.any { it.category.contains("food", true) || it.category.contains("gastr", true) || it.category.contains("market", true) } -> context.getString(R.string.plan_local_focus_food)
+            prefs.contains(Preference.OCIO) && dayActivities.any { it.category.contains("night", true) || it.category.contains("entertain", true) || it.category.contains("club", true) } -> context.getString(R.string.plan_local_focus_night)
+            else -> context.getString(R.string.plan_local_focus_free)
         }
 
         val activitiesText = if (dayActivities.isNotEmpty()) {
             dayActivities.joinToString(separator = " • ") { it.name }
         } else {
-            "Actividad libre sugerida"
+            context.getString(R.string.plan_local_activity_free_suggestion)
         }
 
-        "Día $day: $focus en $destino. Actividades: $activitiesText"
+        ItineraryDay(
+            dayLabel = context.getString(R.string.plan_result_day_label, day),
+            summary = context.getString(R.string.plan_local_itinerary_day_activities, day, focus, destino, activitiesText),
+            activities = dayActivities.map {
+                ItineraryActivityLink(
+                    name = it.name,
+                    bookingUrl = it.bookingUrl
+                )
+            }
+        )
     }
 }
 

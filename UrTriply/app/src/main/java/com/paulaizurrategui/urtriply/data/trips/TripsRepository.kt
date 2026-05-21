@@ -23,7 +23,7 @@ class TripsRepository(
         onSuccess: (tripId: String) -> Unit,
         onError: (Throwable) -> Unit
     ) {
-        // preparo el documento a guardar (usa el helper para mapear PlanResult incluyendo vuelos)
+        // preparo el documento a guardar (solo guarda los datos necesarios para reabrir la propuesta)
         val baseDoc = tripDocFromPlanResult(plan, authorUid, authorEmail, status)
         val doc = baseDoc.copy(
             createdAt = Timestamp.now(),

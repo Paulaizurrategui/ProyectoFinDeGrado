@@ -220,7 +220,7 @@ fun CommunityHeader(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "UrTriply",
+                    text = stringResource(R.string.app_name),
                     style = if (isCompactWidth) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = OrangeUrTriply,
@@ -239,12 +239,12 @@ fun CommunityHeader(
             ) {
                 Column {
                     Text(
-                        text = "Comunidad",
+                        text = stringResource(R.string.community_title),
                         style = if (isCompactWidth) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Descubre viajes de otros usuarios",
+                        text = stringResource(R.string.community_subtitle),
                         style = if (isCompactWidth) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
                         color = Color.Gray
                     )

@@ -86,7 +86,7 @@ fun InicioTabScreen(
                 ) {
                     // Logo
                     Text(
-                        text = "✈️",
+                        text = stringResource(R.string.home_emoji_plane),
                         fontSize = 44.sp,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
@@ -107,14 +107,14 @@ fun InicioTabScreen(
                     // Mensaje personalizado
                     if (!isGuest) {
                         Text(
-                            text = "Hola, $email",
+                            text = stringResource(R.string.home_greeting, email),
                             style = MaterialTheme.typography.bodyLarge,
                             color = Color.White,
                             textAlign = TextAlign.Center
                         )
                     } else {
                         Text(
-                            text = "Explora sin cuenta",
+                            text = stringResource(R.string.home_guest_explore),
                             style = MaterialTheme.typography.bodyLarge,
                             color = Color.White,
                             textAlign = TextAlign.Center
@@ -125,7 +125,7 @@ fun InicioTabScreen(
 
                     // Eslogan
                     Text(
-                        text = "Viaja sin salirte del presupuesto",
+                        text = stringResource(R.string.home_tagline),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.9f),
                         textAlign = TextAlign.Center
@@ -144,7 +144,7 @@ fun InicioTabScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Accesos rápidos",
+                    text = stringResource(R.string.home_quick_access),
                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
                     color = if (isDarkTheme) Color.White else Color.Black
@@ -153,24 +153,24 @@ fun InicioTabScreen(
                 // Planificar viaje
                 HomeActionCard(
                     icon = "🗺️",
-                    title = "Planificar viaje",
-                    description = "Genera una propuesta ajustada a tu presupuesto",
+                    title = stringResource(R.string.home_plan_trip),
+                    description = stringResource(R.string.home_plan_description),
                     onClick = onGoPlan
                 )
 
                 // Comunidad
                 HomeActionCard(
                     icon = "👥",
-                    title = "Comunidad",
-                    description = if (isGuest) "Inicia sesión para ver publicaciones" else "Mira las publicaciones de tus amigos",
+                    title = stringResource(R.string.home_community),
+                    description = if (isGuest) stringResource(R.string.home_guest_login_required) else stringResource(R.string.home_community_description),
                     onClick = if (isGuest) onRequireLogin else onGoCommunity
                 )
 
                 // Mi perfil
                 HomeActionCard(
                     icon = "👤",
-                    title = "Mi perfil",
-                    description = if (isGuest) "Inicia sesión para guardar favoritos" else "Tus viajes, likes y guardados",
+                    title = stringResource(R.string.home_profile_title),
+                    description = if (isGuest) stringResource(R.string.home_guest_login_required) else stringResource(R.string.home_profile_description),
                     onClick = if (isGuest) onRequireLogin else onGoProfile
                 )
             }

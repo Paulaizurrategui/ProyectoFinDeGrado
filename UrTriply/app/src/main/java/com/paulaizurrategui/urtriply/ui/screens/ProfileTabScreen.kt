@@ -76,6 +76,12 @@ fun ProfileTabScreen(
     val email = user?.email ?: "-"
     val displayName = user?.displayName
     val initial = (displayName?.firstOrNull() ?: email.firstOrNull() ?: 'U').uppercaseChar().toString()
+    val profileAccountText = stringResource(R.string.profile_account)
+    val profileEditProfileText = stringResource(R.string.profile_edit_profile)
+    val profileFriendsTitle = stringResource(R.string.profile_friends_title)
+    val profileFriendsSubtitle = stringResource(R.string.profile_friends_subtitle)
+    val profileThemeLightDarkText = stringResource(R.string.profile_theme_light_dark)
+    val profileThemeDarkLightText = stringResource(R.string.profile_theme_dark_light)
 
     val tripsVm = remember { ProfileTripsViewModel() }
     val tripsState by tripsVm.uiState.collectAsState()
@@ -181,8 +187,8 @@ fun ProfileTabScreen(
                             Icon(imageVector = Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.size(10.dp))
                             Column {
-                                Text(text = "Panel Admin", fontWeight = FontWeight.Bold)
-                                Text(text = "Gestionar reportes y usuarios", style = MaterialTheme.typography.bodySmall)
+                                Text(text = stringResource(R.string.profile_panel_admin_title), fontWeight = FontWeight.Bold)
+                                Text(text = stringResource(R.string.profile_panel_admin_subtitle), style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
@@ -224,7 +230,7 @@ fun ProfileTabScreen(
                             )
                             Spacer(Modifier.height(2.dp))
                             Text(
-                                text = "Mi cuenta",
+                                text = profileAccountText,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -242,7 +248,7 @@ fun ProfileTabScreen(
                                 )
                                 Spacer(Modifier.size(6.dp))
                                 Text(
-                                    text = "Editar perfil",
+                                    text = profileEditProfileText,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -254,11 +260,11 @@ fun ProfileTabScreen(
 
             // SECCIÓN AMIGOS (con contador)
             item {
-                SectionTitle("Amigos", "Personas a las que sigues")
+                SectionTitle(profileFriendsTitle, profileFriendsSubtitle)
 
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    text = "Siguiendo: $friendsCount",
+                    text = stringResource(R.string.profile_following_count, friendsCount),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -459,12 +465,12 @@ fun ProfileTabScreen(
                             Spacer(Modifier.size(10.dp))
                             Column {
                                 Text(
-                                    text = if (isDarkTheme) stringResource(R.string.soon_title) else stringResource(R.string.soon_title),
+                                    text = stringResource(R.string.profile_theme_text),
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    text = if (isDarkTheme) "Modo Oscuro / Dark Mode" else "Modo Claro / Light Mode",
+                                    text = if (isDarkTheme) profileThemeDarkLightText else profileThemeLightDarkText,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
                                 )

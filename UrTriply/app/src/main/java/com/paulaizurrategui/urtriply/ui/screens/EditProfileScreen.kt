@@ -15,6 +15,13 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -40,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageReference
 import com.google.firebase.firestore.SetOptions
 import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.ui.theme.UrCream
@@ -57,6 +66,7 @@ fun EditProfileScreen(
 
     // estado local de campos
     var name by remember { mutableStateOf(user?.displayName ?: "") }
+    var photoUrl by remember { mutableStateOf(user?.photoUrl?.toString() ?: "") }
     var bio by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
     var instagram by remember { mutableStateOf("") }
@@ -65,6 +75,7 @@ fun EditProfileScreen(
     var loading by remember { mutableStateOf(true) }
     var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var uploadingPhoto by remember { mutableStateOf(false) }
 
     // scroll para pantallas pequeñas
     val scroll = rememberScrollState()
@@ -89,6 +100,7 @@ fun EditProfileScreen(
                 bio = doc.getString("bio") ?: ""
                 city = doc.getString("city") ?: ""
                 instagram = doc.getString("instagram") ?: ""
+                photoUrl = doc.getString("photoUrl") ?: user?.photoUrl?.toString() ?: ""
                 loading = false
             }
             .addOnFailureListener { e ->
@@ -250,6 +262,94 @@ fun EditProfileScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        // foto de perfil
+                        FieldLabel(stringResource(R.string.edit_profile_photo_label))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            val imageSize = 84.dp
+                            if (photoUrl.isNotBlank()) {
+                                // usa Coil si está disponible
+                                androidx.compose.foundation.Image(
+                                    painter = coil.compose.rememberAsyncImagePainter(photoUrl),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(imageSize).clickable { /* abrir picker más abajo */ },
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(imageSize)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(12.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(stringResource(R.string.edit_profile_no_photo), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+
+                            Spacer(Modifier.widthIn(8.dp))
+
+                            Column {
+                                val pickLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+                                    if (uri != null && user != null) {
+                                        uploadingPhoto = true
+                                        // upload to Firebase Storage
+                                        val storage = FirebaseStorage.getInstance()
+                                        val ref = storage.reference.child("profile_photos/${user.uid}.jpg")
+                                        val uploadTask = ref.putFile(uri)
+                                        uploadTask.addOnSuccessListener {
+                                            ref.downloadUrl.addOnSuccessListener { dl ->
+                                                val url = dl.toString()
+                                                // update Auth profile + users doc
+                                                user.updateProfile(UserProfileChangeRequest.Builder().setPhotoUri(android.net.Uri.parse(url)).build())
+                                                db.collection("users").document(user.uid)
+                                                    .set(mapOf("photoUrl" to url), SetOptions.merge())
+                                                    .addOnSuccessListener {
+                                                        photoUrl = url
+                                                        uploadingPhoto = false
+                                                    }
+                                                    .addOnFailureListener { e ->
+                                                        uploadingPhoto = false
+                                                        error = e.message ?: context.getString(R.string.edit_profile_photo_error)
+                                                    }
+                                            }.addOnFailureListener { e ->
+                                                uploadingPhoto = false
+                                                error = e.message ?: context.getString(R.string.edit_profile_photo_error)
+                                            }
+                                        }.addOnFailureListener { e ->
+                                            uploadingPhoto = false
+                                            error = e.message ?: context.getString(R.string.edit_profile_photo_error)
+                                        }
+                                    }
+                                }
+
+                                Button(onClick = { pickLauncher.launch("image/*") }, enabled = !uploadingPhoto) {
+                                    Text(if (uploadingPhoto) stringResource(R.string.edit_profile_photo_uploading) else stringResource(R.string.edit_profile_change_photo))
+                                }
+
+                                if (photoUrl.isNotBlank()) {
+                                    TextButton(onClick = {
+                                        // remove photo
+                                        val u = user
+                                        if (u != null) {
+                                            uploadingPhoto = true
+                                            // remove storage file (best-effort)
+                                            val storage = FirebaseStorage.getInstance()
+                                            val ref = storage.reference.child("profile_photos/${u.uid}.jpg")
+                                            ref.delete().addOnCompleteListener {
+                                                val request = UserProfileChangeRequest.Builder().setPhotoUri(null).build()
+                                                u.updateProfile(request).addOnCompleteListener {
+                                                    db.collection("users").document(u.uid).set(mapOf("photoUrl" to null), SetOptions.merge())
+                                                    photoUrl = ""
+                                                    uploadingPhoto = false
+                                                }
+                                            }
+                                        }
+                                    }) {
+                                        Text(stringResource(R.string.edit_profile_remove_photo))
+                                    }
+                                }
+                            }
+                        }
+
                         // texto mientras carga
                         if (loading) {
                             Text(stringResource(R.string.edit_profile_loading), color = MaterialTheme.colorScheme.onSurfaceVariant)

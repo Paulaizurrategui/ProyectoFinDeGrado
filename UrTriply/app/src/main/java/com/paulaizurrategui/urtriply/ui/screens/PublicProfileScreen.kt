@@ -71,6 +71,7 @@ import com.paulaizurrategui.urtriply.ui.theme.UrOrange
 import com.paulaizurrategui.urtriply.ui.theme.UrSky
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.util.Locale
 
 data class PublicProfileUiState(
     val isLoading: Boolean = true,
@@ -112,7 +113,7 @@ class PublicProfileViewModel(
             .addOnFailureListener { e ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = e.message ?: "No se pudo cargar el perfil público"
+                    errorMessage = e.message ?: localizedFallback("No se pudo cargar el perfil público", "Could not load the public profile")
                 )
             }
     }
@@ -129,11 +130,11 @@ class PublicProfileViewModel(
                     TravelPost(
                         id = doc.id,
                         authorUid = doc.getString("authorUid") ?: user.uid,
-                        destination = doc.getString("destination") ?: doc.getString("destino") ?: "(sin destino)",
+                        destination = doc.getString("destination") ?: doc.getString("destino") ?: localizedFallback("(sin destino)", "(no destination)"),
                         days = (doc.getLong("days") ?: doc.getLong("diasRecomendados") ?: 0L).toInt(),
                         budget = doc.getDouble("budget") ?: doc.getDouble("presupuestoTotal") ?: 0.0,
                         currency = doc.getString("currency") ?: "€",
-                        authorName = doc.getString("authorName") ?: user.displayName.ifBlank { "usuario" },
+                        authorName = doc.getString("authorName") ?: user.displayName.ifBlank { localizedFallback("usuario", "user") },
                         authorAvatar = doc.getString("authorAvatar") ?: user.photoUrl,
                         date = doc.getString("date") ?: "",
                         description = doc.getString("description") ?: "",
@@ -154,9 +155,13 @@ class PublicProfileViewModel(
             .addOnFailureListener { e ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = e.message ?: "No se pudieron cargar los viajes"
+                    errorMessage = e.message ?: localizedFallback("No se pudieron cargar los viajes", "Could not load trips")
                 )
             }
+    }
+
+    private fun localizedFallback(spanish: String, english: String): String {
+        return if (Locale.getDefault().language.startsWith("es")) spanish else english
     }
 }
 
@@ -168,7 +173,7 @@ fun PublicProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    UrTriplyGradientScaffold(title = "Perfil público", onBack = onBack) {
+    UrTriplyGradientScaffold(title = stringResource(R.string.public_profile_title), onBack = onBack) {
         when {
             uiState.isLoading -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -236,14 +241,14 @@ fun PublicProfileScreen(
 
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = user.displayName.ifBlank { "Sin nombre" },
+                                            text = user.displayName.ifBlank { stringResource(R.string.public_profile_no_name) },
                                             style = MaterialTheme.typography.headlineSmall,
                                             fontWeight = FontWeight.Bold,
                                             maxLines = 2,
                                             overflow = TextOverflow.Ellipsis
                                         )
                                         Text(
-                                            text = user.email.ifBlank { "Sin email" },
+                                            text = user.email.ifBlank { stringResource(R.string.public_profile_no_email) },
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             maxLines = 2,
@@ -255,19 +260,19 @@ fun PublicProfileScreen(
                                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     AssistChip(
                                         onClick = {},
-                                        label = { Text(if (user.isOver13Confirmed) "+13 confirmado" else "+13 no confirmado") },
+                                        label = { Text(if (user.isOver13Confirmed) stringResource(R.string.public_profile_verified_yes) else stringResource(R.string.public_profile_verified_no)) },
                                         leadingIcon = { Icon(Icons.Default.Verified, contentDescription = null) },
                                         colors = AssistChipDefaults.assistChipColors()
                                     )
                                     AssistChip(
                                         onClick = {},
-                                        label = { Text(if (user.esAdmin) "Admin" else "Usuario") },
+                                        label = { Text(if (user.esAdmin) stringResource(R.string.public_profile_admin) else stringResource(R.string.public_profile_user)) },
                                         leadingIcon = { Icon(Icons.Default.Shield, contentDescription = null) },
                                         colors = AssistChipDefaults.assistChipColors()
                                     )
                                     AssistChip(
                                         onClick = {},
-                                        label = { Text(if (user.isDarkTheme) "Modo oscuro" else "Modo claro") },
+                                        label = { Text(if (user.isDarkTheme) stringResource(R.string.public_profile_dark_mode) else stringResource(R.string.public_profile_light_mode)) },
                                         leadingIcon = { Icon(Icons.Default.DarkMode, contentDescription = null) },
                                         colors = AssistChipDefaults.assistChipColors()
                                     )

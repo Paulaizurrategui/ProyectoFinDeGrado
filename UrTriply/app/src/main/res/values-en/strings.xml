@@ -23,6 +23,16 @@
 
     <!-- Home -->
     <string name="home_welcome">Welcome to UrTriply</string>
+    <string name="home_greeting">Hi, %1$s</string>
+    <string name="home_tagline">Travel without going over budget</string>
+    <string name="home_quick_access">Quick Access</string>
+    <string name="home_profile_title">My Profile</string>
+    <string name="home_plan_description">Generate a proposal tailored to your budget</string>
+    <string name="home_community_description">See your friends\' posts</string>
+    <string name="home_profile_description">Your trips, likes and saved items</string>
+    <string name="home_guest_explore">Explore without an account</string>
+    <string name="home_guest_login_required">Sign in to view posts</string>
+    <string name="home_emoji_plane">✈️</string>
     <string name="home_logged_as">Signed in as: %1$s</string>
     <string name="home_next_trip">Ready for your next trip?</string>
     <string name="home_subtitle">Ready for your next adventure?</string>
@@ -84,12 +94,24 @@
     <string name="plan_auth_note">When you sign in you can save drafts and publish trips.</string>
 
     <string name="community_title">Community</string>
+    <string name="community_subtitle">Discover trips from other users</string>
     <string name="community_placeholder_body">Here you will see posts from other travelers (only for registered users).</string>
     <string name="community_access_restricted">Restricted Access</string>
     <string name="community_access_age_required">You must be at least 13 years old to access the community.</string>
 
     <string name="profile_title">Profile</string>
     <string name="profile_email">Email: %1$s</string>
+    <string name="profile_panel_admin_title">Admin Panel</string>
+    <string name="profile_panel_admin_subtitle">Manage reports and users</string>
+    <string name="profile_account">My Account</string>
+    <string name="profile_edit_profile">Edit profile</string>
+    <string name="profile_friends_title">Friends</string>
+    <string name="profile_friends_subtitle">People you follow</string>
+    <string name="profile_theme_text">Dark Mode / Light Mode</string>
+    <string name="profile_theme_dark_light">Dark Mode / Light Mode</string>
+    <string name="profile_theme_light_dark">Light Mode / Dark Mode</string>
+    <string name="profile_theme_toggle_description">Toggle light/dark mode</string>
+    <string name="profile_following_count">Following: %1$d</string>
 
     <string name="login_required_title">Sign In Required</string>
     <string name="login_required_body">To access this section you need to sign in or create an account.</string>
@@ -163,7 +185,6 @@
     <string name="profile_remove_like_body">Are you sure you want to remove this trip from your likes?</string>
     <string name="profile_remove_confirm">Remove</string>
     <string name="profile_manage_friends">Manage friends</string>
-    <string name="profile_following_count">Following: %1$d</string>
     <string name="profile_refresh">Refresh</string>
     <string name="profile_refreshing">Loading...</string>
     <string name="profile_favorites_title">My Favorites</string>
@@ -181,9 +202,6 @@
     <string name="profile_logout_title">Sign out</string>
     <string name="profile_logout_body">You will leave your account on this device</string>
     <string name="profile_logout_action">Sign out</string>
-    <string name="profile_panel_admin_title">Admin Panel</string>
-    <string name="profile_panel_admin_subtitle">Manage reports and users</string>
-    <string name="profile_account">My Account</string>
     <string name="profile_edit_button">Edit Profile</string>
     <string name="profile_more">See More</string>
 
@@ -200,6 +218,9 @@
     <string name="post_detail_published_by">Posted by %1$s</string>
     <string name="post_detail_published_community">Posted by a community traveler</string>
     <string name="post_detail_summary">Trip summary</string>
+    <string name="post_detail_no_destination">Untitled destination</string>
+    <string name="post_detail_no_date">No date</string>
+    <string name="post_detail_origin_madrid">Madrid</string>
     <string name="post_detail_departure">Departure</string>
     <string name="post_detail_return">Return</string>
     <string name="post_detail_origin">Origin</string>
@@ -207,6 +228,17 @@
     <string name="post_detail_itinerary">Itinerary</string>
     <string name="post_detail_no_itinerary">This trip does not include a detailed itinerary yet.</string>
     <string name="post_detail_comments">Comments</string>
+    <string name="post_detail_report_reason_spam">Spam</string>
+    <string name="post_detail_report_reason_inappropriate">Inappropriate content</string>
+    <string name="post_detail_report_reason_scam">Scam</string>
+    <string name="post_detail_report_reason_offensive">Offensive</string>
+    <string name="post_detail_report_reason_other">Other reason</string>
+    <string name="post_detail_report_success">✓ Report sent successfully</string>
+    <string name="post_detail_report_error">Error: %1$s</string>
+    <string name="post_detail_report_reason_required">Please select a reason</string>
+    <string name="post_detail_anonymous_user">Anonymous user</string>
+    <string name="post_detail_block_success">✓ User blocked</string>
+    <string name="post_detail_block_login_required">You need to sign in</string>
 
     <!-- Public Profile -->
     <string name="public_profile_title">Public Profile</string>
@@ -223,6 +255,14 @@
     <string name="public_profile_field_age">+13 verification</string>
     <string name="public_profile_field_yes">Yes</string>
     <string name="public_profile_field_no">No</string>
+    <string name="public_profile_no_name">No name</string>
+    <string name="public_profile_no_email">No email</string>
+    <string name="public_profile_verified_yes">+13 confirmed</string>
+    <string name="public_profile_verified_no">+13 not confirmed</string>
+    <string name="public_profile_admin">Admin</string>
+    <string name="public_profile_user">User</string>
+    <string name="public_profile_dark_mode">Dark mode</string>
+    <string name="public_profile_light_mode">Light mode</string>
 
     <!-- Comments / Time -->
     <string name="comment_delete_title">Delete comment</string>
@@ -265,6 +305,12 @@
     <string name="edit_profile_city">City</string>
     <string name="edit_profile_instagram">Instagram (optional)</string>
     <string name="edit_profile_instagram_placeholder">@username or url</string>
+    <string name="edit_profile_photo_label">Profile photo</string>
+    <string name="edit_profile_no_photo">No photo</string>
+    <string name="edit_profile_change_photo">Change photo</string>
+    <string name="edit_profile_remove_photo">Remove photo</string>
+    <string name="edit_profile_photo_uploading">Uploading photo…</string>
+    <string name="edit_profile_photo_error">Could not upload photo.</string>
 
     <!-- Admin -->
     <string name="admin_access_message">You do not have access to this panel</string>
@@ -288,6 +334,9 @@
     <string name="admin_notes_optional">Notes (optional)</string>
     <string name="admin_confirm">Confirm</string>
     <string name="admin_cancel">Cancel</string>
+    <string name="admin_delete_confirm_title">Delete content</string>
+    <string name="admin_delete_confirm_body">Delete the reported content? This action cannot be undone.</string>
+    <string name="admin_delete_confirm_button">Delete</string>
 
     <!-- Edit Trip -->
     <string name="edit_trip_back">← Back</string>
@@ -324,6 +373,10 @@
     <string name="community_empty_feed_subtitle">Follow your friends to see their trips</string>
     <string name="community_days_format">%1$d days</string>
     <string name="community_budget_format">%1$d%2$s</string>
+    <string name="community_travelers_format">%1$d travelers</string>
+    <string name="community_post_unavailable">This trip is no longer available</string>
+    <string name="community_load_trip_error">Error loading trip: %1$s</string>
+    <string name="community_generic_error">Error: %1$s</string>
 
     <!-- Plan Tab -->
     <string name="plan_budget_total">Total budget</string>
@@ -370,6 +423,9 @@
     <string name="plan_result_duration">Recommended duration: %1$d days</string>
     <string name="plan_result_pricing_note">Estimated prices. They may vary depending on dates, availability and provider. Always check the link before booking.</string>
     <string name="plan_result_section_activities">Real recommended activities</string>
+    <string name="plan_result_section_itinerary">Day-by-day itinerary</string>
+    <string name="plan_result_day_label">Day %1$d</string>
+    <string name="plan_result_activity_links_title">Activity links</string>
     <string name="plan_result_section_hotel">Recommended lodging</string>
     <string name="plan_result_section_flights">Flight offers</string>
     <string name="plan_result_section_comments">Comments</string>
@@ -411,8 +467,14 @@
     <string name="edit_trip_field_start">Start date</string>
     <string name="edit_trip_field_end">End date</string>
     <string name="edit_trip_field_prefs">Preferences</string>
+    <string name="edit_trip_dates">Dates</string>
     <string name="edit_trip_loading_error">Could not load the trip.</string>
     <string name="edit_trip_save_error">Could not save the trip.</string>
+    <string name="edit_trip_error_budget_positive">Enter a valid budget (&gt; 0).</string>
+    <string name="edit_trip_error_travelers_positive">Enter a valid number of travelers (&gt; 0).</string>
+    <string name="edit_trip_error_dates_required">Select the start and end dates.</string>
+    <string name="edit_trip_error_dates_order">The end date cannot be earlier than the start date.</string>
+    <string name="edit_trip_error_prefs_required">Select at least one preference.</string>
 
     <!-- Public Profile -->
     <string name="public_profile_trip_summary">%1$d days • %2$d%3$s</string>

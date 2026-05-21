@@ -38,6 +38,9 @@ import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -57,6 +60,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -85,6 +89,17 @@ fun PostDetailScreen(
     onBack: () -> Unit
 ) {
     val isCompactWidth = LocalConfiguration.current.screenWidthDp < 360
+    val context = LocalContext.current
+    val reportReasonSpam = stringResource(R.string.post_detail_report_reason_spam)
+    val reportReasonInappropriate = stringResource(R.string.post_detail_report_reason_inappropriate)
+    val reportReasonScam = stringResource(R.string.post_detail_report_reason_scam)
+    val reportReasonOffensive = stringResource(R.string.post_detail_report_reason_offensive)
+    val reportReasonOther = stringResource(R.string.post_detail_report_reason_other)
+    val reportSuccessText = stringResource(R.string.post_detail_report_success)
+    val reportErrorTemplate = stringResource(R.string.post_detail_report_error)
+    val reportReasonRequiredText = stringResource(R.string.post_detail_report_reason_required)
+    val blockSuccessText = stringResource(R.string.post_detail_block_success)
+    val blockLoginRequiredText = stringResource(R.string.post_detail_block_login_required)
     val db = FirebaseFirestore.getInstance()
     val auth = FirebaseAuth.getInstance()
 
@@ -117,7 +132,7 @@ fun PostDetailScreen(
                 try {
                     val isDeleted = doc.getBoolean("deleted") ?: false
                     if (isDeleted) {
-                        errorMessage = "Este viaje ya no está disponible"
+                        errorMessage = context.getString(R.string.community_post_unavailable)
                         tripData = null
                         isLoading = false
                     } else {
@@ -126,12 +141,12 @@ fun PostDetailScreen(
                         commentVm.loadCommentsForTrip(postId)
                     }
                 } catch (e: Exception) {
-                    errorMessage = "Error al cargar el viaje: ${e.message}"
+                    errorMessage = context.getString(R.string.community_load_trip_error, e.message ?: "")
                     isLoading = false
                 }
             }
             .addOnFailureListener { e ->
-                errorMessage = "Error: ${e.message}"
+                errorMessage = context.getString(R.string.community_generic_error, e.message ?: "")
                 isLoading = false
             }
     }
@@ -253,7 +268,7 @@ fun PostDetailScreen(
                                     }
 
                                     Text(
-                                        text = trip.destino.ifBlank { "Destino sin nombre" },
+                                        text = trip.destino.ifBlank { stringResource(R.string.post_detail_no_destination) },
                                         style = if (isCompactWidth) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.headlineMedium,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color.White
@@ -274,8 +289,8 @@ fun PostDetailScreen(
                                         verticalArrangement = Arrangement.spacedBy(10.dp)
                                     ) {
                                         DetailChip(Icons.Default.Euro, "€${trip.presupuestoTotal.toInt()}", isCompactWidth)
-                                        DetailChip(Icons.Default.People, "${trip.viajeros} viajeros", isCompactWidth)
-                                        DetailChip(Icons.Default.AccessTime, "${trip.diasRecomendados} días", isCompactWidth)
+                                        DetailChip(Icons.Default.People, stringResource(R.string.community_travelers_format, trip.viajeros), isCompactWidth)
+                                        DetailChip(Icons.Default.AccessTime, stringResource(R.string.community_days_format, trip.diasRecomendados), isCompactWidth)
                                     }
                                 }
                             }
@@ -296,9 +311,9 @@ fun PostDetailScreen(
                                     fontWeight = FontWeight.Bold
                                 )
 
-                                SummaryRow(stringResource(R.string.post_detail_departure), trip.fechaInicioMillis?.let { dateFormat.format(Date(it)) } ?: "Sin fecha", Icons.Default.CalendarToday)
-                                SummaryRow(stringResource(R.string.post_detail_return), trip.fechaFinMillis?.let { dateFormat.format(Date(it)) } ?: "Sin fecha", Icons.Default.CalendarToday)
-                                SummaryRow(stringResource(R.string.post_detail_origin), "Madrid", Icons.Default.LocationOn)
+                                SummaryRow(stringResource(R.string.post_detail_departure), trip.fechaInicioMillis?.let { dateFormat.format(Date(it)) } ?: stringResource(R.string.post_detail_no_date), Icons.Default.CalendarToday)
+                                SummaryRow(stringResource(R.string.post_detail_return), trip.fechaFinMillis?.let { dateFormat.format(Date(it)) } ?: stringResource(R.string.post_detail_no_date), Icons.Default.CalendarToday)
+                                SummaryRow(stringResource(R.string.post_detail_origin), stringResource(R.string.post_detail_origin_madrid), Icons.Default.LocationOn)
                                 SummaryRow(stringResource(R.string.post_detail_status), trip.status.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }, Icons.Default.AccessTime)
                             }
                         }
@@ -317,40 +332,53 @@ fun PostDetailScreen(
                                     fontWeight = FontWeight.Bold
                                 )
 
-                                if (trip.itinerario.isNotEmpty()) {
+                                if (trip.itineraryByDay != null && trip.itineraryByDay.isNotEmpty()) {
                                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                        trip.itinerario.forEachIndexed { index, day ->
+                                        trip.itineraryByDay.forEachIndexed { index, day ->
                                             OutlinedCard(
                                                 shape = RoundedCornerShape(18.dp),
                                                 modifier = Modifier.fillMaxWidth()
                                             ) {
-                                                Row(
-                                                    modifier = Modifier.padding(14.dp),
-                                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                                    verticalAlignment = Alignment.Top
-                                                ) {
-                                                    Surface(
-                                                        shape = RoundedCornerShape(12.dp),
-                                                        color = UrOrange.copy(alpha = 0.12f)
-                                                    ) {
+                                                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+                                                        Surface(
+                                                            shape = RoundedCornerShape(12.dp),
+                                                            color = UrOrange.copy(alpha = 0.12f)
+                                                        ) {
+                                                            Text(
+                                                                text = day.dayLabel ?: "${index + 1}",
+                                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                                                color = UrOrange,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
+                                                        }
+
                                                         Text(
-                                                            text = "${index + 1}",
-                                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                                            color = UrOrange,
-                                                            fontWeight = FontWeight.Bold
+                                                            text = day.summary ?: "",
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            modifier = Modifier.weight(1f)
                                                         )
                                                     }
 
-                                                    Text(
-                                                        text = day,
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        modifier = Modifier.weight(1f)
-                                                    )
+                                                    if (day.activities != null && day.activities.isNotEmpty()) {
+                                                        val ctx = LocalContext.current
+                                                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                            day.activities.forEach { act ->
+                                                                if (!act.bookingUrl.isNullOrBlank()) {
+                                                                    TextButton(onClick = { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(act.bookingUrl))) }) {
+                                                                        Text(act.name ?: "")
+                                                                    }
+                                                                } else {
+                                                                    Text(text = act.name ?: "", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                                }
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
                                     }
-                                } else {
+                                } else if (trip.itinerario.isNotEmpty()) {
                                     Text(
                                         text = stringResource(R.string.post_detail_no_itinerary),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -434,7 +462,7 @@ fun PostDetailScreen(
                     }
 
                     Text(stringResource(R.string.post_detail_select_reason))
-                    val reasons = listOf("Spam", "Contenido inapropiado", "Estafa", "Otra razón")
+                    val reasons = listOf(reportReasonSpam, reportReasonInappropriate, reportReasonScam, reportReasonOther)
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         reasons.forEach { reason ->
                             val isSelected = reportReason == reason
@@ -477,20 +505,20 @@ fun PostDetailScreen(
                                 targetUserUid = tripData?.authorUid,
                                 tripId = postId,
                                 reporterUid = currentUser.uid,
-                                reporterName = currentUser.displayName ?: "Usuario Anónimo",
+                                    reporterName = currentUser.displayName ?: context.getString(R.string.post_detail_anonymous_user),
                                 reason = reportReason,
                                 description = reportDescription,
                                 onSuccess = {
-                                    reportMessage = "✓ Reporte enviado exitosamente"
+                                    reportMessage = reportSuccessText
                                     reportReason = ""
                                     reportDescription = ""
                                 },
                                 onError = { e ->
-                                    reportMessage = "Error: ${e.message}"
+                                    reportMessage = context.getString(R.string.post_detail_report_error, e.message ?: "")
                                 }
                             )
                         } else {
-                            reportMessage = "Por favor selecciona una razón"
+                            reportMessage = reportReasonRequiredText
                         }
                     }
                 ) {
@@ -532,7 +560,7 @@ fun PostDetailScreen(
                     }
 
                     Text(stringResource(R.string.post_detail_select_reason))
-                    val reasons = listOf("Spam", "Contenido inapropiado", "Ofensivo", "Otra razón")
+                    val reasons = listOf(reportReasonSpam, reportReasonInappropriate, reportReasonOffensive, reportReasonOther)
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         reasons.forEach { reason ->
                             val isSelected = commentReportReason == reason
@@ -577,20 +605,20 @@ fun PostDetailScreen(
                                 tripId = postId,
                                 commentId = comment.id,
                                 reporterUid = currentUser.uid,
-                                reporterName = currentUser.displayName ?: "Usuario Anónimo",
+                                    reporterName = currentUser.displayName ?: context.getString(R.string.post_detail_anonymous_user),
                                 reason = commentReportReason,
                                 description = commentReportDescription,
                                 onSuccess = {
-                                    commentReportMessage = "✓ Reporte enviado exitosamente"
+                                    commentReportMessage = reportSuccessText
                                     commentReportReason = ""
                                     commentReportDescription = ""
                                 },
                                 onError = { e ->
-                                    commentReportMessage = "Error: ${e.message}"
+                                    commentReportMessage = context.getString(R.string.post_detail_report_error, e.message ?: "")
                                 }
                             )
                         } else {
-                            commentReportMessage = "Por favor selecciona una razón"
+                            commentReportMessage = reportReasonRequiredText
                         }
                     }
                 ) {
@@ -652,13 +680,13 @@ fun PostDetailScreen(
                         if (target != null && currentUser != null) {
                             communityVm.blockUser(target,
                                 onSuccess = {
-                                    blockMessage = "✓ Usuario bloqueado"
+                                    blockMessage = blockSuccessText
                                     blockReason = ""
                                 },
-                                onError = { e -> blockMessage = "Error: ${e.message}" }
+                                onError = { e -> blockMessage = context.getString(R.string.post_detail_report_error, e.message ?: "") }
                             )
                         } else {
-                            blockMessage = "Necesitas iniciar sesión"
+                            blockMessage = blockLoginRequiredText
                         }
                     }
                 ) {

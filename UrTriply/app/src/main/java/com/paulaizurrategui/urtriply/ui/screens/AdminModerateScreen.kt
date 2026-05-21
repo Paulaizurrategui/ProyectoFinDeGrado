@@ -308,55 +308,88 @@ fun ReportCard(
         }
     }
 
-    // Resolution dialog
+    // Resolution dialog (customized per action)
     if (showResolutionDialog) {
-        AlertDialog(
-            onDismissRequest = { showResolutionDialog = false },
-            title = { Text(stringResource(R.string.admin_resolve_report_title)) },
-            text = {
-                Column {
-                    Text(
-                        text = stringResource(R.string.admin_action_question),
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-                    OutlinedTextField(
-                        value = resolutionText,
-                        onValueChange = { resolutionText = it },
-                        label = { Text(stringResource(R.string.admin_notes_optional)) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 60.dp),
-                        maxLines = 3
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        when (selectedAction) {
-                            "delete" -> {
-                                viewModel.deleteReportedContentAndResolve(report)
-                            }
-                            "resolve" -> {
-                                viewModel.resolveReport(report.id, resolutionText.ifEmpty { "No action needed" })
-                            }
-                            "block" -> {
-                                viewModel.blockReportedUserAndResolve(report)
-                            }
+        when (selectedAction) {
+            "delete" -> {
+                AlertDialog(
+                    onDismissRequest = { showResolutionDialog = false },
+                    title = { Text(stringResource(R.string.admin_delete_confirm_title)) },
+                    text = {
+                        Column {
+                            Text(
+                                text = stringResource(R.string.admin_delete_confirm_body),
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
                         }
-                        showResolutionDialog = false
-                        resolutionText = ""
-                        selectedAction = null
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                viewModel.deleteReportedContentAndResolve(report)
+                                showResolutionDialog = false
+                                resolutionText = ""
+                                selectedAction = null
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Text(stringResource(R.string.admin_delete_confirm_button))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showResolutionDialog = false }) {
+                            Text(stringResource(R.string.admin_cancel))
+                        }
                     }
-                ) {
-                    Text(stringResource(R.string.admin_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showResolutionDialog = false }) {
-                    Text(stringResource(R.string.admin_cancel))
-                }
+                )
             }
-        )
+            else -> {
+                AlertDialog(
+                    onDismissRequest = { showResolutionDialog = false },
+                    title = { Text(stringResource(R.string.admin_resolve_report_title)) },
+                    text = {
+                        Column {
+                            Text(
+                                text = stringResource(R.string.admin_action_question),
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+                            OutlinedTextField(
+                                value = resolutionText,
+                                onValueChange = { resolutionText = it },
+                                label = { Text(stringResource(R.string.admin_notes_optional)) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 60.dp),
+                                maxLines = 3
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                when (selectedAction) {
+                                    "resolve" -> {
+                                        viewModel.resolveReport(report.id, resolutionText.ifEmpty { "No action needed" })
+                                    }
+                                    "block" -> {
+                                        viewModel.blockReportedUserAndResolve(report)
+                                    }
+                                }
+                                showResolutionDialog = false
+                                resolutionText = ""
+                                selectedAction = null
+                            }
+                        ) {
+                            Text(stringResource(R.string.admin_confirm))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showResolutionDialog = false }) {
+                            Text(stringResource(R.string.admin_cancel))
+                        }
+                    }
+                )
+            }
+        }
     }
 }

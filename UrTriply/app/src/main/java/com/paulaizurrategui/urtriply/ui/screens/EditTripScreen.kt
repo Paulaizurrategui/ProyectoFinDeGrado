@@ -61,12 +61,17 @@ import java.util.Date
 import java.util.Locale
 
 // ojo: se llama trippreference para no chocar con preference de plantabscreen
-private enum class TripPreference(val label: String) {
-    CULTURA("Cultura"),
-    OCIO("Ocio nocturno"),
-    NATURALEZA("Naturaleza"),
-    GASTRONOMIA("Gastronomía")
+private enum class TripPreference(val labelRes: Int) {
+    CULTURA(R.string.plan_pref_culture),
+    OCIO(R.string.plan_pref_night),
+    NATURALEZA(R.string.plan_pref_nature),
+    GASTRONOMIA(R.string.plan_pref_food)
 }
+
+private data class DestinationOption(
+    val value: String,
+    val labelRes: Int
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,20 +87,20 @@ fun EditTripScreen(
 
     // mismos destinos que planificar
     val destinos = listOf(
-        "París (Francia)",
-        "Londres (Reino Unido)",
-        "Roma (Italia)",
-        "Ámsterdam (Países Bajos)",
-        "Atenas (Grecia)",
-        "Lisboa (Portugal)",
-        "Berlín (Alemania)",
-        "Praga (República Checa)",
-        "Viena (Austria)",
-        "Dublín (Irlanda)"
+        DestinationOption("París (Francia)", R.string.plan_dest_paris),
+        DestinationOption("Londres (Reino Unido)", R.string.plan_dest_london),
+        DestinationOption("Roma (Italia)", R.string.plan_dest_rome),
+        DestinationOption("Ámsterdam (Países Bajos)", R.string.plan_dest_amsterdam),
+        DestinationOption("Atenas (Grecia)", R.string.plan_dest_athens),
+        DestinationOption("Lisboa (Portugal)", R.string.plan_dest_lisbon),
+        DestinationOption("Berlín (Alemania)", R.string.plan_dest_berlin),
+        DestinationOption("Praga (República Checa)", R.string.plan_dest_prague),
+        DestinationOption("Viena (Austria)", R.string.plan_dest_vienna),
+        DestinationOption("Dublín (Irlanda)", R.string.plan_dest_dublin)
     )
 
     // estado del formulario
-    var destino by remember { mutableStateOf(destinos.first()) }
+    var destino by remember { mutableStateOf(destinos.first().value) }
     var presupuestoText by remember { mutableStateOf("") }
     var viajerosText by remember { mutableStateOf("1") }
     var fechaInicioMillis by remember { mutableStateOf<Long?>(null) }
@@ -109,6 +114,11 @@ fun EditTripScreen(
     var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var localError by remember { mutableStateOf<String?>(null) }
+    val editTripBudgetError = stringResource(R.string.edit_trip_error_budget_positive)
+    val editTripTravelersError = stringResource(R.string.edit_trip_error_travelers_positive)
+    val editTripDatesError = stringResource(R.string.edit_trip_error_dates_required)
+    val editTripDateOrderError = stringResource(R.string.edit_trip_error_dates_order)
+    val editTripPrefsError = stringResource(R.string.edit_trip_error_prefs_required)
 
     // formateador de fechas para mostrar en pantalla
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
@@ -267,7 +277,7 @@ fun EditTripScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             // destino
-                            SectionLabel("Destino")
+                            SectionLabel(stringResource(R.string.edit_trip_field_destination))
                             DestinationDropdown(
                                 destinos = destinos,
                                 selected = destino,
@@ -275,7 +285,7 @@ fun EditTripScreen(
                             )
 
                             // presupuesto
-                            SectionLabel("Presupuesto total")
+                            SectionLabel(stringResource(R.string.edit_trip_field_budget))
                             OutlinedTextField(
                                 value = presupuestoText,
                                 onValueChange = { presupuestoText = it.replace(",", ".") }, // permito coma y la convierto
@@ -286,7 +296,7 @@ fun EditTripScreen(
                             )
 
                             // viajeros
-                            SectionLabel("Viajeros")
+                            SectionLabel(stringResource(R.string.edit_trip_field_travelers))
                             OutlinedTextField(
                                 value = viajerosText,
                                 onValueChange = { viajerosText = it.filter(Char::isDigit) }, // solo numeros
@@ -309,18 +319,18 @@ fun EditTripScreen(
                                     verticalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
                                     Text(
-                                        text = "Fechas",
+                                        text = stringResource(R.string.edit_trip_dates),
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.SemiBold
                                     )
 
                                     DateRowField(
-                                        label = "Fecha de inicio",
+                                        label = stringResource(R.string.edit_trip_field_start),
                                         value = formatDate(fechaInicioMillis),
                                         onClick = { showStartPicker = true }
                                     )
                                     DateRowField(
-                                        label = "Fecha de fin",
+                                        label = stringResource(R.string.edit_trip_field_end),
                                         value = formatDate(fechaFinMillis),
                                         onClick = { showEndPicker = true }
                                     )
@@ -328,7 +338,7 @@ fun EditTripScreen(
                             }
 
                             // preferencias (chips)
-                            SectionLabel("Preferencias")
+                            SectionLabel(stringResource(R.string.edit_trip_field_prefs))
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                     TripPreference.entries.take(2).forEach { pref ->
@@ -337,7 +347,7 @@ fun EditTripScreen(
                                             onClick = {
                                                 prefs = if (prefs.contains(pref)) prefs - pref else prefs + pref
                                             },
-                                            label = { Text(pref.label) }
+                                            label = { Text(stringResource(pref.labelRes)) }
                                         )
                                     }
                                 }
@@ -348,7 +358,7 @@ fun EditTripScreen(
                                             onClick = {
                                                 prefs = if (prefs.contains(pref)) prefs - pref else prefs + pref
                                             },
-                                            label = { Text(pref.label) }
+                                            label = { Text(stringResource(pref.labelRes)) }
                                         )
                                     }
                                 }
@@ -388,23 +398,23 @@ fun EditTripScreen(
 
                             // validaciones
                             if (presupuesto == null || presupuesto <= 0) {
-                                localError = "Introduce un presupuesto válido (> 0)."
+                                localError = editTripBudgetError
                                 return@Button
                             }
                             if (viajeros == null || viajeros <= 0) {
-                                localError = "Introduce un número de viajeros válido (> 0)."
+                                localError = editTripTravelersError
                                 return@Button
                             }
                             if (fechaInicioMillis == null || fechaFinMillis == null) {
-                                localError = "Selecciona fecha de inicio y fin."
+                                localError = editTripDatesError
                                 return@Button
                             }
                             if (fechaFinMillis!! < fechaInicioMillis!!) {
-                                localError = "La fecha fin no puede ser anterior a la fecha inicio."
+                                localError = editTripDateOrderError
                                 return@Button
                             }
                             if (prefs.isEmpty()) {
-                                localError = "Selecciona al menos una preferencia."
+                                localError = editTripPrefsError
                                 return@Button
                             }
 
@@ -429,7 +439,7 @@ fun EditTripScreen(
                                 }
                                 .addOnFailureListener { e ->
                                     saving = false
-                                    error = e.message ?: "No se pudieron guardar los cambios."
+                                    error = e.message ?: context.getString(R.string.edit_trip_save_error)
                                 }
                         },
                         enabled = !saving,
@@ -539,7 +549,7 @@ private fun DateRowField(
 
 @Composable
 private fun DestinationDropdown(
-    destinos: List<String>,
+    destinos: List<DestinationOption>,
     selected: String,
     onSelected: (String) -> Unit
 ) {
@@ -549,7 +559,7 @@ private fun DestinationDropdown(
     Box(modifier = Modifier.fillMaxWidth()) {
         // campo readOnly que parece dropdown
         OutlinedTextField(
-            value = selected,
+            value = destinos.firstOrNull { it.value == selected }?.let { stringResource(it.labelRes) } ?: selected,
             onValueChange = {},
             readOnly = true,
             label = { Text(stringResource(R.string.edit_trip_destination_label)) },
@@ -576,11 +586,11 @@ private fun DestinationDropdown(
                 LazyColumn {
                     items(destinos) { option ->
                         Text(
-                            text = option,
+                            text = stringResource(option.labelRes),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    onSelected(option)
+                                    onSelected(option.value)
                                     showDialog = false
                                 }
                                 .padding(vertical = 12.dp),
