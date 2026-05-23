@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
@@ -141,7 +142,9 @@ fun RegisterScreen(
                 Text(
                     text = stringResource(R.string.register_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF6B7280)
+                    color = Color(0xFF6B7280),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(18.dp))
@@ -275,7 +278,9 @@ fun RegisterScreen(
                     Text(
                         text = if (uiState.isLoading) stringResource(R.string.register_loading) else stringResource(R.string.register_button),
                         color = Color.White,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
@@ -287,7 +292,12 @@ fun RegisterScreen(
                         color = Color(0xFF6B7280)
                     )
                     TextButton(onClick = onGoToLogin) {
-                        Text(stringResource(R.string.already_have_account_action), fontWeight = FontWeight.Bold)
+                        Text(
+                            stringResource(R.string.already_have_account_action),
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }

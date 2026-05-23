@@ -258,6 +258,7 @@
     <string name="public_profile_no_name">No name</string>
     <string name="public_profile_no_email">No email</string>
     <string name="public_profile_verified_yes">+13 confirmed</string>
+    <string name="webview_title">Open link</string>
     <string name="public_profile_verified_no">+13 not confirmed</string>
     <string name="public_profile_admin">Admin</string>
     <string name="public_profile_user">User</string>

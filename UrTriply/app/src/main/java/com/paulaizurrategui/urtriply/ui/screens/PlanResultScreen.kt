@@ -1,5 +1,6 @@
 package com.paulaizurrategui.urtriply.ui.screens
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,10 +41,9 @@ import com.paulaizurrategui.urtriply.ui.viewmodels.CommentViewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import android.content.Intent
-import android.net.Uri
 import com.paulaizurrategui.urtriply.data.trips.TripStatus
 import com.paulaizurrategui.urtriply.domain.model.Hotel
 import com.paulaizurrategui.urtriply.domain.model.SuggestedActivity
@@ -57,7 +57,8 @@ import androidx.compose.runtime.remember as rememberRuntime
 fun PlanResultScreen(
     isGuest: Boolean,
     onBack: () -> Unit,
-    onRequireLogin: () -> Unit
+    onRequireLogin: () -> Unit,
+    onOpenUrl: (String) -> Unit
 ) {
     val r = PlanResultStore.lastResult
     val context = LocalContext.current
@@ -91,6 +92,8 @@ fun PlanResultScreen(
         showHeader = false,
         showTitle = false
     ) {
+        val shareSubject = stringResource(R.string.plan_result_share_subject, r?.destino ?: "")
+        val shareChooser = stringResource(R.string.plan_result_share_chooser)
         if (r == null) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Text(
@@ -120,7 +123,12 @@ fun PlanResultScreen(
                         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
                         contentPadding = ButtonDefaults.TextButtonContentPadding
                     ) {
-                        Text(stringResource(R.string.plan_result_back_arrow), fontWeight = FontWeight.SemiBold)
+                        Text(
+                            stringResource(R.string.plan_result_back_arrow),
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                     Spacer(Modifier.weight(1f))
                 }
@@ -152,7 +160,8 @@ fun PlanResultScreen(
                                     else -> stringResource(R.string.trip_save_draft)
                                 },
                                 maxLines = 1,
-                                fontSize = 12.sp
+                                fontSize = 12.sp,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
 
@@ -173,6 +182,8 @@ fun PlanResultScreen(
                                     else -> stringResource(R.string.trip_publish)
                                 },
                                 fontWeight = FontWeight.Bold
+                                ,maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -185,9 +196,9 @@ fun PlanResultScreen(
                             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
                                 putExtra(Intent.EXTRA_TEXT, shareText)
-                                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.plan_result_share_subject, r.destino))
+                                putExtra(Intent.EXTRA_SUBJECT, shareSubject)
                             }
-                            context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.plan_result_share_chooser)))
+                            context.startActivity(Intent.createChooser(shareIntent, shareChooser))
                         },
                         enabled = !uiState.isSaving,
                         modifier = Modifier.fillMaxWidth(),
@@ -279,7 +290,8 @@ fun PlanResultScreen(
                             Spacer(Modifier.height(8.dp))
                             ItineraryCards(
                                 itineraryByDay = r.itineraryByDay,
-                                itinerario = r.itinerario
+                                itinerario = r.itinerario,
+                                onOpenUrl = onOpenUrl
                             )
 
                             Spacer(Modifier.height(14.dp))
@@ -288,7 +300,8 @@ fun PlanResultScreen(
                             Spacer(Modifier.height(8.dp))
                             HotelsBlock(
                                 hoteles = r.hoteles,
-                                apiHotelesOk = r.apiHotelesOk
+                                apiHotelesOk = r.apiHotelesOk,
+                                onOpenUrl = onOpenUrl
                             )
 
                             Spacer(Modifier.height(14.dp))
@@ -297,7 +310,8 @@ fun PlanResultScreen(
                             Spacer(Modifier.height(8.dp))
                             FlightsBlock(
                                 flights = r.vuelos,
-                                apiOk = r.apiVuelosOk
+                                apiOk = r.apiVuelosOk,
+                                onOpenUrl = onOpenUrl
                             )
 
                             Spacer(Modifier.height(14.dp))
@@ -409,7 +423,8 @@ private fun BudgetCards(categorias: Map<String, Double>) {
 @Composable
 private fun ItineraryCards(
     itineraryByDay: List<ItineraryDay>,
-    itinerario: List<String>
+    itinerario: List<String>,
+    onOpenUrl: (String) -> Unit
 ) {
     if (itineraryByDay.isEmpty() && itinerario.isEmpty()) {
         Text(stringResource(R.string.plan_result_no_itinerary), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -438,17 +453,18 @@ private fun ItineraryCards(
                                 fontWeight = FontWeight.SemiBold
                             )
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                day.activities.forEach { activity ->
-                                    if (!activity.bookingUrl.isNullOrBlank()) {
-                                        TextButton(onClick = {
-                                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(activity.bookingUrl)))
-                                        }) {
-                                            Text(activity.name)
+                                    day.activities.forEach { activity ->
+                                        val bookingUrl = activity.bookingUrl
+                                        if (!bookingUrl.isNullOrBlank()) {
+                                            TextButton(onClick = {
+                                                onOpenUrl(bookingUrl)
+                                            }) {
+                                                Text(activity.name)
+                                            }
+                                        } else {
+                                            Text(activity.name, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
-                                    } else {
-                                        Text(activity.name, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
-                                }
                             }
                         }
                     }
@@ -509,7 +525,8 @@ private fun ActivitiesBlock(
 @Composable
 private fun HotelsBlock(
     hoteles: List<Hotel>,
-    apiHotelesOk: Boolean
+    apiHotelesOk: Boolean,
+    onOpenUrl: (String) -> Unit
 ) {
     val realHotels = hoteles.filter { it.isReal }
 
@@ -523,7 +540,7 @@ private fun HotelsBlock(
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         realHotels.forEach { hotel ->
-            HotelCard(hotel = hotel)
+            HotelCard(hotel = hotel, onOpenUrl = onOpenUrl)
         }
     }
 }
@@ -531,7 +548,8 @@ private fun HotelsBlock(
 @Composable
 private fun RealActivitiesBlock(
     activities: List<SuggestedActivity>,
-    apiOk: Boolean
+    apiOk: Boolean,
+    onOpenUrl: (String) -> Unit
 ) {
     val realActivities = activities.filter { it.isReal }
 
@@ -545,13 +563,13 @@ private fun RealActivitiesBlock(
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         realActivities.forEach { activity ->
-            ActivityCard(activity = activity)
+            ActivityCard(activity = activity, onOpenUrl = onOpenUrl)
         }
     }
 }
 
 @Composable
-private fun ActivityCard(activity: SuggestedActivity) {
+private fun ActivityCard(activity: SuggestedActivity, onOpenUrl: (String) -> Unit) {
     val context = LocalContext.current
 
     Card(
@@ -587,10 +605,10 @@ private fun ActivityCard(activity: SuggestedActivity) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            if (activity.bookingUrl != null) {
+            val bookingUrl = activity.bookingUrl
+            if (!bookingUrl.isNullOrBlank()) {
                 TextButton(onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(activity.bookingUrl))
-                    context.startActivity(intent)
+                    onOpenUrl(bookingUrl)
                 }) {
                     Text(stringResource(R.string.plan_result_link))
                 }
@@ -600,7 +618,7 @@ private fun ActivityCard(activity: SuggestedActivity) {
 }
 
 @Composable
-private fun HotelCard(hotel: Hotel) {
+private fun HotelCard(hotel: Hotel, onOpenUrl: (String) -> Unit) {
     val context = LocalContext.current
 
     Card(
@@ -655,10 +673,10 @@ private fun HotelCard(hotel: Hotel) {
                 )
             }
 
-            if (hotel.bookingUrl != null) {
+            val bookingUrl = hotel.bookingUrl
+            if (!bookingUrl.isNullOrBlank()) {
                 TextButton(onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(hotel.bookingUrl))
-                    context.startActivity(intent)
+                    onOpenUrl(bookingUrl)
                 }) {
                     Text(stringResource(R.string.plan_result_reservation_link))
                 }
@@ -670,7 +688,8 @@ private fun HotelCard(hotel: Hotel) {
 @Composable
 private fun FlightsBlock(
     flights: List<com.paulaizurrategui.urtriply.domain.model.FlightOffer>,
-    apiOk: Boolean
+    apiOk: Boolean,
+    onOpenUrl: (String) -> Unit
 ) {
     val realFlights = flights.filter { it.isReal }
 
@@ -684,13 +703,13 @@ private fun FlightsBlock(
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         realFlights.forEach { flight ->
-            FlightCard(flight)
+            FlightCard(flight, onOpenUrl = onOpenUrl)
         }
     }
 }
 
 @Composable
-private fun FlightCard(flight: com.paulaizurrategui.urtriply.domain.model.FlightOffer) {
+private fun FlightCard(flight: com.paulaizurrategui.urtriply.domain.model.FlightOffer, onOpenUrl: (String) -> Unit) {
     val context = LocalContext.current
 
     Card(
@@ -716,10 +735,10 @@ private fun FlightCard(flight: com.paulaizurrategui.urtriply.domain.model.Flight
 
             Text(text = stringResource(R.string.plan_result_real_data), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-            if (flight.bookingUrl != null) {
+            val bookingUrl = flight.bookingUrl
+            if (!bookingUrl.isNullOrBlank()) {
                 TextButton(onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(flight.bookingUrl))
-                    context.startActivity(intent)
+                    onOpenUrl(bookingUrl)
                 }) {
                     Text(stringResource(R.string.plan_result_flight_book))
                 }

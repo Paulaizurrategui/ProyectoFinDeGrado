@@ -258,6 +258,8 @@
     <string name="public_profile_no_name">Sin nombre</string>
     <string name="public_profile_no_email">Sin email</string>
     <string name="public_profile_verified_yes">+13 confirmado</string>
+    <string name="webview_title">Abrir enlace</string>
+    <string name="webview_no_url">Página web no disponible</string>
     <string name="public_profile_verified_no">+13 no confirmado</string>
     <string name="public_profile_admin">Admin</string>
     <string name="public_profile_user">Usuario</string>

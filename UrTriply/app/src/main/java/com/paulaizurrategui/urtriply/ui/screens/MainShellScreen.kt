@@ -16,6 +16,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import android.net.Uri
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -119,7 +120,19 @@ fun MainShellScreen( // pantalla principal con navegación
                 PlanResultScreen(
                     isGuest = isGuest,
                     onBack = { navController.popBackStack() }, // volver atrás
-                    onRequireLogin = onRequireLogin
+                    onRequireLogin = onRequireLogin,
+                    onOpenUrl = { url -> navController.navigate("${PlanRoutes.WEB_VIEW}?url=${Uri.encode(url)}") }
+                )
+            }
+
+            composable(
+                route = "${PlanRoutes.WEB_VIEW}?url={url}",
+                arguments = listOf(navArgument("url") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val url = backStackEntry.arguments?.getString("url").orEmpty()
+                WebViewScreen(
+                    url = url,
+                    onBack = { navController.popBackStack() }
                 )
             }
 
@@ -142,7 +155,8 @@ fun MainShellScreen( // pantalla principal con navegación
                 val postId = backStackEntry.arguments?.getString("postId") ?: return@composable
                 PostDetailScreen(
                     postId = postId,
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onOpenUrl = { url -> navController.navigate("${PlanRoutes.WEB_VIEW}?url=${Uri.encode(url)}") }
                 )
             }
 

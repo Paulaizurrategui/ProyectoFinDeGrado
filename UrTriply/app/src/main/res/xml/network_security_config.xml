@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Temporal: permitir cleartext globalmente durante pruebas.
+         Cambiar a domain-configs más adelante para endurecer. -->
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

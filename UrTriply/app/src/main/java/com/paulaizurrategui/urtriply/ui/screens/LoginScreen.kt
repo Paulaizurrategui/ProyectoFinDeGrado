@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
@@ -123,7 +124,9 @@ fun LoginScreen( // pantalla de login
                 Text( // subtitulo
                     text = "¡bienvenid@ de vuelta!",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF6B7280)
+                    color = Color(0xFF6B7280),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(18.dp))
@@ -219,7 +222,9 @@ fun LoginScreen( // pantalla de login
                         else
                             stringResource(R.string.login_button),
                         color = Color.White,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
@@ -228,7 +233,12 @@ fun LoginScreen( // pantalla de login
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(text = "¿no tienes cuenta?", color = Color(0xFF6B7280))
                     TextButton(onClick = onGoToRegister) { // ir a registro
-                        Text(stringResource(R.string.create_account), fontWeight = FontWeight.Bold)
+                        Text(
+                            stringResource(R.string.create_account),
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }

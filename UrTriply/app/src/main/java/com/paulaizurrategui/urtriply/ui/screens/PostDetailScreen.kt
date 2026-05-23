@@ -86,7 +86,8 @@ import java.util.Locale
 @Composable
 fun PostDetailScreen(
     postId: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onOpenUrl: (String) -> Unit
 ) {
     val isCompactWidth = LocalConfiguration.current.screenWidthDp < 360
     val context = LocalContext.current
@@ -365,7 +366,8 @@ fun PostDetailScreen(
                                                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                                             day.activities.forEach { act ->
                                                                 if (!act.bookingUrl.isNullOrBlank()) {
-                                                                    TextButton(onClick = { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(act.bookingUrl))) }) {
+                                                                            val bookingUrl = act.bookingUrl
+                                                                            TextButton(onClick = { onOpenUrl(bookingUrl ?: return@TextButton) }) {
                                                                         Text(act.name ?: "")
                                                                     }
                                                                 } else {

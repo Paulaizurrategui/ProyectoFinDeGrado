@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
@@ -37,7 +38,9 @@ fun WelcomeScreen(
             Text(
                 text = stringResource(R.string.slogan),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -54,7 +57,9 @@ fun WelcomeScreen(
                     Text(
                         text = stringResource(R.string.welcome_go_home),
                         color = Color.White,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
@@ -67,7 +72,12 @@ fun WelcomeScreen(
                         .height(52.dp),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text(stringResource(R.string.welcome_guest), fontWeight = FontWeight.Bold)
+                    Text(
+                        stringResource(R.string.welcome_guest),
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             } else {
                 Button(
@@ -81,7 +91,9 @@ fun WelcomeScreen(
                     Text(
                         text = stringResource(R.string.welcome_login),
                         color = Color.White,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
@@ -94,13 +106,22 @@ fun WelcomeScreen(
                         .height(52.dp),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text(stringResource(R.string.welcome_register), fontWeight = FontWeight.Bold)
+                    Text(
+                        stringResource(R.string.welcome_register),
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
                 TextButton(onClick = onContinueGuest) {
-                    Text(stringResource(R.string.welcome_guest))
+                    Text(
+                        stringResource(R.string.welcome_guest),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
 

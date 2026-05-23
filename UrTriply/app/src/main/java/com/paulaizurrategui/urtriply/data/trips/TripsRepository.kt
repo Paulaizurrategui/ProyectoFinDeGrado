@@ -3,6 +3,7 @@ package com.paulaizurrategui.urtriply.data.trips
 import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.paulaizurrategui.urtriply.domain.model.ActivityDoc
 import com.paulaizurrategui.urtriply.domain.model.Hotel
 import com.paulaizurrategui.urtriply.domain.model.SuggestedActivity
 import com.paulaizurrategui.urtriply.ui.screens.PlanResult
@@ -34,6 +35,7 @@ class TripsRepository(
         trips.add(doc)
             .addOnSuccessListener { ref ->
                 Log.d("TripsRepository", "saved trip id=${ref.id} status=${doc.status}")
+                saveTripActivities(ref.id, plan.actividadesReales)
                 onSuccess(ref.id) // devuelvo el id por si lo necesito
             }
             .addOnFailureListener { e ->
@@ -58,5 +60,28 @@ class TripsRepository(
             )
             .addOnSuccessListener { onSuccess() }
             .addOnFailureListener { e -> onError(e) }
+    }
+
+    private fun saveTripActivities(tripId: String, activities: List<SuggestedActivity>) {
+        if (activities.isEmpty()) return
+
+        val activitiesRef = trips.document(tripId).collection("activities")
+        activities.forEach { activity ->
+            val activityDoc = ActivityDoc(
+                tripId = tripId,
+                name = activity.name,
+                category = activity.category,
+                priceEUR = activity.price,
+                isGratis = activity.isFree,
+                enlace = activity.bookingUrl,
+                isReal = activity.isReal,
+                createdAt = Timestamp.now()
+            )
+
+            activitiesRef.document(activity.id).set(activityDoc)
+                .addOnFailureListener { e ->
+                    Log.w("TripsRepository", "Failed to save activity ${activity.id} for trip $tripId", e)
+                }
+        }
     }
 }

@@ -2,6 +2,7 @@ package com.paulaizurrategui.urtriply.data.remote.flights
 
 import android.util.Log
 import com.paulaizurrategui.urtriply.BuildConfig
+import com.paulaizurrategui.urtriply.data.remote.currency.CurrencyExchangeRepository
 import com.paulaizurrategui.urtriply.domain.model.FlightOffer
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -32,6 +33,7 @@ class FlightsRepository() {
     }
 
     private val moshi: Moshi by lazy { Moshi.Builder().add(KotlinJsonAdapterFactory()).build() }
+    private val currencyRepo = CurrencyExchangeRepository()
 
     // Travelpayouts API (primary)
     private val travelpayouts: TravelPayoutsApi by lazy {
@@ -145,13 +147,14 @@ class FlightsRepository() {
                     val price = flight.price ?: return@mapNotNullIndexed null
                     val airline = flight.airline ?: "Unknown"
                     val link = flight.link?.let { "https://www.aviasales.com$it" }
+                    val convertedPrice = convertPriceToEur(price, "EUR")
                     FlightOffer(
                         id = "tp_date_$index",
                         origin = flight.originAirport ?: flight.origin ?: origin,
                         destination = flight.destinationAirport ?: flight.destination ?: destination,
                         departureDate = flight.departureAt ?: dateFrom,
                         returnDate = flight.returnAt ?: dateTo,
-                        price = price,
+                        price = convertedPrice,
                         currency = "EUR",
                         durationMinutes = flight.duration ?: 0,
                         carrier = airline,
@@ -188,14 +191,16 @@ class FlightsRepository() {
                 resp.data.orEmpty().take(limit).mapIndexedNotNull { index, flight ->
                     val price = flight.price ?: return@mapIndexedNotNull null
                     val link = flight.link?.let { "https://www.aviasales.com$it" }
+                    val sourceCurrency = resp.currency?.uppercase(Locale.getDefault()) ?: "EUR"
+                    val convertedPrice = convertPriceToEur(price, sourceCurrency)
                     FlightOffer(
                         id = "tp_special_$index",
                         origin = flight.originAirport ?: flight.origin ?: origin,
                         destination = flight.destinationAirport ?: flight.destination ?: destination,
                         departureDate = flight.departureAt ?: "",
                         returnDate = flight.returnAt,
-                        price = price,
-                        currency = resp.currency?.uppercase(Locale.getDefault()) ?: "EUR",
+                        price = convertedPrice,
+                        currency = "EUR",
                         durationMinutes = flight.duration ?: 0,
                         carrier = flight.airlineTitle ?: flight.airline ?: "",
                         bookingUrl = link,
@@ -233,14 +238,16 @@ class FlightsRepository() {
                 resp.data.orEmpty().take(limit).mapIndexedNotNull { index, flight ->
                     val price = flight.price ?: return@mapIndexedNotNull null
                     val link = flight.link?.let { "https://www.aviasales.com$it" }
+                    val sourceCurrency = resp.currency?.uppercase(Locale.getDefault()) ?: "EUR"
+                    val convertedPrice = convertPriceToEur(price, sourceCurrency)
                     FlightOffer(
                         id = "tp_week_$index",
                         origin = flight.originAirport ?: flight.origin ?: origin,
                         destination = flight.destinationAirport ?: flight.destination ?: destination,
                         departureDate = flight.departureAt ?: departureDate,
                         returnDate = flight.returnAt ?: returnDate,
-                        price = price,
-                        currency = resp.currency?.uppercase(Locale.getDefault()) ?: "EUR",
+                        price = convertedPrice,
+                        currency = "EUR",
                         durationMinutes = flight.duration ?: 0,
                         carrier = flight.airline ?: "",
                         bookingUrl = link,
@@ -279,14 +286,16 @@ class FlightsRepository() {
                 prices.take(limit).mapIndexedNotNull { index, flight ->
                     val price = flight.price ?: return@mapIndexedNotNull null
                     val link = flight.link?.let { "https://www.aviasales.com$it" }
+                    val sourceCurrency = resp.currency?.uppercase(Locale.getDefault()) ?: "EUR"
+                    val convertedPrice = convertPriceToEur(price, sourceCurrency)
                     FlightOffer(
                         id = "tp_near_$index",
                         origin = flight.originAirport ?: flight.originCode ?: flight.origin ?: origin,
                         destination = flight.destinationAirport ?: flight.destinationCode ?: flight.destination ?: destination,
                         departureDate = flight.departureAt ?: departureDate,
                         returnDate = flight.returnAt ?: returnDate,
-                        price = price,
-                        currency = resp.currency?.uppercase(Locale.getDefault()) ?: "EUR",
+                        price = convertedPrice,
+                        currency = "EUR",
                         durationMinutes = flight.duration ?: 0,
                         carrier = flight.airline ?: "",
                         bookingUrl = link,
@@ -343,5 +352,10 @@ class FlightsRepository() {
             destination.add(mapped)
         }
         return destination
+    }
+
+    private suspend fun convertPriceToEur(price: Double, currency: String): Double {
+        if (currency.equals("EUR", ignoreCase = true)) return price
+        return currencyRepo.convertToEur(price, currency)
     }
 }
