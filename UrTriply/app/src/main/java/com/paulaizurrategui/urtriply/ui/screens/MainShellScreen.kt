@@ -71,30 +71,27 @@ fun MainShellScreen( // pantalla principal con navegación
     }
 
     Scaffold(
-        // CLAVE: gestionamos insets una sola vez a nivel app
-        contentWindowInsets = WindowInsets.safeDrawing, // evita solaparse con sistema
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            // CLAVE: evitamos que NavigationBar meta padding extra "de más"
             NavigationBar(
-                windowInsets = WindowInsets(0, 0, 0, 0), // quito padding extra
-                modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing)
+                windowInsets = WindowInsets(0, 0, 0, 0)
             ) {
-                tabs.forEach { tab -> // recorro tabs
-                    val selected = currentRoute == tab.route // si esta seleccionada
+                tabs.forEach { tab ->
+                    val selected = currentRoute == tab.route
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
                             navigateToTab(tab.route)
                         },
                         icon = tab.icon,
-                        label = { Text(stringResource(tab.labelRes)) } // texto tab
+                        label = { Text(stringResource(tab.labelRes)) }
                     )
                 }
             }
         }
-    ) { innerPadding -> // padding interno del scaffold
+    ) { innerPadding ->
         NavHost(
-            modifier = Modifier.padding(innerPadding), // aplico padding
+            modifier = Modifier.padding(innerPadding),
             navController = navController,
             startDestination = MainTabs.HOME // inicio en home
         ) {
@@ -103,7 +100,12 @@ fun MainShellScreen( // pantalla principal con navegación
                 InicioTabScreen(
                     isGuest = isGuest,
                     onRequireLogin = onRequireLogin,
-                    onGoPlan = { navigateToTab(MainTabs.PLAN) },
+                    onGoPlan = {
+                        navigateToTab(MainTabs.PLAN)
+                    },
+                    onGoManualTrip = {
+                        if (isGuest) onRequireLogin() else navController.navigate("trip/new")
+                    },
                     onGoCommunity = { navigateToTab(MainTabs.COMMUNITY) },
                     onGoProfile = { navigateToTab(MainTabs.PROFILE) }
                 )
@@ -187,6 +189,13 @@ fun MainShellScreen( // pantalla principal con navegación
                 EditTripScreen(
                     tripId = tripId,
                     onBack = { navController.popBackStack() } // volver atrás
+                )
+            }
+
+            composable("trip/new") {
+                EditTripScreen(
+                    tripId = null,
+                    onBack = { navController.popBackStack() }
                 )
             }
 

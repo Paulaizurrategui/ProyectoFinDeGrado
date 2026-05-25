@@ -29,6 +29,7 @@ fun InicioTabScreen(
     isGuest: Boolean,
     onRequireLogin: () -> Unit,
     onGoPlan: () -> Unit,
+    onGoManualTrip: () -> Unit,
     onGoCommunity: () -> Unit,
     onGoProfile: () -> Unit
 ) {
@@ -156,6 +157,14 @@ fun InicioTabScreen(
                     title = stringResource(R.string.home_plan_trip),
                     description = stringResource(R.string.home_plan_description),
                     onClick = onGoPlan
+                )
+
+                // Borrador manual
+                HomeActionCard(
+                    icon = "✍️",
+                    title = stringResource(R.string.home_manual_trip),
+                    description = stringResource(R.string.home_manual_trip_description),
+                    onClick = if (isGuest) onRequireLogin else onGoManualTrip
                 )
 
                 // Comunidad

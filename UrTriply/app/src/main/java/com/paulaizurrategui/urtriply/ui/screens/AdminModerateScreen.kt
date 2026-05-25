@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.domain.model.Report
+import com.paulaizurrategui.urtriply.domain.model.ReportType
 import com.paulaizurrategui.urtriply.ui.theme.UrOrange
 import com.paulaizurrategui.urtriply.ui.viewmodels.AdminViewModel
 
@@ -154,6 +155,28 @@ fun ReportCard(
     var selectedAction by remember { mutableStateOf<String?>(null) }
     var resolutionText by remember { mutableStateOf("") }
 
+    val isCommentReport = report.targetType == ReportType.COMMENT.name
+    val deleteActionLabel = if (isCommentReport) {
+        stringResource(R.string.admin_delete_comment)
+    } else {
+        stringResource(R.string.admin_delete_post)
+    }
+    val deleteConfirmTitle = if (isCommentReport) {
+        stringResource(R.string.admin_delete_comment_confirm_title)
+    } else {
+        stringResource(R.string.admin_delete_post_confirm_title)
+    }
+    val deleteConfirmBody = if (isCommentReport) {
+        stringResource(R.string.admin_delete_comment_confirm_body)
+    } else {
+        stringResource(R.string.admin_delete_post_confirm_body)
+    }
+    val deleteConfirmButton = if (isCommentReport) {
+        stringResource(R.string.admin_delete_comment_confirm_button)
+    } else {
+        stringResource(R.string.admin_delete_post_confirm_button)
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -262,7 +285,7 @@ fun ReportCard(
                             .size(16.dp)
                             .padding(end = 4.dp)
                     )
-                    Text(stringResource(R.string.admin_delete), fontSize = 12.sp)
+                    Text(deleteActionLabel, fontSize = 12.sp)
                 }
 
                 Button(
@@ -314,13 +337,10 @@ fun ReportCard(
             "delete" -> {
                 AlertDialog(
                     onDismissRequest = { showResolutionDialog = false },
-                    title = { Text(stringResource(R.string.admin_delete_confirm_title)) },
+                    title = { Text(deleteConfirmTitle) },
                     text = {
                         Column {
-                            Text(
-                                text = stringResource(R.string.admin_delete_confirm_body),
-                                modifier = Modifier.padding(bottom = 12.dp)
-                            )
+                            Text(text = deleteConfirmBody, modifier = Modifier.padding(bottom = 12.dp))
                         }
                     },
                     confirmButton = {
@@ -333,7 +353,7 @@ fun ReportCard(
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                         ) {
-                            Text(stringResource(R.string.admin_delete_confirm_button))
+                            Text(deleteConfirmButton)
                         }
                     },
                     dismissButton = {

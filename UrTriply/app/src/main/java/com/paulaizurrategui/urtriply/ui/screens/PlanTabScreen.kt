@@ -54,7 +54,9 @@ import android.util.Log
 import com.paulaizurrategui.urtriply.data.remote.overpass.ActivitiesRepository
 import com.paulaizurrategui.urtriply.data.remote.overpass.HotelsRepository
 import com.paulaizurrategui.urtriply.data.remote.nominatim.GeocodingRepository
+import com.paulaizurrategui.urtriply.domain.model.FlightOffer
 import com.paulaizurrategui.urtriply.domain.model.Hotel
+import com.paulaizurrategui.urtriply.domain.model.countTripNights
 import com.paulaizurrategui.urtriply.domain.model.SuggestedActivity
 import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
 import java.text.SimpleDateFormat
@@ -100,7 +102,8 @@ fun PlanTabScreen(
     isGuest: Boolean,
     onNavigateToResult: () -> Unit
 ) {
-    UrTriplyGradientScaffold(title = stringResource(R.string.plan_title)) {
+    // hide scaffold header and render a compact custom header to match design polish
+    UrTriplyGradientScaffold(title = stringResource(R.string.plan_title), showHeader = false) {
         val context = LocalContext.current
         val destinos = listOf(
             stringResource(R.string.plan_dest_paris),
@@ -152,24 +155,46 @@ fun PlanTabScreen(
                     .verticalScroll(scrollState)
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .padding(top = 12.dp, bottom = 18.dp)
+                    .padding(top = 8.dp, bottom = 18.dp)
             ) {
-                // intro
+                // compact header (60-70dp) with subtle background
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(68.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
+                        .padding(horizontal = 12.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = stringResource(R.string.home_emoji_plane))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(text = stringResource(R.string.app_name), fontWeight = FontWeight.SemiBold)
+                            Text(text = stringResource(R.string.plan_header_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(10.dp))
+
+                // intro (lighter)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
-                    Column(Modifier.padding(14.dp)) {
+                    Column(Modifier.padding(12.dp)) {
                         Text(
                             text = stringResource(R.string.plan_title),
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.ExtraBold
+                            fontWeight = FontWeight.SemiBold
                         )
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(2.dp))
                         Text(
                             text = if (isGuest) stringResource(R.string.plan_guest_notice)
                             else stringResource(R.string.plan_form_hint),
@@ -191,22 +216,20 @@ fun PlanTabScreen(
                 )
 
                 Spacer(Modifier.height(8.dp))
+                // origen fijo: mostrar como info box más suave
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.06f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
-                    Column(Modifier.padding(14.dp)) {
-                        Text(
-                            text = stringResource(R.string.plan_origin_fixed),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = stringResource(R.string.plan_origin_madrid),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "📍", modifier = Modifier.size(28.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text(text = stringResource(R.string.plan_origin_fixed), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                            Text(text = stringResource(R.string.plan_origin_madrid), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
 
@@ -223,14 +246,16 @@ fun PlanTabScreen(
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        // presupuesto: prefijo € y borde más fino
                         OutlinedTextField(
                             value = presupuestoText,
                             onValueChange = { presupuestoText = it.replace(",", ".") },
                             label = { Text(stringResource(R.string.plan_budget_total)) },
-                            trailingIcon = { Text(stringResource(R.string.plan_currency), color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            leadingIcon = { Text("€", style = MaterialTheme.typography.bodyLarge) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            // keep default colors to ensure compatibility across compose versions
                         )
 
                         Text(
@@ -239,14 +264,17 @@ fun PlanTabScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        OutlinedTextField(
-                            value = viajerosText,
-                            onValueChange = { viajerosText = it.filter(Char::isDigit) },
-                            label = { Text(stringResource(R.string.plan_travelers)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp)
-                        )
+                        // viajeros: compact stepper
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(text = stringResource(R.string.plan_travelers), modifier = Modifier.weight(1f))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Button(onClick = { val n = viajerosText.toIntOrNull() ?: 1; if (n>1) viajerosText = (n-1).toString() }, modifier = Modifier.size(36.dp), shape = RoundedCornerShape(8.dp)) { Text("-") }
+                                Spacer(Modifier.width(8.dp))
+                                Card(shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) { Text(viajerosText, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) }
+                                Spacer(Modifier.width(8.dp))
+                                Button(onClick = { val n = viajerosText.toIntOrNull() ?: 1; viajerosText = (n+1).toString() }, modifier = Modifier.size(36.dp), shape = RoundedCornerShape(8.dp)) { Text("+") }
+                            }
+                        }
                     }
                 }
 
@@ -255,13 +283,11 @@ fun PlanTabScreen(
                 // fechas
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
-                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(stringResource(R.string.plan_dates), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
 
                         DateRowField(
@@ -301,7 +327,12 @@ fun PlanTabScreen(
                                         onClick = {
                                             prefs = if (prefs.contains(pref)) prefs - pref else prefs + pref
                                         },
-                                        label = { Text(stringResource(pref.labelRes)) }
+                                        label = { Text(stringResource(pref.labelRes)) },
+                                        shape = RoundedCornerShape(24.dp),
+                                        colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = Color(0xFFFFF3E0),
+                                            selectedLabelColor = Color(0xFF1F2937)
+                                        )
                                     )
                                 }
                             }
@@ -312,7 +343,12 @@ fun PlanTabScreen(
                                         onClick = {
                                             prefs = if (prefs.contains(pref)) prefs - pref else prefs + pref
                                         },
-                                        label = { Text(stringResource(pref.labelRes)) }
+                                        label = { Text(stringResource(pref.labelRes)) },
+                                        shape = RoundedCornerShape(24.dp),
+                                        colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = Color(0xFFFFF3E0),
+                                            selectedLabelColor = Color(0xFF1F2937)
+                                        )
                                     )
                                 }
                             }
@@ -324,21 +360,21 @@ fun PlanTabScreen(
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.04f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
-                    Column(Modifier.padding(14.dp)) {
-                        Text(
-                            text = stringResource(R.string.plan_flight_route),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.plan_route_outbound, queryCity, destinationIata),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Column(Modifier.padding(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "✈️", modifier = Modifier.size(28.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.plan_route_outbound_short, "MAD", destinationIata),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        Spacer(Modifier.height(6.dp))
                         Text(
                             text = stringResource(R.string.plan_route_return, queryCity, destinationIata),
                             style = MaterialTheme.typography.bodySmall,
@@ -374,7 +410,7 @@ fun PlanTabScreen(
                 val errorPreferencesText = stringResource(R.string.plan_error_preferences)
                 val preferenceNames = prefs.map { it.key }.toSet()
 
-                // boton generar
+                // boton generar (más delgado, sombra suave, feedback)
                 Button(
                     onClick = {
                         localError = null
@@ -407,8 +443,8 @@ fun PlanTabScreen(
 
                         scope.launch {
                             try {
-                                // 1) genero local (fallback inmediato)
-                                val base = generateLocalProposal(
+                                // 1) genero una base local que solo se usa como fallback
+                                val fallback = generateLocalProposal(
                                     context = context,
                                     destino = destino,
                                     presupuestoTotal = presupuesto,
@@ -472,36 +508,32 @@ fun PlanTabScreen(
                                     Triple(hotelesDeferred.await(), actividadesDeferred.await(), vuelosDeferred.await())
                                 }
 
-                                // 4) si sale bien, lo guardo en el resultado
+                                // 4) reconstruyo la propuesta con datos reales cuando existen
                                 val finalPlan = if (geo != null) {
                                     val itineraryByDay = withContext(Dispatchers.Default) {
                                         buildItineraryFromActivities(
                                             context = context,
                                             destino = destino,
-                                            diasRecomendados = base.diasRecomendados,
+                                            diasRecomendados = fallback.diasRecomendados,
                                             prefs = prefs,
-                                            actividades = actividadesReales,
-                                            fallbackItinerary = base.itinerario
+                                            actividades = actividadesReales.filter { it.isReal },
+                                            fallbackItinerary = fallback.itinerario
                                         )
                                     }
-                                    val itineraryStrings = itineraryByDay.map { it.summary }
-
-                                    base.copy(
+                                    buildRealProposal(
+                                        context = context,
+                                        fallback = fallback,
+                                        presupuestoTotal = presupuesto,
                                         destinoDisplayName = geo.displayName,
                                         lat = geo.lat,
                                         lon = geo.lon,
                                         hoteles = hoteles,
-                                        hotelMesSeleccionado = hoteles.firstOrNull(),
-                                        apiHotelesOk = hoteles.any { it.isReal },
-                                        actividadesReales = actividadesReales,
-                                        apiActividadesOk = actividadesReales.any { it.isReal },
-                                        itinerario = itineraryStrings,
-                                        itineraryByDay = itineraryByDay,
+                                        actividades = actividadesReales,
                                         vuelos = vuelosOfertas,
-                                        apiVuelosOk = vuelosOfertas.any { it.isReal }
+                                        itineraryByDay = itineraryByDay
                                     )
                                 } else {
-                                    base
+                                    fallback
                                 }
 
                                 PlanResultStore.lastResult = finalPlan
@@ -516,15 +548,16 @@ fun PlanTabScreen(
                     enabled = !isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(54.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                 ) {
                     if (isLoading) {
-                        CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(end = 12.dp))
+                        // simple contextual loading
+                        CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp).padding(end = 8.dp))
                         Text(stringResource(R.string.plan_generating))
                     } else {
-                        Text(stringResource(R.string.plan_generate), fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.plan_generate), fontWeight = FontWeight.SemiBold)
                     }
                 }
 
@@ -597,9 +630,10 @@ private fun DateRowField(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color.White)
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -612,7 +646,9 @@ private fun DateRowField(
             Spacer(Modifier.height(2.dp))
             Text(text = value, fontWeight = FontWeight.SemiBold)
         }
-        TextButton(onClick = onClick) { Text(stringResource(R.string.plan_select)) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = onClick) { Text(stringResource(R.string.plan_select)) }
+        }
     }
 }
 
@@ -630,10 +666,11 @@ private fun DestinationDropdown(
             onValueChange = {},
             readOnly = true,
             label = { Text(stringResource(R.string.plan_destination_input_label)) },
-            trailingIcon = { Text(stringResource(R.string.edit_trip_dropdown)) },
+            trailingIcon = { Text("▾", color = MaterialTheme.colorScheme.onSurfaceVariant) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            // use default colors for compatibility
         )
 
         Box(
@@ -707,8 +744,7 @@ private fun VerticalScrollbar(
 }
 
 /**
- * Generación local (MVP). Todavía no usamos APIs reales, por eso usedFallback=true.
- * Cumple RF-13 / RF-14 de forma estimada.
+ * Generación local de respaldo. Se usa solo cuando no hay datos reales suficientes.
  */
 private fun generateLocalProposal(
     context: android.content.Context,
@@ -804,6 +840,77 @@ private fun generateLocalProposal(
         actividadesPago = actividadesPago,
         usedFallback = true
         // los nuevos campos (destinodisplayname/lat/lon) quedan null por defecto
+    )
+}
+
+private fun buildRealProposal(
+    context: android.content.Context,
+    fallback: PlanResult,
+    presupuestoTotal: Double,
+    destinoDisplayName: String,
+    lat: Double,
+    lon: Double,
+    hoteles: List<Hotel>,
+    actividades: List<SuggestedActivity>,
+    vuelos: List<FlightOffer>,
+    itineraryByDay: List<ItineraryDay>
+): PlanResult {
+    val realHotels = hoteles.filter { it.isReal }
+    val realActivities = actividades.filter { it.isReal }
+    val realFlights = vuelos.filter { it.isReal }
+
+    val hotelSource = if (realHotels.isNotEmpty()) realHotels else hoteles
+    val activitySource = if (realActivities.isNotEmpty()) realActivities else actividades
+    val flightSource = if (realFlights.isNotEmpty()) realFlights else vuelos
+
+    val tripNights = countTripNights(fallback.fechaInicioMillis, fallback.fechaFinMillis)
+
+    val selectedHotel = hotelSource.minByOrNull {
+        it.totalPrice ?: (it.pricePerNight * tripNights.toDouble())
+    }
+    val selectedFlight = flightSource.minByOrNull { it.price }
+    val paidActivities = activitySource
+        .filterNot { it.isFree }
+        .sortedWith(compareBy<SuggestedActivity> { it.price }.thenBy { it.name })
+        .take(maxOf(1, itineraryByDay.size))
+
+    val transportBudget = selectedFlight?.price ?: fallback.presupuestoCategorias[
+        context.getString(R.string.plan_local_budget_transport)
+    ] ?: 0.0
+    val lodgingBudget = selectedHotel?.totalPrice
+        ?: selectedHotel?.pricePerNight?.times(tripNights.toDouble())
+        ?: fallback.presupuestoCategorias[context.getString(R.string.plan_local_budget_lodging)]
+        ?: 0.0
+    val activitiesBudget = if (paidActivities.isNotEmpty()) {
+        paidActivities.sumOf { it.price }
+    } else {
+        fallback.presupuestoCategorias[context.getString(R.string.plan_local_budget_activities)] ?: 0.0
+    }
+    val mealsBudget = (presupuestoTotal - transportBudget - lodgingBudget - activitiesBudget)
+        .coerceAtLeast(0.0)
+
+    return fallback.copy(
+        destinoDisplayName = destinoDisplayName,
+        lat = lat,
+        lon = lon,
+        hoteles = hotelSource,
+        hotelMesSeleccionado = selectedHotel,
+        apiHotelesOk = realHotels.isNotEmpty(),
+        actividadesReales = activitySource,
+        apiActividadesOk = realActivities.isNotEmpty(),
+        itinerario = itineraryByDay.map { it.summary },
+        itineraryByDay = itineraryByDay,
+        actividadesGratis = activitySource.filter { it.isFree }.map { it.name }.distinct(),
+        actividadesPago = paidActivities.map { it.name }.distinct(),
+        presupuestoCategorias = linkedMapOf(
+            context.getString(R.string.plan_local_budget_transport) to transportBudget,
+            context.getString(R.string.plan_local_budget_lodging) to lodgingBudget,
+            context.getString(R.string.plan_local_budget_meals) to mealsBudget,
+            context.getString(R.string.plan_local_budget_activities) to activitiesBudget
+        ),
+        vuelos = flightSource,
+        apiVuelosOk = realFlights.isNotEmpty(),
+        usedFallback = !(realHotels.isNotEmpty() && realActivities.isNotEmpty() && realFlights.isNotEmpty())
     )
 }
 

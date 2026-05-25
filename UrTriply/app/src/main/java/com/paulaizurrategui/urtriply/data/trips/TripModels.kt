@@ -26,6 +26,7 @@ data class TripDoc(
     val itinerario: List<String> = emptyList(),
     val itineraryByDay: List<ItineraryDay> = emptyList(),
     val usedFallback: Boolean = true, // true si hemos tirado de estimaciones
+    val propuestaGenerada: String? = null,
 
     // estado + timestamps
     val status: String = TripStatus.DRAFT.name,
@@ -53,6 +54,7 @@ fun tripDocFromPlanResult(
     itinerario = plan.itinerario,
     itineraryByDay = plan.itineraryByDay,
     usedFallback = plan.usedFallback,
+    propuestaGenerada = plan.itinerario.joinToString("\n"),
     status = status.name
     // createdat/publishedat se setean donde se guarda (repositorio/vm)
 )

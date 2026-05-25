@@ -53,6 +53,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.ui.theme.UrCream
@@ -76,14 +77,16 @@ private data class DestinationOption(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditTripScreen(
-    tripId: String,
+    tripId: String? = null,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val isCreating = tripId.isNullOrBlank()
 
     // firestore
     val db = remember { FirebaseFirestore.getInstance() }
     val trips = remember { db.collection("trips") }
+    val currentUser = FirebaseAuth.getInstance().currentUser
 
     // mismos destinos que planificar
     val destinos = listOf(
@@ -110,7 +113,7 @@ fun EditTripScreen(
     // estado de ui
     var showStartPicker by remember { mutableStateOf(false) }
     var showEndPicker by remember { mutableStateOf(false) }
-    var loading by remember { mutableStateOf(true) }
+    var loading by remember { mutableStateOf(!isCreating) }
     var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var localError by remember { mutableStateOf<String?>(null) }
@@ -127,31 +130,33 @@ fun EditTripScreen(
     // scroll para pantallas pequeñas
     val scrollState = rememberScrollState()
 
-    // 1) cargar viaje al abrir
+    // 1) cargar viaje al abrir solo si es edición
     LaunchedEffect(tripId) {
+        if (isCreating) {
+            loading = false
+            error = null
+            localError = null
+            return@LaunchedEffect
+        }
+
         loading = true
         error = null
         localError = null
 
-        trips.document(tripId).get()
+        trips.document(tripId!!).get()
             .addOnSuccessListener { doc ->
-                // destino guardado
                 destino = doc.getString("destino") ?: destino
 
-                // presupuesto (compatibilidad: presupuestoTotal o presupuesto)
                 val presupuesto = doc.getDouble("presupuestoTotal")
                     ?: doc.getDouble("presupuesto")
                 presupuestoText = presupuesto?.toString() ?: ""
 
-                // viajeros
                 val viajeros = doc.getLong("viajeros") ?: 1L
                 viajerosText = viajeros.toString()
 
-                // fechas en millis
                 fechaInicioMillis = doc.getLong("fechaInicioMillis")
                 fechaFinMillis = doc.getLong("fechaFinMillis")
 
-                // preferencias guardadas como list<string> (name del enum)
                 val prefStrings =
                     (doc.get("prefs") as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
 
@@ -194,7 +199,7 @@ fun EditTripScreen(
 
                     // titulo
                     Text(
-                        text = stringResource(R.string.edit_trip_title),
+                        text = if (isCreating) stringResource(R.string.edit_trip_new_title) else stringResource(R.string.edit_trip_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold
                     )
@@ -210,12 +215,12 @@ fun EditTripScreen(
                     ) {
                         Column(Modifier.padding(14.dp)) {
                             Text(
-                                text = stringResource(R.string.edit_trip_intro_title),
+                                text = if (isCreating) stringResource(R.string.edit_trip_new_intro_title) else stringResource(R.string.edit_trip_intro_title),
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                text = stringResource(R.string.edit_trip_intro_body),
+                                text = if (isCreating) stringResource(R.string.edit_trip_new_intro_body) else stringResource(R.string.edit_trip_intro_body),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -421,26 +426,48 @@ fun EditTripScreen(
                             saving = true
 
                             // mapa de update (solo campos editables)
-                            val updateMap = mapOf(
+                            val saveMap = mapOf(
                                 "destino" to destino,
                                 "presupuestoTotal" to presupuesto,
                                 "viajeros" to viajeros,
                                 "fechaInicioMillis" to fechaInicioMillis,
                                 "fechaFinMillis" to fechaFinMillis,
-                                "prefs" to prefs.map { it.name } // list<string>
+                                "prefs" to prefs.map { it.name }, // list<string>
+                                "status" to com.paulaizurrategui.urtriply.data.trips.TripStatus.DRAFT.name,
+                                "authorUid" to (currentUser?.uid ?: ""),
+                                "authorEmail" to (currentUser?.email ?: ""),
+                                "diasRecomendados" to 0,
+                                "presupuestoCategorias" to emptyMap<String, Double>(),
+                                "itinerario" to emptyList<String>(),
+                                "itineraryByDay" to emptyList<ItineraryDay>(),
+                                "usedFallback" to false,
+                                "hoteles" to emptyList<Any>(),
+                                "actividadesReales" to emptyList<Any>(),
+                                "vuelos" to emptyList<Any>()
                             )
 
-                            // update en firestore
-                            trips.document(tripId)
-                                .update(updateMap)
-                                .addOnSuccessListener {
-                                    saving = false
-                                    onBack()
-                                }
-                                .addOnFailureListener { e ->
-                                    saving = false
-                                    error = e.message ?: context.getString(R.string.edit_trip_save_error)
-                                }
+                            if (isCreating) {
+                                trips.add(saveMap)
+                                    .addOnSuccessListener {
+                                        saving = false
+                                        onBack()
+                                    }
+                                    .addOnFailureListener { e ->
+                                        saving = false
+                                        error = e.message ?: context.getString(R.string.edit_trip_save_error)
+                                    }
+                            } else {
+                                trips.document(tripId!!)
+                                    .update(saveMap)
+                                    .addOnSuccessListener {
+                                        saving = false
+                                        onBack()
+                                    }
+                                    .addOnFailureListener { e ->
+                                        saving = false
+                                        error = e.message ?: context.getString(R.string.edit_trip_save_error)
+                                    }
+                            }
                         },
                         enabled = !saving,
                         modifier = Modifier
@@ -455,7 +482,10 @@ fun EditTripScreen(
                             Spacer(Modifier.size(12.dp))
                             Text(stringResource(R.string.edit_trip_saving), fontWeight = FontWeight.Bold)
                         } else {
-                            Text(stringResource(R.string.edit_trip_save_changes), fontWeight = FontWeight.Bold)
+                            Text(
+                                text = if (isCreating) stringResource(R.string.edit_trip_create_trip) else stringResource(R.string.edit_trip_save_changes),
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
 

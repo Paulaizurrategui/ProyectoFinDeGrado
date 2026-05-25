@@ -27,6 +27,8 @@
     <string name="home_quick_access">Accesos rápidos</string>
     <string name="home_profile_title">Mi perfil</string>
     <string name="home_plan_description">Genera una propuesta ajustada a tu presupuesto</string>
+    <string name="home_manual_trip">Borrador de viaje</string>
+    <string name="home_manual_trip_description">Crea un borrador editable con destino, presupuesto, fechas y preferencias</string>
     <string name="home_community_description">Mira las publicaciones de tus amigos</string>
     <string name="home_profile_description">Tus viajes, likes y guardados</string>
     <string name="home_guest_explore">Explora sin cuenta</string>
@@ -329,6 +331,8 @@
     <string name="admin_description">Descripción: %1$s</string>
     <string name="admin_target_id">Target ID: %1$s</string>
     <string name="admin_delete">Eliminar</string>
+    <string name="admin_delete_post">Ocultar/Borrar post</string>
+    <string name="admin_delete_comment">Borrar comentario</string>
     <string name="admin_resolve">Resolver</string>
     <string name="admin_block">Bloquear</string>
     <string name="admin_resolve_report_title">Resolver reporte</string>
@@ -336,9 +340,12 @@
     <string name="admin_notes_optional">Notas (opcional)</string>
     <string name="admin_confirm">Confirmar</string>
     <string name="admin_cancel">Cancelar</string>
-    <string name="admin_delete_confirm_title">Eliminar contenido</string>
-    <string name="admin_delete_confirm_body">¿Eliminar el contenido reportado? Esta acción no se puede deshacer.</string>
-    <string name="admin_delete_confirm_button">Eliminar</string>
+    <string name="admin_delete_post_confirm_title">Eliminar post</string>
+    <string name="admin_delete_post_confirm_body">¿Ocultar o borrar el post reportado? Esta acción no se puede deshacer.</string>
+    <string name="admin_delete_post_confirm_button">Borrar post</string>
+    <string name="admin_delete_comment_confirm_title">Eliminar comentario</string>
+    <string name="admin_delete_comment_confirm_body">¿Eliminar el comentario reportado? Esta acción no se puede deshacer.</string>
+    <string name="admin_delete_comment_confirm_button">Borrar comentario</string>
 
     <!-- Edit Trip -->
     <string name="edit_trip_back">← Volver</string>
@@ -391,6 +398,8 @@
     <string name="plan_dest_prague">Praga (República Checa)</string>
     <string name="plan_dest_vienna">Viena (Austria)</string>
     <string name="plan_dest_dublin">Dublín (Irlanda)</string>
+    <string name="plan_header_subtitle">Planifica tu próxima aventura</string>
+    <string name="plan_route_outbound_short">%1$s → %2$s</string>
     <string name="plan_pref_culture">Cultura</string>
     <string name="plan_pref_night">Ocio nocturno</string>
     <string name="plan_pref_nature">Naturaleza</string>
@@ -462,9 +471,10 @@
     <string name="plan_result_published">Ya publicado</string>
     <string name="plan_result_trip_title">Viaje a %1$s</string>
     <string name="plan_result_api_ok">api ok: %1$s (%2$.6f, %3$.6f)</string>
-    <string name="plan_result_api_fallback">api: sin datos (fallback)</string>
+    <string name="plan_result_api_fallback">Algunos datos no han podido obtenerse de las APIs, así que se han usado valores de respaldo estimados.</string>
     <string name="plan_result_duration">Duración recomendada: %1$d días</string>
     <string name="plan_result_pricing_note">Precios estimados. Pueden variar según fechas, disponibilidad y proveedor. Verifica siempre el enlace antes de reservar.</string>
+    <string name="plan_result_legal_notice">Los precios son orientativos y pueden variar. La compra o reserva se completa en el proveedor externo.</string>
     <string name="plan_result_section_activities">Actividades recomendadas reales</string>
     <string name="plan_result_section_itinerary">Itinerario por días</string>
     <string name="plan_result_day_label">Día %1$d</string>
@@ -477,6 +487,7 @@
     <string name="plan_result_no_activities">No hay actividades reales disponibles para este destino.</string>
     <string name="plan_result_no_flights">No hay ofertas de vuelo reales para este destino.</string>
     <string name="plan_result_real_data">Datos reales</string>
+    <string name="plan_result_fallback_data">Resultado de fallback</string>
     <string name="plan_result_price_per_night">€%1$s / noche</string>
     <string name="plan_result_link">Ver enlace</string>
     <string name="plan_result_reservation_link">Ver enlace de reserva</string>
@@ -485,6 +496,7 @@
     <string name="plan_result_empty_dash">—</string>
     <string name="plan_result_stars">%1$d estrellas</string>
     <string name="plan_result_total_estimated">Total estimado: €%1$.0f</string>
+    <string name="plan_result_total_real">Total real: €%1$.0f</string>
     <string name="plan_result_activity_price">€ %1$s</string>
     <string name="plan_result_activity_price_free">Gratis</string>
     <string name="plan_result_flight_departure">Salida: %1$s %2$s</string>
@@ -520,6 +532,10 @@
     <string name="edit_trip_title">Editar viaje</string>
     <string name="edit_trip_intro_title">Actualiza los datos del viaje</string>
     <string name="edit_trip_intro_body">Puedes editar destino, presupuesto, fechas y preferencias.</string>
+    <string name="edit_trip_new_title">Nuevo borrador</string>
+    <string name="edit_trip_new_intro_title">Crea un borrador de viaje</string>
+    <string name="edit_trip_new_intro_body">Rellena destino, presupuesto, fechas y preferencias para guardarlo y editarlo más tarde.</string>
+    <string name="edit_trip_create_trip">Guardar borrador</string>
     <string name="edit_trip_field_destination">Destino</string>
     <string name="edit_trip_field_budget">Presupuesto</string>
     <string name="edit_trip_field_travelers">Viajeros</string>
@@ -534,7 +550,6 @@
     <string name="edit_trip_error_dates_required">Selecciona fecha de inicio y fin.</string>
     <string name="edit_trip_error_dates_order">La fecha fin no puede ser anterior a la fecha inicio.</string>
     <string name="edit_trip_error_prefs_required">Selecciona al menos una preferencia.</string>
-
     <!-- Public Profile -->
     <string name="public_profile_trip_summary">%1$d días • %2$d%3$s</string>
 

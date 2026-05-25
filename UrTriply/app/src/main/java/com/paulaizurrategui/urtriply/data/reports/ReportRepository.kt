@@ -243,11 +243,12 @@ class ReportRepository {
         onSuccess: (Boolean) -> Unit,
         onError: (Exception) -> Unit
     ) {
-        db.collection("blocks")
+        db.collection("users")
             .document(userUid)
             .get()
             .addOnSuccessListener { doc ->
-                onSuccess(doc.exists())
+                val blockedByUserIds = doc.get("blockedByUserIds") as? List<*>
+                onSuccess(!blockedByUserIds.isNullOrEmpty())
             }
             .addOnFailureListener { e ->
                 onError(e)

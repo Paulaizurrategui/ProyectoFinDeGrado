@@ -328,6 +328,8 @@
     <string name="admin_description">Description: %1$s</string>
     <string name="admin_target_id">Target ID: %1$s</string>
     <string name="admin_delete">Delete</string>
+    <string name="admin_delete_post">Hide/Delete post</string>
+    <string name="admin_delete_comment">Delete comment</string>
     <string name="admin_resolve">Resolve</string>
     <string name="admin_block">Block</string>
     <string name="admin_resolve_report_title">Resolve report</string>
@@ -335,9 +337,12 @@
     <string name="admin_notes_optional">Notes (optional)</string>
     <string name="admin_confirm">Confirm</string>
     <string name="admin_cancel">Cancel</string>
-    <string name="admin_delete_confirm_title">Delete content</string>
-    <string name="admin_delete_confirm_body">Delete the reported content? This action cannot be undone.</string>
-    <string name="admin_delete_confirm_button">Delete</string>
+    <string name="admin_delete_post_confirm_title">Delete post</string>
+    <string name="admin_delete_post_confirm_body">Hide or delete the reported post? This action cannot be undone.</string>
+    <string name="admin_delete_post_confirm_button">Delete post</string>
+    <string name="admin_delete_comment_confirm_title">Delete comment</string>
+    <string name="admin_delete_comment_confirm_body">Delete the reported comment? This action cannot be undone.</string>
+    <string name="admin_delete_comment_confirm_button">Delete comment</string>
 
     <!-- Edit Trip -->
     <string name="edit_trip_back">← Back</string>
@@ -420,7 +425,7 @@
     <string name="plan_result_published">Already published</string>
     <string name="plan_result_trip_title">Trip to %1$s</string>
     <string name="plan_result_api_ok">api ok: %1$s (%2$.6f, %3$.6f)</string>
-    <string name="plan_result_api_fallback">api: no data (fallback)</string>
+    <string name="plan_result_api_fallback">Some data could not be fetched from the APIs, so estimated fallback values were used.</string>
     <string name="plan_result_duration">Recommended duration: %1$d days</string>
     <string name="plan_result_pricing_note">Estimated prices. They may vary depending on dates, availability and provider. Always check the link before booking.</string>
     <string name="plan_result_section_activities">Real recommended activities</string>
@@ -433,6 +438,7 @@
     <string name="plan_result_no_itinerary">No itinerary.</string>
     <string name="plan_result_no_hotels">No real lodging available for this destination.</string>
     <string name="plan_result_real_data">Real data</string>
+    <string name="plan_result_fallback_data">Fallback result</string>
     <string name="plan_result_link">View link</string>
     <string name="plan_result_reservation_link">View reservation link</string>
     <string name="plan_result_free_label">Free</string>
@@ -440,6 +446,7 @@
     <string name="plan_result_empty_dash">—</string>
     <string name="plan_result_stars">%1$d stars</string>
     <string name="plan_result_total_estimated">Estimated total: €%1$.0f</string>
+    <string name="plan_result_total_real">Real total: €%1$.0f</string>
     <string name="plan_result_activity_price">€ %1$s</string>
     <string name="plan_result_activity_price_free">Free</string>
     <string name="plan_result_flight_departure">Departure: %1$s %2$s</string>

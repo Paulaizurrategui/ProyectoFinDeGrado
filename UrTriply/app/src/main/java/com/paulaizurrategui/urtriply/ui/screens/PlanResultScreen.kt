@@ -15,6 +15,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -244,17 +246,32 @@ fun PlanResultScreen(
                             )
                             Spacer(Modifier.height(6.dp))
 
-                            // debug para comprobar api (si no quieres esto luego, lo quitas)
-                            if (r.destinoDisplayName != null && r.lat != null && r.lon != null) {
+                            if (r.usedFallback || !r.apiHotelesOk || !r.apiActividadesOk || !r.apiVuelosOk) {
+                                ElevatedCard(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.elevatedCardColors(
+                                        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.55f)
+                                    )
+                                ) {
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        Text(
+                                            text = stringResource(R.string.plan_result_warning_title),
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                                        )
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(
+                                            text = stringResource(R.string.plan_result_api_fallback),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                                        )
+                                    }
+                                }
+                            } else if (r.destinoDisplayName != null && r.lat != null && r.lon != null) {
                                 Text(
                                     text = stringResource(R.string.plan_result_api_ok, r.destinoDisplayName ?: "", r.lat ?: 0.0, r.lon ?: 0.0),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(Modifier.height(6.dp))
-                            } else {
-                                Text(
-                                    text = stringResource(R.string.plan_result_api_fallback),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -277,7 +294,11 @@ fun PlanResultScreen(
                                 )
                             ) {
                                 Text(
-                                    text = stringResource(R.string.plan_result_pricing_note),
+                                    text = if (r.usedFallback || !r.apiHotelesOk || !r.apiActividadesOk || !r.apiVuelosOk) {
+                                        stringResource(R.string.plan_result_pricing_note)
+                                    } else {
+                                        stringResource(R.string.plan_result_real_data)
+                                    },
                                     modifier = Modifier.padding(14.dp),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onTertiaryContainer
@@ -285,6 +306,20 @@ fun PlanResultScreen(
                             }
 
                             Spacer(Modifier.height(12.dp))
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.plan_result_legal_notice),
+                                        modifier = Modifier.padding(12.dp),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                                Spacer(Modifier.height(10.dp))
 
                             SectionTitle(stringResource(R.string.plan_result_section_itinerary))
                             Spacer(Modifier.height(8.dp))
@@ -528,9 +563,7 @@ private fun HotelsBlock(
     apiHotelesOk: Boolean,
     onOpenUrl: (String) -> Unit
 ) {
-    val realHotels = hoteles.filter { it.isReal }
-
-    if (realHotels.isEmpty()) {
+    if (hoteles.isEmpty()) {
         Text(
             text = stringResource(R.string.plan_result_no_hotels),
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -539,7 +572,7 @@ private fun HotelsBlock(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        realHotels.forEach { hotel ->
+        hoteles.forEach { hotel ->
             HotelCard(hotel = hotel, onOpenUrl = onOpenUrl)
         }
     }
@@ -551,9 +584,7 @@ private fun RealActivitiesBlock(
     apiOk: Boolean,
     onOpenUrl: (String) -> Unit
 ) {
-    val realActivities = activities.filter { it.isReal }
-
-    if (realActivities.isEmpty()) {
+    if (activities.isEmpty()) {
         Text(
             text = stringResource(R.string.plan_result_no_activities),
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -562,7 +593,7 @@ private fun RealActivitiesBlock(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        realActivities.forEach { activity ->
+        activities.forEach { activity ->
             ActivityCard(activity = activity, onOpenUrl = onOpenUrl)
         }
     }
@@ -599,11 +630,7 @@ private fun ActivityCard(activity: SuggestedActivity, onOpenUrl: (String) -> Uni
                 color = MaterialTheme.colorScheme.primary
             )
 
-            Text(
-                text = stringResource(R.string.plan_result_real_data),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            SourceLabel(isReal = activity.isReal)
 
             val bookingUrl = activity.bookingUrl
             if (!bookingUrl.isNullOrBlank()) {
@@ -659,15 +686,15 @@ private fun HotelCard(hotel: Hotel, onOpenUrl: (String) -> Unit) {
                 )
             }
 
-            Text(
-                text = stringResource(R.string.plan_result_real_data),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            SourceLabel(isReal = hotel.isReal)
 
             if (hotel.totalPrice != null) {
                 Text(
-                    text = stringResource(R.string.plan_result_total_estimated, hotel.totalPrice ?: 0.0),
+                    text = if (hotel.isReal) {
+                        stringResource(R.string.plan_result_total_real, hotel.totalPrice ?: 0.0)
+                    } else {
+                        stringResource(R.string.plan_result_total_estimated, hotel.totalPrice ?: 0.0)
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -733,7 +760,7 @@ private fun FlightCard(flight: com.paulaizurrategui.urtriply.domain.model.Flight
 
             Text(text = stringResource(R.string.plan_result_flight_price, flight.currency, String.format("%.2f", flight.price)), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
 
-            Text(text = stringResource(R.string.plan_result_real_data), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            SourceLabel(isReal = flight.isReal)
 
             val bookingUrl = flight.bookingUrl
             if (!bookingUrl.isNullOrBlank()) {
@@ -743,8 +770,44 @@ private fun FlightCard(flight: com.paulaizurrategui.urtriply.domain.model.Flight
                     Text(stringResource(R.string.plan_result_flight_book))
                 }
             }
+
         }
     }
+}
+
+@Composable
+private fun SourceLabel(isReal: Boolean) {
+    AssistChip(
+        onClick = { },
+        enabled = false,
+        label = {
+            Text(
+                text = if (isReal) {
+                    stringResource(R.string.plan_result_real_data)
+                } else {
+                    stringResource(R.string.plan_result_fallback_data)
+                },
+                style = MaterialTheme.typography.labelMedium
+            )
+        },
+        colors = AssistChipDefaults.assistChipColors(
+            disabledContainerColor = if (isReal) {
+                UrOrange.copy(alpha = 0.12f)
+            } else {
+                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f)
+            },
+            disabledLabelColor = if (isReal) {
+                UrOrange
+            } else {
+                MaterialTheme.colorScheme.onErrorContainer
+            },
+            disabledLeadingIconContentColor = if (isReal) {
+                UrOrange
+            } else {
+                MaterialTheme.colorScheme.onErrorContainer
+            }
+        )
+    )
 }
 
 /**

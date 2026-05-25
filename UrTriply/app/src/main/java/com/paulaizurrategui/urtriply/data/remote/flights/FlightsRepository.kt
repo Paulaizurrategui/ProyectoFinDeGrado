@@ -15,6 +15,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
 class FlightsRepository() {
     companion object {
@@ -101,9 +102,9 @@ class FlightsRepository() {
                 Log.w(TAG, "Travelpayouts nearby places failed: ${e.message}")
             }
 
-            // 4) No inventamos precios: devolvemos vacío si no hay datos reales.
-            Log.w(TAG, "No real flight offers found for $originCode -> $destinationCode")
-            emptyList()
+            // 4) Fallback local: si no hay vuelos reales, devolvemos ofertas estimadas para no romper la propuesta.
+            Log.w(TAG, "No real flight offers found for $originCode -> $destinationCode, using fallback offers")
+            buildFallbackFlights(originCode, destinationCode, departureDate, returnDate, limit)
         }
     }
 
@@ -357,5 +358,74 @@ class FlightsRepository() {
     private suspend fun convertPriceToEur(price: Double, currency: String): Double {
         if (currency.equals("EUR", ignoreCase = true)) return price
         return currencyRepo.convertToEur(price, currency)
+    }
+
+    private fun buildFallbackFlights(
+        origin: String,
+        destination: String,
+        dateFrom: String,
+        dateTo: String?,
+        limit: Int
+    ): List<FlightOffer> {
+        val routeFactor = estimateRouteFactor(origin, destination)
+        val basePrice = (routeFactor * 85.0).coerceAtLeast(90.0)
+        val durationMinutes = estimateDurationMinutes(origin, destination)
+        val returnDate = dateTo.takeIf { !it.isNullOrBlank() }
+
+        return listOf(
+            FlightOffer(
+                id = "fallback_flight_1",
+                origin = origin,
+                destination = destination,
+                departureDate = dateFrom,
+                returnDate = returnDate,
+                price = basePrice,
+                currency = "EUR",
+                durationMinutes = durationMinutes,
+                carrier = "Fallback Air",
+                bookingUrl = null,
+                isReal = false
+            ),
+            FlightOffer(
+                id = "fallback_flight_2",
+                origin = origin,
+                destination = destination,
+                departureDate = dateFrom,
+                returnDate = returnDate,
+                price = (basePrice * 1.18).coerceAtLeast(basePrice + 35.0),
+                currency = "EUR",
+                durationMinutes = (durationMinutes * 1.05).toInt(),
+                carrier = "Fallback Connect",
+                bookingUrl = null,
+                isReal = false
+            ),
+            FlightOffer(
+                id = "fallback_flight_3",
+                origin = origin,
+                destination = destination,
+                departureDate = dateFrom,
+                returnDate = returnDate,
+                price = (basePrice * 1.35).coerceAtLeast(basePrice + 60.0),
+                currency = "EUR",
+                durationMinutes = (durationMinutes * 1.15).toInt(),
+                carrier = "Fallback Express",
+                bookingUrl = null,
+                isReal = false
+            )
+        ).take(limit)
+    }
+
+    private fun estimateRouteFactor(origin: String, destination: String): Double {
+        val originSeed = abs(origin.filter(Char::isLetter).uppercase(Locale.getDefault()).hashCode())
+        val destinationSeed = abs(destination.filter(Char::isLetter).uppercase(Locale.getDefault()).hashCode())
+        val combined = abs(originSeed xor destinationSeed)
+        return 1.0 + (combined % 5) * 0.35
+    }
+
+    private fun estimateDurationMinutes(origin: String, destination: String): Int {
+        val originSeed = abs(origin.filter(Char::isLetter).uppercase(Locale.getDefault()).hashCode())
+        val destinationSeed = abs(destination.filter(Char::isLetter).uppercase(Locale.getDefault()).hashCode())
+        val combined = abs(originSeed + destinationSeed)
+        return 90 + (combined % 7) * 65
     }
 }
