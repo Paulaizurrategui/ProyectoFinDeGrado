@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -24,6 +25,10 @@ fun WelcomeScreen(
     onGoRegister: () -> Unit,
     onContinueGuest: () -> Unit
 ) {
+    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val mainTextColor = MaterialTheme.colorScheme.onSurface
+    val secondaryTextColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurfaceVariant else UrTextMuted
+
     UrTriplyGradientScaffold(
         title = "",
         showHeader = true,
@@ -38,9 +43,9 @@ fun WelcomeScreen(
             Text(
                 text = stringResource(R.string.slogan),
                 style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                color = secondaryTextColor,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -75,6 +80,7 @@ fun WelcomeScreen(
                     Text(
                         stringResource(R.string.welcome_guest),
                         fontWeight = FontWeight.Bold,
+                        color = mainTextColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -109,6 +115,7 @@ fun WelcomeScreen(
                     Text(
                         stringResource(R.string.welcome_register),
                         fontWeight = FontWeight.Bold,
+                        color = mainTextColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -130,7 +137,7 @@ fun WelcomeScreen(
             Text(
                 text = stringResource(R.string.welcome_guest_note),
                 style = MaterialTheme.typography.bodySmall,
-                color = UrTextMuted
+                color = secondaryTextColor
             )
         }
     }

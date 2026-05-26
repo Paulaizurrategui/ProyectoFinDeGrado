@@ -3,6 +3,7 @@ package com.paulaizurrategui.urtriply.ui.screens
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -142,51 +143,102 @@ fun PlanResultScreen(
                         .background(MaterialTheme.colorScheme.surface)
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                if (isGuest) onRequireLogin()
-                                else vm.saveDraft(r)
-                            },
-                            enabled = !uiState.isSaving && !isPublished,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text(
-                                text = when {
-                                    uiState.isSaving -> stringResource(R.string.plan_result_saving)
-                                    isPublished -> stringResource(R.string.plan_result_saved)
-                                    else -> stringResource(R.string.trip_save_draft)
-                                },
-                                maxLines = 1,
-                                fontSize = 12.sp,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                        val compactLayout = maxWidth < 360.dp
 
-                        Button(
-                            onClick = {
-                                if (isGuest) onRequireLogin()
-                                else vm.publish(r)
-                            },
-                            enabled = !uiState.isSaving && !isPublished,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(16.dp),
-                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp)
-                        ) {
-                            Text(
-                                when {
-                                    uiState.isSaving -> stringResource(R.string.plan_result_publishing)
-                                    isPublished -> stringResource(R.string.plan_result_published)
-                                    else -> stringResource(R.string.trip_publish)
-                                },
-                                fontWeight = FontWeight.Bold
-                                ,maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                        if (compactLayout) {
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                OutlinedButton(
+                                    onClick = {
+                                        if (isGuest) onRequireLogin()
+                                        else vm.saveDraft(r)
+                                    },
+                                    enabled = !uiState.isSaving && !isPublished,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Text(
+                                        text = when {
+                                            uiState.isSaving -> stringResource(R.string.plan_result_saving)
+                                            isPublished -> stringResource(R.string.plan_result_saved)
+                                            else -> stringResource(R.string.trip_save_draft)
+                                        },
+                                        maxLines = 1,
+                                        fontSize = 13.sp,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        if (isGuest) onRequireLogin()
+                                        else vm.publish(r)
+                                    },
+                                    enabled = !uiState.isSaving && !isPublished,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp)
+                                ) {
+                                    Text(
+                                        when {
+                                            uiState.isSaving -> stringResource(R.string.plan_result_publishing)
+                                            isPublished -> stringResource(R.string.plan_result_published)
+                                            else -> stringResource(R.string.trip_publish)
+                                        },
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        if (isGuest) onRequireLogin()
+                                        else vm.saveDraft(r)
+                                    },
+                                    enabled = !uiState.isSaving && !isPublished,
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Text(
+                                        text = when {
+                                            uiState.isSaving -> stringResource(R.string.plan_result_saving)
+                                            isPublished -> stringResource(R.string.plan_result_saved)
+                                            else -> stringResource(R.string.trip_save_draft)
+                                        },
+                                        maxLines = 1,
+                                        fontSize = 12.sp,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        if (isGuest) onRequireLogin()
+                                        else vm.publish(r)
+                                    },
+                                    enabled = !uiState.isSaving && !isPublished,
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(16.dp),
+                                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp)
+                                ) {
+                                    Text(
+                                        when {
+                                            uiState.isSaving -> stringResource(R.string.plan_result_publishing)
+                                            isPublished -> stringResource(R.string.plan_result_published)
+                                            else -> stringResource(R.string.trip_publish)
+                                        },
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
                         }
                     }
 

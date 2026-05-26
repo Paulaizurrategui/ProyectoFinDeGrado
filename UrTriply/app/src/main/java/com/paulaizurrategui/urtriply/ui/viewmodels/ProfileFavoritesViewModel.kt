@@ -34,6 +34,17 @@ class ProfileFavoritesViewModel : ViewModel() {
     private val _likesLoading = MutableStateFlow(false)
     val likesLoading: StateFlow<Boolean> = _likesLoading
 
+    fun clearListeners() {
+        likesListener?.remove()
+        favoritesListener?.remove()
+        likesListener = null
+        favoritesListener = null
+        likesGeneration++
+        favoritesGeneration++
+        _likesLoading.value = false
+        _favoritesLoading.value = false
+    }
+
     fun loadFavorites() {
         val uid = auth.currentUser?.uid ?: return
 
@@ -162,8 +173,7 @@ class ProfileFavoritesViewModel : ViewModel() {
     }
 
     override fun onCleared() {
-        likesListener?.remove()
-        favoritesListener?.remove()
+        clearListeners()
         super.onCleared()
     }
 }

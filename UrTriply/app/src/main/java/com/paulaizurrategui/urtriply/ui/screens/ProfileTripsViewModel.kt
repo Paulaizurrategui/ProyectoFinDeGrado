@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Query
 import com.paulaizurrategui.urtriply.data.trips.TripStatus
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +37,13 @@ class ProfileTripsViewModel(
     private val _uiState = MutableStateFlow(ProfileTripsUiState(isLoading = true))
     val uiState: StateFlow<ProfileTripsUiState> = _uiState
 
+    fun clearListeners() {
+        draftsListener?.remove()
+        publishedListener?.remove()
+        draftsListener = null
+        publishedListener = null
+    }
+
     fun loadMyTrips() {
         val uid = auth.currentUser?.uid ?: run {
             _uiState.value = ProfileTripsUiState(
@@ -46,10 +54,7 @@ class ProfileTripsViewModel(
         }
 
         // Remove existing listeners if any
-        draftsListener?.remove()
-        publishedListener?.remove()
-        draftsListener = null
-        publishedListener = null
+        clearListeners()
 
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
@@ -60,6 +65,11 @@ class ProfileTripsViewModel(
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapDrafts, e ->
                 if (e != null) {
+                    if (e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED &&
+                        auth.currentUser == null
+                    ) {
+                        return@addSnapshotListener
+                    }
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         errorMessage = e.message ?: "Error cargando borradores."
@@ -92,6 +102,11 @@ class ProfileTripsViewModel(
             .orderBy("publishedAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapPublished, e ->
                 if (e != null) {
+                    if (e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED &&
+                        auth.currentUser == null
+                    ) {
+                        return@addSnapshotListener
+                    }
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         errorMessage = e.message ?: "Error cargando publicaciones."
@@ -177,8 +192,7 @@ class ProfileTripsViewModel(
     }
 
     override fun onCleared() {
-        draftsListener?.remove()
-        publishedListener?.remove()
+        clearListeners()
         super.onCleared()
     }
 }

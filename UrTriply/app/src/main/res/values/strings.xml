@@ -106,7 +106,7 @@
     <string name="profile_panel_admin_subtitle">Gestionar reportes y usuarios</string>
     <string name="profile_account">Mi cuenta</string>
 
-    <string name="profile_edit_profile">Editar perfil</string>
+    <string name="profile_edit_profile">Editar</string>
     <string name="profile_friends_title">Amigos</string>
     <string name="profile_friends_subtitle">Personas a las que sigues</string>
     <string name="profile_theme_text">Modo Oscuro / Modo Claro</string>
@@ -170,7 +170,7 @@
 
     <!-- Profile -->
     <string name="profile_my_account">Mi cuenta</string>
-    <string name="profile_edit">Editar perfil</string>
+    <string name="profile_edit">Editar</string>
     <string name="profile_my_trips">Mis viajes</string>
     <string name="profile_my_favorites">Mis favoritos</string>
     <string name="profile_my_likes">Mis me gusta</string>
@@ -204,7 +204,7 @@
     <string name="profile_logout_title">Cerrar sesión</string>
     <string name="profile_logout_body">Saldrás de tu cuenta en este dispositivo</string>
     <string name="profile_logout_action">Salir</string>
-    <string name="profile_edit_button">Editar perfil</string>
+    <string name="profile_edit_button">Editar</string>
     <string name="profile_more">Ver más</string>
 
     <!-- Post Detail -->
@@ -292,7 +292,7 @@
     <string name="friends_follow">Seguir</string>
 
     <!-- Edit Profile -->
-    <string name="edit_profile_title">Editar perfil</string>
+    <string name="edit_profile_title">Editar</string>
     <string name="edit_profile_saving">Guardando…</string>
     <string name="edit_profile_save">Guardar</string>
     <string name="edit_profile_back">← Volver</string>
@@ -529,7 +529,7 @@
     <string name="plan_result_share_generated_with">Generado con UrTriply ✈️</string>
 
     <!-- Edit Trip -->
-    <string name="edit_trip_title">Editar viaje</string>
+    <string name="edit_trip_title">Editar</string>
     <string name="edit_trip_intro_title">Actualiza los datos del viaje</string>
     <string name="edit_trip_intro_body">Puedes editar destino, presupuesto, fechas y preferencias.</string>
     <string name="edit_trip_new_title">Nuevo borrador</string>

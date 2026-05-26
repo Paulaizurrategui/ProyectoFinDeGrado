@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -20,11 +21,26 @@ fun GuestHomeScreen(
     onGoLogin: () -> Unit, // Acción principal: llevar al usuario a Login para desbloquear funciones (modo auth)
     onBack: () -> Unit // Acción secundaria: volver atrás (normalmente a Welcome)
 ) {
-    val bg = Brush.verticalGradient( // Fondo degradado consistente con el resto de pantallas (Welcome/Login/Register)
-        0f to Color(0xFF4FC3F7),
-        0.55f to Color(0xFFB3E5FC),
-        1f to Color(0xFFE3F2FD)
-    )
+    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val mainTextColor = MaterialTheme.colorScheme.onSurface
+    val secondaryTextColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF6B7280)
+    val panelColor = if (isDarkTheme) MaterialTheme.colorScheme.surface else Color.White
+    val headerColor = if (isDarkTheme) MaterialTheme.colorScheme.surface else Color(0xFFFFF3E0)
+    val headerTextColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurface else Color(0xFFEF6C00)
+
+    val bg = if (isDarkTheme) {
+        Brush.verticalGradient(
+            0f to MaterialTheme.colorScheme.background,
+            0.55f to MaterialTheme.colorScheme.surface,
+            1f to MaterialTheme.colorScheme.surfaceVariant
+        )
+    } else {
+        Brush.verticalGradient(
+            0f to Color(0xFF4FC3F7),
+            0.55f to Color(0xFFB3E5FC),
+            1f to Color(0xFFE3F2FD)
+        )
+    }
     val orange = Color(0xFFFF8A00) // Color para el botón CTA principal
 
     Surface(modifier = Modifier.fillMaxSize()) { // Surface ocupa toda la pantalla
@@ -38,7 +54,7 @@ fun GuestHomeScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp), // Bordes redondeados (misma estética)
-                colors = CardDefaults.cardColors(containerColor = Color.White), // Card blanca sobre el fondo
+                colors = CardDefaults.cardColors(containerColor = panelColor), // Card adaptada al tema
                 elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
             ) {
                 Column(
@@ -49,14 +65,14 @@ fun GuestHomeScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(18.dp))
-                            .background(Color(0xFFFFF3E0))
+                            .background(headerColor)
                             .padding(vertical = 14.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = stringResource(R.string.app_name),
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFFEF6C00),
+                            color = headerTextColor,
                             style = MaterialTheme.typography.titleLarge
                         )
                     }
@@ -66,7 +82,8 @@ fun GuestHomeScreen(
                     Text(
                         text = stringResource(R.string.guest_title), // Título explicando que estás en modo invitado
                         style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = mainTextColor
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -74,7 +91,7 @@ fun GuestHomeScreen(
                     Text(
                         text = stringResource(R.string.guest_subtitle), // Subtítulo: qué se puede / qué no se puede sin cuenta
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF6B7280)
+                        color = secondaryTextColor
                     )
 
                     Spacer(modifier = Modifier.height(18.dp))
@@ -99,7 +116,7 @@ fun GuestHomeScreen(
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(14.dp)
                     ) {
-                        Text(stringResource(R.string.back), fontWeight = FontWeight.Bold) // Texto "Volver"
+                        Text(stringResource(R.string.back), fontWeight = FontWeight.Bold, color = mainTextColor) // Texto "Volver"
                     }
                 }
             }

@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -391,6 +393,10 @@ fun ProfileTabScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
+                            tripsVm.clearListeners()
+                            favoritesVm.clearListeners()
+                            friendsCountVm.clearListeners()
+                            tripsVm.clearError()
                             authViewModel.logout()
                             onLoggedOut()
                         },
@@ -401,17 +407,18 @@ fun ProfileTabScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.Logout,
+                                modifier = Modifier.size(20.dp),
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onErrorContainer
                             )
-                            Spacer(Modifier.size(10.dp))
+                            Spacer(Modifier.size(8.dp))
                             Column {
                                 Text(
                                     text = stringResource(R.string.profile_logout_title),
@@ -425,18 +432,8 @@ fun ProfileTabScreen(
                                 )
                             }
                         }
-
-                        TextButton(onClick = {
-                            authViewModel.logout()
-                            onLoggedOut()
-                        }) {
-                            Text(
-                                text = stringResource(R.string.profile_logout_action),
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
                     }
+
                 }
             }
 

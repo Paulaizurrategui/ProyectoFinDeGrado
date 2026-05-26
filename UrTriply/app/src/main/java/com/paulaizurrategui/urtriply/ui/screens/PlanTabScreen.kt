@@ -31,6 +31,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -44,8 +45,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -148,6 +151,11 @@ fun PlanTabScreen(
         val queryCity = destino.substringBefore("(").trim()
         val destinationIata = destinationToIata(destino)
         val effectiveOriginIata = "MAD"
+        val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
+        val mainTextColor = if (isDarkTheme) Color(0xFFD7DFEB) else MaterialTheme.colorScheme.onSurface
+        val secondaryTextColor = if (isDarkTheme) Color(0xFF9AA7B8) else MaterialTheme.colorScheme.onSurfaceVariant
+        val panelColor = if (isDarkTheme) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f) else MaterialTheme.colorScheme.surface
+        val fieldColor = if (isDarkTheme) MaterialTheme.colorScheme.surface.copy(alpha = 0.9f) else Color.White
 
         Box(modifier = Modifier.fillMaxWidth()) {
             Column(
@@ -163,16 +171,16 @@ fun PlanTabScreen(
                         .fillMaxWidth()
                         .height(68.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
+                        .background(panelColor)
                         .padding(horizontal = 12.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = stringResource(R.string.home_emoji_plane))
+                        Text(text = stringResource(R.string.home_emoji_plane), color = mainTextColor)
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
-                            Text(text = stringResource(R.string.app_name), fontWeight = FontWeight.SemiBold)
-                            Text(text = stringResource(R.string.plan_header_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(text = stringResource(R.string.app_name), fontWeight = FontWeight.SemiBold, color = mainTextColor)
+                            Text(text = stringResource(R.string.plan_header_subtitle), style = MaterialTheme.typography.bodySmall, color = secondaryTextColor)
                         }
                     }
                 }
@@ -183,23 +191,22 @@ fun PlanTabScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
-                    ),
+                    colors = CardDefaults.cardColors(containerColor = panelColor),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(Modifier.padding(12.dp)) {
                         Text(
                             text = stringResource(R.string.plan_title),
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
+                            color = mainTextColor
                         )
                         Spacer(Modifier.height(2.dp))
                         Text(
                             text = if (isGuest) stringResource(R.string.plan_guest_notice)
                             else stringResource(R.string.plan_form_hint),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = secondaryTextColor
                         )
                     }
                 }
@@ -207,7 +214,10 @@ fun PlanTabScreen(
                 Spacer(Modifier.height(14.dp))
 
                 // destino
-                    SectionTitle(title = stringResource(R.string.plan_destination_label), subtitle = stringResource(R.string.plan_choose_destination))
+                    SectionTitle(
+                        title = stringResource(R.string.plan_destination_label),
+                        subtitle = stringResource(R.string.plan_choose_destination)
+                    )
                 Spacer(Modifier.height(8.dp))
                 DestinationDropdown(
                     destinos = destinos,
@@ -220,15 +230,15 @@ fun PlanTabScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.06f)),
+                    colors = CardDefaults.cardColors(containerColor = panelColor),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = "📍", modifier = Modifier.size(28.dp))
+                        Text(text = "📍", modifier = Modifier.size(28.dp), color = mainTextColor)
                         Spacer(Modifier.width(8.dp))
                         Column {
-                            Text(text = stringResource(R.string.plan_origin_fixed), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                            Text(text = stringResource(R.string.plan_origin_madrid), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(text = stringResource(R.string.plan_origin_fixed), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = mainTextColor)
+                            Text(text = stringResource(R.string.plan_origin_madrid), style = MaterialTheme.typography.bodySmall, color = secondaryTextColor)
                         }
                     }
                 }
@@ -242,7 +252,7 @@ fun PlanTabScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    colors = CardDefaults.cardColors(containerColor = panelColor),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -251,26 +261,37 @@ fun PlanTabScreen(
                             value = presupuestoText,
                             onValueChange = { presupuestoText = it.replace(",", ".") },
                             label = { Text(stringResource(R.string.plan_budget_total)) },
-                            leadingIcon = { Text("€", style = MaterialTheme.typography.bodyLarge) },
+                            leadingIcon = { Text("€", style = MaterialTheme.typography.bodyLarge, color = mainTextColor) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
-                            // keep default colors to ensure compatibility across compose versions
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = mainTextColor),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = secondaryTextColor.copy(alpha = 0.7f),
+                                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                unfocusedLabelColor = secondaryTextColor,
+                                focusedTextColor = mainTextColor,
+                                unfocusedTextColor = mainTextColor,
+                                cursorColor = MaterialTheme.colorScheme.primary,
+                                focusedLeadingIconColor = mainTextColor,
+                                unfocusedLeadingIconColor = mainTextColor
+                            )
                         )
 
                         Text(
                             text = stringResource(R.string.plan_budget_hint),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = secondaryTextColor
                         )
 
                         // viajeros: compact stepper
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(text = stringResource(R.string.plan_travelers), modifier = Modifier.weight(1f))
+                            Text(text = stringResource(R.string.plan_travelers), modifier = Modifier.weight(1f), color = mainTextColor)
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Button(onClick = { val n = viajerosText.toIntOrNull() ?: 1; if (n>1) viajerosText = (n-1).toString() }, modifier = Modifier.size(36.dp), shape = RoundedCornerShape(8.dp)) { Text("-") }
                                 Spacer(Modifier.width(8.dp))
-                                Card(shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) { Text(viajerosText, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) }
+                                Card(shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = fieldColor)) { Text(viajerosText, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), color = mainTextColor) }
                                 Spacer(Modifier.width(8.dp))
                                 Button(onClick = { val n = viajerosText.toIntOrNull() ?: 1; viajerosText = (n+1).toString() }, modifier = Modifier.size(36.dp), shape = RoundedCornerShape(8.dp)) { Text("+") }
                             }
@@ -284,11 +305,11 @@ fun PlanTabScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    colors = CardDefaults.cardColors(containerColor = panelColor),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.plan_dates), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.plan_dates), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = mainTextColor)
 
                         DateRowField(
                             label = stringResource(R.string.plan_start_date),
@@ -312,7 +333,7 @@ fun PlanTabScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    colors = CardDefaults.cardColors(containerColor = panelColor),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Column(
@@ -606,17 +627,22 @@ fun PlanTabScreen(
 
 @Composable
 private fun SectionTitle(title: String, subtitle: String) {
+    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val mainTextColor = if (isDarkTheme) Color(0xFFD7DFEB) else MaterialTheme.colorScheme.onSurface
+    val secondaryTextColor = if (isDarkTheme) Color(0xFF9AA7B8) else MaterialTheme.colorScheme.onSurfaceVariant
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.ExtraBold
+            fontWeight = FontWeight.ExtraBold,
+            color = mainTextColor
         )
         Spacer(Modifier.height(2.dp))
         Text(
             text = subtitle,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = secondaryTextColor
         )
     }
 }
@@ -627,11 +653,16 @@ private fun DateRowField(
     value: String,
     onClick: () -> Unit
 ) {
+    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val mainTextColor = if (isDarkTheme) Color(0xFFD7DFEB) else MaterialTheme.colorScheme.onSurface
+    val secondaryTextColor = if (isDarkTheme) Color(0xFF9AA7B8) else MaterialTheme.colorScheme.onSurfaceVariant
+    val fieldColor = if (isDarkTheme) MaterialTheme.colorScheme.surface.copy(alpha = 0.9f) else Color.White
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Color.White)
+            .background(fieldColor)
             .clickable { onClick() }
             .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -641,13 +672,13 @@ private fun DateRowField(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = secondaryTextColor
             )
             Spacer(Modifier.height(2.dp))
-            Text(text = value, fontWeight = FontWeight.SemiBold)
+            Text(text = value, fontWeight = FontWeight.SemiBold, color = mainTextColor)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onClick) { Text(stringResource(R.string.plan_select)) }
+            TextButton(onClick = onClick) { Text(stringResource(R.string.plan_select), color = MaterialTheme.colorScheme.primary) }
         }
     }
 }
@@ -659,18 +690,32 @@ private fun DestinationDropdown(
     onSelected: (String) -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
+    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val mainTextColor = if (isDarkTheme) Color(0xFFD7DFEB) else MaterialTheme.colorScheme.onSurface
+    val secondaryTextColor = if (isDarkTheme) Color(0xFF9AA7B8) else MaterialTheme.colorScheme.onSurfaceVariant
 
     Box(modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(
             value = selected,
             onValueChange = {},
             readOnly = true,
-            label = { Text(stringResource(R.string.plan_destination_input_label)) },
-            trailingIcon = { Text("▾", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+            label = { Text(stringResource(R.string.plan_destination_input_label), color = secondaryTextColor) },
+            trailingIcon = { Text("▾", color = secondaryTextColor) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            // use default colors for compatibility
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = mainTextColor),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = secondaryTextColor.copy(alpha = 0.7f),
+                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                unfocusedLabelColor = secondaryTextColor,
+                focusedTextColor = mainTextColor,
+                unfocusedTextColor = mainTextColor,
+                cursorColor = MaterialTheme.colorScheme.primary,
+                focusedTrailingIconColor = secondaryTextColor,
+                unfocusedTrailingIconColor = secondaryTextColor
+            )
         )
 
         Box(
@@ -697,7 +742,8 @@ private fun DestinationDropdown(
                                 }
                                 .padding(vertical = 12.dp),
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Divider()
                     }

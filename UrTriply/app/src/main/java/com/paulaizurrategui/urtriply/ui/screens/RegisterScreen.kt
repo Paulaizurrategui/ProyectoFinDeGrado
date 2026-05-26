@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -32,6 +33,12 @@ fun RegisterScreen(
     onRegisterSuccess: () -> Unit
 ) {
     val uiState by authViewModel.uiState.collectAsState()
+    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val mainTextColor = MaterialTheme.colorScheme.onSurface
+    val secondaryTextColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF6B7280)
+    val panelColor = if (isDarkTheme) MaterialTheme.colorScheme.surface else Color.White
+    val headerColor = if (isDarkTheme) MaterialTheme.colorScheme.surface else Color(0xFFFFF3E0)
+    val headerTextColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurface else Color(0xFFEF6C00)
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -90,11 +97,19 @@ fun RegisterScreen(
         )
     }
 
-    val bg = Brush.verticalGradient(
-        0f to Color(0xFF4FC3F7),
-        0.55f to Color(0xFFB3E5FC),
-        1f to Color(0xFFE3F2FD)
-    )
+    val bg = if (isDarkTheme) {
+        Brush.verticalGradient(
+            0f to MaterialTheme.colorScheme.background,
+            0.55f to MaterialTheme.colorScheme.surface,
+            1f to MaterialTheme.colorScheme.surfaceVariant
+        )
+    } else {
+        Brush.verticalGradient(
+            0f to Color(0xFF4FC3F7),
+            0.55f to Color(0xFFB3E5FC),
+            1f to Color(0xFFE3F2FD)
+        )
+    }
     val orange = Color(0xFFFF8A00)
 
     Box(
@@ -109,7 +124,7 @@ fun RegisterScreen(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp)),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = panelColor),
             elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
         ) {
             Column(
@@ -120,14 +135,14 @@ fun RegisterScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(18.dp))
-                        .background(Color(0xFFFFF3E0))
+                        .background(headerColor)
                         .padding(vertical = 14.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = stringResource(R.string.app_name),
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFFEF6C00),
+                        color = headerTextColor,
                         style = MaterialTheme.typography.titleLarge
                     )
                 }
@@ -137,12 +152,13 @@ fun RegisterScreen(
                 Text(
                     text = stringResource(R.string.register_title),
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = mainTextColor
                 )
                 Text(
                     text = stringResource(R.string.register_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF6B7280),
+                    color = secondaryTextColor,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -160,7 +176,18 @@ fun RegisterScreen(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.email_label)) },
                     leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                    singleLine = true
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = secondaryTextColor.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = secondaryTextColor,
+                        focusedTextColor = mainTextColor,
+                        unfocusedTextColor = mainTextColor,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedLeadingIconColor = secondaryTextColor,
+                        unfocusedLeadingIconColor = secondaryTextColor
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -185,7 +212,20 @@ fun RegisterScreen(
                         }
                     },
                     singleLine = true,
-                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation()
+                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = secondaryTextColor.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = secondaryTextColor,
+                        focusedTextColor = mainTextColor,
+                        unfocusedTextColor = mainTextColor,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedLeadingIconColor = secondaryTextColor,
+                        unfocusedLeadingIconColor = secondaryTextColor,
+                        focusedTrailingIconColor = secondaryTextColor,
+                        unfocusedTrailingIconColor = secondaryTextColor
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -210,7 +250,20 @@ fun RegisterScreen(
                         }
                     },
                     singleLine = true,
-                    visualTransformation = if (showRepeatPassword) VisualTransformation.None else PasswordVisualTransformation()
+                    visualTransformation = if (showRepeatPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = secondaryTextColor.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = secondaryTextColor,
+                        focusedTextColor = mainTextColor,
+                        unfocusedTextColor = mainTextColor,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedLeadingIconColor = secondaryTextColor,
+                        unfocusedLeadingIconColor = secondaryTextColor,
+                        focusedTrailingIconColor = secondaryTextColor,
+                        unfocusedTrailingIconColor = secondaryTextColor
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -233,7 +286,7 @@ fun RegisterScreen(
                     Text(
                         text = "Tengo más de 13 años / I\'m over 13",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF6B7280)
+                        color = secondaryTextColor
                     )
                 }
 
@@ -289,12 +342,13 @@ fun RegisterScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = stringResource(R.string.already_have_account_question),
-                        color = Color(0xFF6B7280)
+                        color = secondaryTextColor
                     )
                     TextButton(onClick = onGoToLogin) {
                         Text(
                             stringResource(R.string.already_have_account_action),
                             fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )

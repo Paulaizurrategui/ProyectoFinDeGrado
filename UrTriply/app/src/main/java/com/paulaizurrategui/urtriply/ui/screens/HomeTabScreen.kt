@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -34,12 +35,13 @@ fun InicioTabScreen(
     onGoProfile: () -> Unit
 ) {
     val scrollState = rememberScrollState()
-    val isDarkTheme = isSystemInDarkTheme()
+    val colorScheme = MaterialTheme.colorScheme
+    val isDarkTheme = colorScheme.background.luminance() < 0.5f
     val email = FirebaseAuth.getInstance().currentUser?.email ?: "usuario"
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = if (isDarkTheme) Color(0xFF0F172A) else Color.White
+        color = colorScheme.background
     ) {
         Column(
             modifier = Modifier
@@ -55,8 +57,8 @@ fun InicioTabScreen(
                         brush = Brush.linearGradient(
                             colors = if (isDarkTheme) {
                                 listOf(
-                                    Color(0xFF1A1F3A),
-                                    Color(0xFF2D1B4E)
+                                    Color(0xFF0F172A),
+                                    Color(0xFF1E293B)
                                 )
                             } else {
                                 listOf(
@@ -73,7 +75,7 @@ fun InicioTabScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
-                            color = Color.Black.copy(alpha = if (isDarkTheme) 0.2f else 0.15f)
+                            color = Color.Black.copy(alpha = if (isDarkTheme) 0.28f else 0.15f)
                         )
                 )
 
@@ -99,7 +101,7 @@ fun InicioTabScreen(
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 38.sp
                         ),
-                        color = Color.White,
+                        color = if (isDarkTheme) Color(0xFFF3F7FF) else Color.White,
                         textAlign = TextAlign.Center
                     )
 
@@ -110,14 +112,14 @@ fun InicioTabScreen(
                         Text(
                             text = stringResource(R.string.home_greeting, email),
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White,
+                            color = if (isDarkTheme) Color(0xFFE3EAF7) else Color.White,
                             textAlign = TextAlign.Center
                         )
                     } else {
                         Text(
                             text = stringResource(R.string.home_guest_explore),
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White,
+                            color = if (isDarkTheme) Color(0xFFE3EAF7) else Color.White,
                             textAlign = TextAlign.Center
                         )
                     }
@@ -128,7 +130,7 @@ fun InicioTabScreen(
                     Text(
                         text = stringResource(R.string.home_tagline),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.9f),
+                        color = if (isDarkTheme) Color(0xFFB4C0D4) else Color.White.copy(alpha = 0.9f),
                         textAlign = TextAlign.Center
                     )
                 }
@@ -148,7 +150,7 @@ fun InicioTabScreen(
                     text = stringResource(R.string.home_quick_access),
                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-                    color = if (isDarkTheme) Color.White else Color.Black
+                    color = colorScheme.onBackground
                 )
 
                 // Planificar viaje
@@ -195,14 +197,15 @@ fun HomeActionCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDarkTheme = isSystemInDarkTheme()
+    val colorScheme = MaterialTheme.colorScheme
+    val isDarkTheme = colorScheme.background.luminance() < 0.5f
 
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp)),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = if (isDarkTheme) Color(0xFF1E293B) else UrSkySoft
+            containerColor = if (isDarkTheme) colorScheme.surfaceVariant else UrSkySoft
         ),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp),
         onClick = onClick
@@ -220,7 +223,7 @@ fun HomeActionCard(
                     .size(56.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(
-                        if (isDarkTheme) Color(0xFF334155) else Color(0xFFE2E8F0)
+                        if (isDarkTheme) colorScheme.surface else Color(0xFFE2E8F0)
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -236,7 +239,7 @@ fun HomeActionCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                    color = if (isDarkTheme) Color.White else Color.Black
+                    color = colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -244,7 +247,7 @@ fun HomeActionCard(
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (isDarkTheme) Color(0xFFCBD5E1) else Color(0xFF64748B)
+                    color = colorScheme.onSurfaceVariant
                 )
             }
 
@@ -252,7 +255,7 @@ fun HomeActionCard(
             Text(
                 text = "→",
                 style = MaterialTheme.typography.headlineSmall,
-                color = UrOrange
+                color = colorScheme.primary
             )
         }
     }

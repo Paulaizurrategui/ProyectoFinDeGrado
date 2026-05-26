@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,12 +40,25 @@ fun UrTriplyGradientScaffold(
     onBack: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
+    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val cardContainer = if (isDarkTheme) MaterialTheme.colorScheme.surface else Color.White
+    val headerContainer = if (isDarkTheme) MaterialTheme.colorScheme.surface.copy(alpha = 0.95f) else Color(0xFFFFF3E0)
+    val headerTextColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurface else Color(0xFFEF6C00)
+
     // degradado de fondo comun
-    val bg = Brush.verticalGradient(
-        0f to Color(0xFF4FC3F7),
-        0.55f to Color(0xFFB3E5FC),
-        1f to Color(0xFFE3F2FD)
-    )
+    val bg = if (isDarkTheme) {
+        Brush.verticalGradient(
+            0f to MaterialTheme.colorScheme.background,
+            0.55f to MaterialTheme.colorScheme.surface,
+            1f to MaterialTheme.colorScheme.surfaceVariant
+        )
+    } else {
+        Brush.verticalGradient(
+            0f to Color(0xFF4FC3F7),
+            0.55f to Color(0xFFB3E5FC),
+            1f to Color(0xFFE3F2FD)
+        )
+    }
 
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box(
@@ -59,7 +73,7 @@ fun UrTriplyGradientScaffold(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(24.dp)),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = cardContainer),
                 elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
@@ -70,14 +84,14 @@ fun UrTriplyGradientScaffold(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(18.dp))
-                                .background(Color(0xFFFFF3E0))
+                                .background(headerContainer)
                                 .padding(vertical = 14.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = stringResource(R.string.app_name),
                                 fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFFEF6C00),
+                                color = headerTextColor,
                                 style = MaterialTheme.typography.titleLarge
                             )
                         }
@@ -96,7 +110,7 @@ fun UrTriplyGradientScaffold(
                                 text = title,
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF111827),
+                                color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )

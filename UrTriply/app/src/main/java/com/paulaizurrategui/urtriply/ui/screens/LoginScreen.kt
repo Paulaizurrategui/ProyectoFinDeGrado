@@ -13,6 +13,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
@@ -29,6 +30,12 @@ fun LoginScreen( // pantalla de login
     onLoginSuccess: () -> Unit // cuando login va bien
 ) {
     val uiState by authViewModel.uiState.collectAsState() // recojo estado del viewmodel
+    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val mainTextColor = MaterialTheme.colorScheme.onSurface
+    val secondaryTextColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF6B7280)
+    val panelColor = if (isDarkTheme) MaterialTheme.colorScheme.surface else Color.White
+    val headerColor = if (isDarkTheme) MaterialTheme.colorScheme.surface else Color(0xFFFFF3E0)
+    val headerTextColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurface else Color(0xFFEF6C00)
 
     var email by remember { mutableStateOf("") } // estado email
     var password by remember { mutableStateOf("") } // estado password
@@ -73,11 +80,19 @@ fun LoginScreen( // pantalla de login
     }
 
     // fondo degradado azul
-    val bg = Brush.verticalGradient(
-        0f to Color(0xFF4FC3F7),
-        0.55f to Color(0xFFB3E5FC),
-        1f to Color(0xFFE3F2FD)
-    )
+    val bg = if (isDarkTheme) {
+        Brush.verticalGradient(
+            0f to MaterialTheme.colorScheme.background,
+            0.55f to MaterialTheme.colorScheme.surface,
+            1f to MaterialTheme.colorScheme.surfaceVariant
+        )
+    } else {
+        Brush.verticalGradient(
+            0f to Color(0xFF4FC3F7),
+            0.55f to Color(0xFFB3E5FC),
+            1f to Color(0xFFE3F2FD)
+        )
+    }
 
     Box( // contenedor principal
         modifier = Modifier
@@ -86,12 +101,12 @@ fun LoginScreen( // pantalla de login
             .padding(20.dp),
         contentAlignment = Alignment.Center
     ) {
-        Card( // tarjeta blanca del login
+        Card( // tarjeta principal del login
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp)),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = panelColor),
             elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
         ) {
             Column( // contenido en columna
@@ -102,14 +117,14 @@ fun LoginScreen( // pantalla de login
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(18.dp))
-                        .background(Color(0xFFFFF3E0))
+                            .background(headerColor)
                         .padding(vertical = 14.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = stringResource(R.string.app_name), // nombre app
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFFEF6C00),
+                            color = headerTextColor,
                         style = MaterialTheme.typography.titleLarge
                     )
                 }
@@ -119,12 +134,13 @@ fun LoginScreen( // pantalla de login
                 Text( // titulo login
                     text = stringResource(R.string.login_button),
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = mainTextColor
                 )
                 Text( // subtitulo
                     text = "¡bienvenid@ de vuelta!",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF6B7280),
+                    color = secondaryTextColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -142,7 +158,18 @@ fun LoginScreen( // pantalla de login
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.email_label)) },
                     leadingIcon = { Icon(imageVector = Icons.Default.Email, contentDescription = null) },
-                    singleLine = true
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = secondaryTextColor.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = secondaryTextColor,
+                        focusedTextColor = mainTextColor,
+                        unfocusedTextColor = mainTextColor,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedLeadingIconColor = secondaryTextColor,
+                        unfocusedLeadingIconColor = secondaryTextColor
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -167,7 +194,20 @@ fun LoginScreen( // pantalla de login
                         }
                     },
                     singleLine = true,
-                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation() // ocultar/mostrar
+                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(), // ocultar/mostrar
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = secondaryTextColor.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = secondaryTextColor,
+                        focusedTextColor = mainTextColor,
+                        unfocusedTextColor = mainTextColor,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedLeadingIconColor = secondaryTextColor,
+                        unfocusedLeadingIconColor = secondaryTextColor,
+                        focusedTrailingIconColor = secondaryTextColor,
+                        unfocusedTrailingIconColor = secondaryTextColor
+                    )
                 )
 
                 Row( // fila para forgot password
@@ -185,7 +225,7 @@ fun LoginScreen( // pantalla de login
                         },
                         enabled = !uiState.isLoading // desactivo si carga
                     ) {
-                        Text(stringResource(R.string.forgot_password))
+                        Text(stringResource(R.string.forgot_password), color = MaterialTheme.colorScheme.primary)
                     }
                 }
 
@@ -231,11 +271,12 @@ fun LoginScreen( // pantalla de login
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "¿no tienes cuenta?", color = Color(0xFF6B7280))
+                    Text(text = "¿no tienes cuenta?", color = secondaryTextColor)
                     TextButton(onClick = onGoToRegister) { // ir a registro
                         Text(
                             stringResource(R.string.create_account),
                             fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
