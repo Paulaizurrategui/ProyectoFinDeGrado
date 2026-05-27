@@ -55,6 +55,9 @@
     <string name="error_passwords_not_match">Las contraseñas no coinciden.</string>
     <string name="error_password_min">La contraseña debe tener al menos 6 caracteres.</string>
     <string name="error_enter_email_reset">Introduce tu correo para recuperar la contraseña.</string>
+    <string name="error_email_domain_not_allowed">El correo debe ser de un dominio permitido (ej: @gmail.com, @hotmail.com, @outlook.com).</string>
+    <string name="login_welcome_back">Bienvenid@ de vuelta</string>
+    <string name="login_no_account">¿No tienes cuenta?</string>
 
     <!-- Auth success messages -->
     <string name="reset_email_sent">Te hemos enviado un correo para restablecer la contraseña.</string>
@@ -66,7 +69,7 @@
     <string name="error_user_collision">Ya existe una cuenta registrada con ese correo.</string>
     <string name="error_weak_password">La contraseña es demasiado débil. Usa al menos 6 caracteres.</string>
     <string name="error_generic">Ha ocurrido un error. Inténtalo de nuevo.</string>
-    <string name="cerrarSesion">Utl</string>
+    <string name="cerrarSesion">Cerrar sesión</string>
     <string name="slogan">Tu próxima aventura europea empieza aquí, sin salirte del presupuesto.</string>
 
     <string name="welcome_login">Iniciar sesión</string>
@@ -114,6 +117,10 @@
     <string name="profile_theme_light_dark">Modo Claro / Modo Oscuro</string>
     <string name="profile_theme_toggle_description">Cambiar modo claro/oscuro</string>
     <string name="profile_following_count">Siguiendo: %1$d</string>
+    <string name="profile_language_title">Idioma</string>
+    <string name="profile_language_subtitle">Selecciona el idioma de la app</string>
+    <string name="profile_language_es">Español</string>
+    <string name="profile_language_en">Inglés</string>
 
     <string name="login_required_title">Necesitas iniciar sesión</string>
     <string name="login_required_body">Para acceder a esta sección tienes que iniciar sesión o crear una cuenta.</string>

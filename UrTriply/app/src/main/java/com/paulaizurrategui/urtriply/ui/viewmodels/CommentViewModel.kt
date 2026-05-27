@@ -9,22 +9,23 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 class CommentViewModel : ViewModel() {
-
+    // Repositorio de comentarios y autenticación
     private val commentRepo = CommentRepository()
     private val auth = FirebaseAuth.getInstance()
 
-    // State for displaying comments
+    // StateFlow que expone la lista de comentarios hacia la UI
     private val _comments = MutableStateFlow<List<Comment>>(emptyList())
     val comments: StateFlow<List<Comment>> = _comments
 
+    // Flags y mensajes observables para la UI (cargando, error, éxito)
     val isLoading = mutableStateOf(false)
     val errorMessage = mutableStateOf("")
     val successMessage = mutableStateOf("")
 
-    // Current trip being viewed
+    // ID del viaje actualmente visualizado (usado por las operaciones de add/delete)
     private var currentTripId = ""
 
-    // Load comments for a trip
+    // Carga los comentarios para un `tripId` y actualiza el estado.
     fun loadCommentsForTrip(tripId: String) {
         currentTripId = tripId
         isLoading.value = true
@@ -43,7 +44,8 @@ class CommentViewModel : ViewModel() {
         )
     }
 
-    // Add a comment
+    // Añade un comentario para el `currentTripId`. Realiza validaciones locales
+    // (texto vacío, usuario no autenticado) antes de delegar al repositorio.
     fun addComment(text: String) {
         if (text.isBlank()) {
             errorMessage.value = "Comment cannot be empty"
@@ -77,7 +79,8 @@ class CommentViewModel : ViewModel() {
         )
     }
 
-    // Delete a comment (author or admin only - validated by security rules)
+    // Elimina un comentario. Las reglas de seguridad en Firestore deben garantizar
+    // que solo el autor o admin puedan borrarlo; aquí solo se llama al repo.
     fun deleteComment(commentId: String) {
         isLoading.value = true
 
@@ -96,7 +99,7 @@ class CommentViewModel : ViewModel() {
         )
     }
 
-    // Update a comment (author only - validated by security rules)
+    // Actualiza el texto de un comentario existente (validación local del texto)
     fun updateComment(commentId: String, newText: String) {
         if (newText.isBlank()) {
             errorMessage.value = "Comment cannot be empty"
@@ -121,6 +124,7 @@ class CommentViewModel : ViewModel() {
         )
     }
 
+    // Limpia mensajes de éxito/ error si existen (utilizado tras operaciones)
     fun clearMessages() {
         if (successMessage.value.isNotEmpty()) {
             successMessage.value = ""

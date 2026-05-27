@@ -16,6 +16,9 @@
 - **Período de Desarrollo**: 17 de marzo - 13 de mayo de 2026 (2 meses)
 - **Total de Commits**: 51
 - **Versión**: 1.0
+ - **Período de Desarrollo**: 17 de marzo - 26 de mayo de 2026 (2+ meses)
+ - **Total de Commits**: 59 (incluye commits posteriores a la entrega)
+ - **Versión**: 1.1
 
 ---
 
@@ -333,7 +336,9 @@ androidx.test.espresso:espresso-core:3.5.1
 
 **Dedicación**: 4 horas diarias en horario de tarde (flexible según disponibilidad)
 
-**Cálculo de Horas**: ~50 días de trabajo efectivo × 4 horas/día = **~200 horas totales aproximadamente**
+**Cálculo de Horas**: ~50 días de trabajo efectivo (hasta 13 may) × 4 horas/día = **~200 horas**.
+Trabajo adicional (14 may - 26 may): 7 días con commits relevantes × 4 h/día = **28 horas**.
+**Total acumulado aproximado**: **~228 horas**
 
 #### **Fase 1: Planificación y Diseño (17 mar - 31 mar)**
 - **Duración**: 2 semanas
@@ -393,6 +398,17 @@ androidx.test.espresso:espresso-core:3.5.1
 - **Commits**: 9
 - **Horas Dedicadas**: 24h (6 días × 4h/día)
 
+#### **Fase 6: Post-entrega — Correcciones y pulido final (14 may - 26 may)**
+
+- **Duración**: 2 semanas (trabajo puntual en días con commits)
+- **Actividades**:
+   - Retoques finales de UI y mejora de pantallas
+   - Optimización de tiempos de generación y ajuste del botón compartir
+   - Correcciones menores y actualización de recursos (logo, textos)
+   - Actualización de la memoria y documentación tras la entrega
+- **Commits**: 8 (commits entre 2026-05-14 y 2026-05-26)
+- **Horas Dedicadas**: 28h (7 días × 4h/día)
+
 ### 5.2. Horas por Categoría
 
 | Actividad | Horas | % |
@@ -405,7 +421,8 @@ androidx.test.espresso:espresso-core:3.5.1
 | **Testing y Debugging** | 20 | 10% |
 | **Documentación** | 8 | 4% |
 | **Deploy y Optimización** | 8 | 4% |
-| **TOTAL** | **200h** | **100%** |
+| **Post-entrega (correcciones y pulido final)** | 28 | 12% |
+| **TOTAL** | **228h** | **100%** |
 
 ### 5.3. Hitos Clave (Entregas Parciales)
 

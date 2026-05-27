@@ -14,26 +14,33 @@ data class SimpleTripData(
 )
 
 class ProfileFavoritesViewModel : ViewModel() {
-
+    // Instancias de Firebase para autenticación y Firestore
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
+
+    // Listener registrations para poder quitar los listeners cuando no sean necesarios
     private var likesListener: ListenerRegistration? = null
     private var favoritesListener: ListenerRegistration? = null
+
+    // Generaciones para invalidar resultados antiguos cuando se re-suscribe
     private var likesGeneration = 0
     private var favoritesGeneration = 0
 
+    // StateFlow expuestos hacia la UI con listas simples de viajes
     private val _favorites = MutableStateFlow<List<SimpleTripData>>(emptyList())
     val favorites: StateFlow<List<SimpleTripData>> = _favorites
 
     private val _likes = MutableStateFlow<List<SimpleTripData>>(emptyList())
     val likes: StateFlow<List<SimpleTripData>> = _likes
 
+    // Flags de carga para indicar estado (mostrar progress spinners en UI)
     private val _favoritesLoading = MutableStateFlow(false)
     val favoritesLoading: StateFlow<Boolean> = _favoritesLoading
 
     private val _likesLoading = MutableStateFlow(false)
     val likesLoading: StateFlow<Boolean> = _likesLoading
 
+    // Elimina listeners activos y resetea estados/generaciones
     fun clearListeners() {
         likesListener?.remove()
         favoritesListener?.remove()
@@ -45,9 +52,12 @@ class ProfileFavoritesViewModel : ViewModel() {
         _favoritesLoading.value = false
     }
 
+    // Carga los favoritos del usuario mediante collectionGroup("favorites")
+    // Extrae los IDs de los viajes y luego carga detalles con loadTripDetails
     fun loadFavorites() {
         val uid = auth.currentUser?.uid ?: return
 
+        // Reinicio listener previo y marco que estamos cargando
         favoritesListener?.remove()
         favoritesListener = null
         favoritesGeneration++
@@ -57,17 +67,20 @@ class ProfileFavoritesViewModel : ViewModel() {
             .whereEqualTo("uid", uid)
             .addSnapshotListener { snap, e ->
                 if (e != null) {
+                    // En caso de error, limpio la lista y desactivo loader
                     _favorites.value = emptyList()
                     _favoritesLoading.value = false
                     return@addSnapshotListener
                 }
 
+                // Mapear los documentos a los IDs de los viajes (parent.parent)
                 val tripIds = snap?.documents
                     ?.mapNotNull { it.reference.parent.parent?.id }
                     ?.distinct()
                     ?: emptySet()
 
                 val generation = favoritesGeneration
+                // Cargo detalles de los viajes y solo aplico si la generación coincide
                 loadTripDetails(tripIds) { list ->
                     if (generation == favoritesGeneration) {
                         _favorites.value = list
@@ -77,6 +90,7 @@ class ProfileFavoritesViewModel : ViewModel() {
             }
     }
 
+    // Análogo a loadFavorites pero para "likes"
     fun loadLikes() {
         val uid = auth.currentUser?.uid ?: return
 
@@ -109,11 +123,14 @@ class ProfileFavoritesViewModel : ViewModel() {
             }
     }
 
+    // Refresca ambos conjuntos
     fun refreshAll() {
         loadFavorites()
         loadLikes()
     }
 
+    // Remove optimisticamente un like y realiza la petición a Firestore. Si falla,
+    // se restaura el estado previo y se recarga desde Firestore.
     fun removeLike(tripId: String) {
         val uid = auth.currentUser?.uid ?: return
         val previousLikes = _likes.value
@@ -126,6 +143,7 @@ class ProfileFavoritesViewModel : ViewModel() {
             }
     }
 
+    // Igual que removeLike pero para favoritos
     fun removeFavorite(tripId: String) {
         val uid = auth.currentUser?.uid ?: return
         val previousFavorites = _favorites.value
@@ -138,6 +156,9 @@ class ProfileFavoritesViewModel : ViewModel() {
             }
     }
 
+    // Dado un conjunto de tripIds, carga en paralelo cada documento de "trips"
+    // y construye una lista de SimpleTripData. Invoca onResult cuando todos
+    // los requests han completado.
     private fun loadTripDetails(
         tripIds: Collection<String>,
         onResult: (List<SimpleTripData>) -> Unit
@@ -157,7 +178,7 @@ class ProfileFavoritesViewModel : ViewModel() {
                         results.add(
                             SimpleTripData(
                                 id = tripDoc.id,
-                                destino = tripDoc.getString("destino") ?: "Destino",
+                                destino = tripDoc.getString("destino") ?: tripDoc.getString("destination") ?: "Destino",
                                 presupuestoTotal = tripDoc.getDouble("presupuestoTotal") ?: 0.0
                             )
                         )

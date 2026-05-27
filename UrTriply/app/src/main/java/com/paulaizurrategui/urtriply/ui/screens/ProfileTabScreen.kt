@@ -52,15 +52,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.data.trips.TripStatus
 import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
 import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
+import java.util.Locale
 
 @Composable
 fun ProfileTabScreen(
@@ -84,6 +88,11 @@ fun ProfileTabScreen(
     val profileFriendsSubtitle = stringResource(R.string.profile_friends_subtitle)
     val profileThemeLightDarkText = stringResource(R.string.profile_theme_light_dark)
     val profileThemeDarkLightText = stringResource(R.string.profile_theme_dark_light)
+    val currentLanguageTag = remember {
+        val tags = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+        if (tags.isNotBlank()) tags else Locale.getDefault().language
+    }
+    var selectedLanguage by remember { mutableStateOf(if (currentLanguageTag.startsWith("en")) "en" else "es") }
 
     val tripsVm = remember { ProfileTripsViewModel() }
     val tripsState by tripsVm.uiState.collectAsState()
@@ -298,6 +307,46 @@ fun ProfileTabScreen(
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
                         Spacer(Modifier.size(8.dp))
                         Text(if (tripsState.isLoading) stringResource(R.string.profile_refreshing) else stringResource(R.string.profile_refresh))
+                    }
+                }
+            }
+
+            item {
+                SectionTitle(
+                    stringResource(R.string.profile_language_title),
+                    stringResource(R.string.profile_language_subtitle)
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            selectedLanguage = "es"
+                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("es"))
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (selectedLanguage == "es") MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+                        )
+                    ) {
+                        Text(stringResource(R.string.profile_language_es))
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            selectedLanguage = "en"
+                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (selectedLanguage == "en") MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+                        )
+                    ) {
+                        Text(stringResource(R.string.profile_language_en))
                     }
                 }
             }

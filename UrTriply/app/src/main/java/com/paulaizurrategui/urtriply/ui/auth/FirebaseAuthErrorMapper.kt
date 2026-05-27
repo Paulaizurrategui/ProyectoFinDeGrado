@@ -14,6 +14,8 @@ object FirebaseAuthErrorMapper {
     // devuelve el id del string segun la excepcion
     @StringRes
     fun toStringRes(e: Exception?): Int {
+        // Mapeo simple y explícito de excepciones Firebase a recursos de string
+        // Esto permite mostrar mensajes localizables en la UI según el error.
         return when (e) {
             is FirebaseNetworkException -> R.string.error_network                // sin red / timeout
             is FirebaseAuthInvalidUserException -> R.string.error_invalid_user    // usuario no existe / deshabilitado

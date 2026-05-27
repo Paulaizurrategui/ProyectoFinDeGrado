@@ -16,21 +16,33 @@ import com.paulaizurrategui.urtriply.ui.theme.UrTriplyTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Habilita que la UI se dibuje edge-to-edge (bajo status/navigation bars)
+        // Esto permite un aspecto más moderno; Compose debe gestionar insets/padding.
+        enableEdgeToEdge()
 
-        enableEdgeToEdge() // Permite dibujar bajo status/navigation bar (look moderno); Compose lo gestiona con paddings/insets
-
+        // Define el contenido Compose de la Activity.
         setContent {
+            // Obtengo el ViewModel que controla el tema (oscuro/claro).
             val themeViewModel: ThemeViewModel = viewModel()
+
+            // Convierto el StateFlow `isDarkTheme` a estado observable por Compose
+            // y tomo su valor actual para decidir el modo de la UI.
             val isDarkTheme = themeViewModel.isDarkTheme.collectAsState().value
-            
-            // Load theme preference ONLY ONCE on app startup
+
+            // Cargo la preferencia de tema una sola vez al arrancar la app.
+            // `LaunchedEffect(Unit)` asegura que la acción se ejecute únicamente
+            // en la primera composición.
             LaunchedEffect(Unit) {
                 themeViewModel.loadThemePreference()
             }
 
-            UrTriplyTheme(darkTheme = isDarkTheme) { // Aplica el theme Material3 de la app (colores, tipografías, etc.)
+            // Aplico el Theme global de la app, pasando si debe usar modo oscuro.
+            // El Theme configura colores, tipografías y shapes (Material3).
+            UrTriplyTheme(darkTheme = isDarkTheme) {
+                // Contenedor principal que ocupa todo el tamaño disponible.
                 androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
-                    AppNavHost() // Punto de entrada real: navegación (Welcome/Login/Register/Main)
+                    // Inserta el NavHost de la app: gestiona rutas y pantallas.
+                    AppNavHost()
                 }
             }
         }

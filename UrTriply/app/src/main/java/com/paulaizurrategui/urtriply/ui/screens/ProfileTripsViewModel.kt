@@ -80,7 +80,7 @@ class ProfileTripsViewModel(
                 val drafts = snapDrafts?.documents?.map { d ->
                     TripListItem(
                         id = d.id,
-                        destino = d.getString("destino") ?: "(sin destino)",
+                        destino = d.getString("destino") ?: d.getString("destination") ?: "(sin destino)",
                         status = TripStatus.DRAFT,
                         createdAt = d.getTimestamp("createdAt"),
                         publishedAt = d.getTimestamp("publishedAt")
@@ -117,7 +117,7 @@ class ProfileTripsViewModel(
                 val published = snapPublished?.documents?.map { d ->
                     TripListItem(
                         id = d.id,
-                        destino = d.getString("destino") ?: "(sin destino)",
+                        destino = d.getString("destino") ?: d.getString("destination") ?: "(sin destino)",
                         status = TripStatus.PUBLISHED,
                         createdAt = d.getTimestamp("createdAt"),
                         publishedAt = d.getTimestamp("publishedAt")

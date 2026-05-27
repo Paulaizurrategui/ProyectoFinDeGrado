@@ -40,12 +40,22 @@ fun UrTriplyGradientScaffold(
     onBack: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
+    // Determino si estamos en tema oscuro usando la luminancia del background.
     val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
+
+    // Color de fondo del contenedor principal (card). En oscuro uso surface del theme,
+    // en claro uso blanco puro para mayor contraste.
     val cardContainer = if (isDarkTheme) MaterialTheme.colorScheme.surface else Color.White
+
+    // Color del header (el bloque superior). En oscuro uso surface con algo de alpha,
+    // en claro se usa un tono naranja pastel definido por literal ARGB.
     val headerContainer = if (isDarkTheme) MaterialTheme.colorScheme.surface.copy(alpha = 0.95f) else Color(0xFFFFF3E0)
+
+    // Color del texto del header: onSurface en oscuro, naranja fuerte en claro.
     val headerTextColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurface else Color(0xFFEF6C00)
 
-    // degradado de fondo comun
+    // Degradado de fondo compartido por toda la pantalla. Emplea diferentes stops
+    // según si estamos en modo oscuro o claro para mantener legibilidad.
     val bg = if (isDarkTheme) {
         Brush.verticalGradient(
             0f to MaterialTheme.colorScheme.background,
@@ -60,14 +70,18 @@ fun UrTriplyGradientScaffold(
         )
     }
 
+    // Superficie raíz: ocupa todo el espacio y usa el background del theme.
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        // Caja principal con el degradado de fondo y padding exterior que deja
+        // espacio alrededor de la Card central.
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(bg)
                 .padding(20.dp), // padding exterior de la card
-            contentAlignment = Alignment.Center // por defecto centro la card
+            contentAlignment = Alignment.Center // centro la card dentro de la caja
         ) {
+            // Card principal con esquinas grandes y elevación.
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -76,9 +90,10 @@ fun UrTriplyGradientScaffold(
                 colors = CardDefaults.cardColors(containerColor = cardContainer),
                 elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
             ) {
+                // Columna interna con padding donde se colocan header, título y contenido.
                 Column(modifier = Modifier.padding(20.dp)) {
 
-                    // header opcional (bloque naranja con nombre app)
+                    // Header opcional: bloque con el nombre de la app centrado.
                     if (showHeader) {
                         Box(
                             modifier = Modifier
@@ -88,6 +103,7 @@ fun UrTriplyGradientScaffold(
                                 .padding(vertical = 14.dp),
                             contentAlignment = Alignment.Center
                         ) {
+                            // Nombre de la aplicación mostrado en el header.
                             Text(
                                 text = stringResource(R.string.app_name),
                                 fontWeight = FontWeight.ExtraBold,
@@ -95,10 +111,12 @@ fun UrTriplyGradientScaffold(
                                 style = MaterialTheme.typography.titleLarge
                             )
                         }
+                        // Espacio entre header y resto del contenido.
                         Spacer(modifier = Modifier.padding(top = 12.dp))
                     }
 
-                    // titulo opcional de pantalla
+                    // Título de la pantalla (opcional). Incluye botón de retroceso si se
+                    // pasó `onBack` para permitir navegación hacia atrás.
                     if (showTitle) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (onBack != null) {
@@ -115,10 +133,11 @@ fun UrTriplyGradientScaffold(
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
+                        // Separador visual entre título y contenido principal.
                         Spacer(modifier = Modifier.padding(top = 14.dp))
                     }
 
-                    // contenido de cada pantalla
+                    // Lugar donde se inyecta el contenido específico de cada pantalla.
                     content()
                 }
             }

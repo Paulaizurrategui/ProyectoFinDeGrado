@@ -43,13 +43,16 @@ fun CommentSection(
     onReportComment: ((Comment) -> Unit)? = null,
     onBlockUser: ((String) -> Unit)? = null
 ) {
+    // Estado local para el texto del nuevo comentario
     var newCommentText by remember { mutableStateOf("") }
 
+    // Contenedor vertical principal con padding lateral
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
     ) {
+        // Título de la sección con el número de comentarios
         Text(
             text = stringResource(R.string.comments_title, comments.size),
             fontSize = 18.sp,
@@ -57,7 +60,7 @@ fun CommentSection(
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
-        // Add comment input
+        // Input para añadir un comentario: solo visible si hay usuario logueado
         if (currentUserId != null) {
             OutlinedTextField(
                 value = newCommentText,
@@ -72,18 +75,21 @@ fun CommentSection(
                 singleLine = false
             )
 
+            // Botones de cancelar y publicar alineados a la derecha
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
                 horizontalArrangement = Arrangement.End
             ) {
+                // Botón cancelar: limpia el campo
                 TextButton(
                     onClick = { newCommentText = "" }
                 ) {
                     Text(stringResource(R.string.comments_cancel))
                 }
 
+                // Botón publicar: llama a onAddComment y limpia el campo
                 Button(
                     onClick = {
                         if (newCommentText.isNotBlank()) {
@@ -100,6 +106,7 @@ fun CommentSection(
                 }
             }
         } else {
+            // Mensaje para usuarios no logueados invitando a iniciar sesión
             Text(
                 text = stringResource(R.string.comments_login),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -108,10 +115,11 @@ fun CommentSection(
             )
         }
 
-        // Comments list
+        // Lista de comentarios o estado vacío/cargando
         Spacer(modifier = Modifier.height(16.dp))
 
         if (comments.isEmpty() && !isLoading) {
+            // Mensaje cuando no hay comentarios
             Text(
                 text = stringResource(R.string.comments_empty),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -119,10 +127,12 @@ fun CommentSection(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         } else if (isLoading) {
+            // Indicador de carga mientras se obtienen los comentarios
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         } else {
+            // Lista perezosa de comentarios con separación vertical
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -151,8 +161,10 @@ fun CommentCard(
     onReport: (() -> Unit)? = null,
     onBlock: ((String) -> Unit)? = null
 ) {
+    // Estado local para mostrar el diálogo de confirmación de borrado
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
+    // Card que contiene todo el comentario (cabecera + texto)
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -167,18 +179,20 @@ fun CommentCard(
                 .fillMaxWidth()
                 .padding(12.dp)
         ) {
-            // Header: avatar + name + time
+            // Header: avatar, nombre y tiempo, y acciones (borrar/reportar/bloquear)
             Row(
                 modifier = Modifier
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Parte izquierda: avatar + nombre + tiempo
                 Row(
                     modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Avatar
+                    // Avatar: si existe URL, se carga con Coil; si no, se muestra
+                    // una surface circular con la inicial del autor.
                     if (comment.authorAvatar != null) {
                         val ctx = LocalContext.current
                         AsyncImage(
@@ -196,6 +210,7 @@ fun CommentCard(
                             placeholder = null
                         )
                     } else {
+                        // Avatar fallback con inicial
                         Surface(
                             modifier = Modifier
                                 .size(32.dp)
@@ -218,6 +233,7 @@ fun CommentCard(
 
                     Spacer(modifier = Modifier.width(8.dp))
 
+                    // Nombre del autor y tiempo relativo del comentario
                     Column {
                         Text(
                             text = comment.authorName,
@@ -241,6 +257,7 @@ fun CommentCard(
                     }
                 }
 
+                // Acciones a la derecha: borrar (si puede), reportar, bloquear
                 if (canDelete) {
                     IconButton(
                         onClick = { showDeleteConfirm = true },
@@ -284,7 +301,7 @@ fun CommentCard(
                 }
             }
 
-            // Comment text
+            // Texto del comentario
             Text(
                 text = comment.text,
                 modifier = Modifier
@@ -295,7 +312,8 @@ fun CommentCard(
         }
     }
 
-    // Delete confirmation dialog
+    // Diálogo de confirmación para borrar comentario. Se muestra cuando se pulsa
+    // el icono de borrar y evita borrados accidentales.
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },

@@ -145,7 +145,7 @@ fun EditTripScreen(
 
         trips.document(tripId!!).get()
             .addOnSuccessListener { doc ->
-                destino = doc.getString("destino") ?: destino
+                destino = doc.getString("destino") ?: doc.getString("destination") ?: destino
 
                 val presupuesto = doc.getDouble("presupuestoTotal")
                     ?: doc.getDouble("presupuesto")
@@ -428,6 +428,7 @@ fun EditTripScreen(
                             // mapa de update (solo campos editables)
                             val saveMap = mapOf(
                                 "destino" to destino,
+                                "destination" to destino,
                                 "presupuestoTotal" to presupuesto,
                                 "viajeros" to viajeros,
                                 "fechaInicioMillis" to fechaInicioMillis,

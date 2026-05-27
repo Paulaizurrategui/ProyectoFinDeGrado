@@ -10,25 +10,28 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 class AdminViewModel : ViewModel() {
-
+    // Repositorio de reports y acceso a Firebase
     private val reportRepo = ReportRepository()
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
-    // State for reports
+    // StateFlow con los reports abiertos que se muestran en el UI
     private val _reports = MutableStateFlow<List<Report>>(emptyList())
     val reports: StateFlow<List<Report>> = _reports
 
+    // Flags y mensajes para la UI
     val isLoading = mutableStateOf(false)
     val errorMessage = mutableStateOf("")
     val successMessage = mutableStateOf("")
     val isAdmin = mutableStateOf(false)
 
+    // Al inicializar, compruebo si el usuario es admin para cargar reports
     init {
         checkAdminStatus()
     }
 
-    // Check if current user is admin
+    // Comprueba en Firestore si el usuario tiene la bandera `esAdmin`.
+    // Si es admin, carga los reports abiertos.
     private fun checkAdminStatus() {
         val currentUser = auth.currentUser
         if (currentUser == null) {
@@ -43,7 +46,7 @@ class AdminViewModel : ViewModel() {
                 val admin = doc.getBoolean("esAdmin") ?: false
                 isAdmin.value = admin
                 if (admin) {
-                    // only load reports if the user is admin
+                    // Solo cargar reports si es admin
                     loadOpenReports()
                 }
             }
@@ -52,7 +55,7 @@ class AdminViewModel : ViewModel() {
             }
     }
 
-    // Load all open reports
+    // Solicita al repositorio los reports abiertos y actualiza el estado
     fun loadOpenReports() {
         isLoading.value = true
 
@@ -68,7 +71,7 @@ class AdminViewModel : ViewModel() {
         )
     }
 
-    // Resolve a report
+    // Resuelve un reporte con una resolución textual; requiere uid admin
     fun resolveReport(reportId: String, resolution: String) {
         val adminUid = auth.currentUser?.uid
         if (adminUid == null) {
@@ -94,7 +97,7 @@ class AdminViewModel : ViewModel() {
         )
     }
 
-    // Dismiss a report
+    // Marca un reporte como "dismissed" con una razón; requiere admin
     fun dismissReport(reportId: String, reason: String) {
         val adminUid = auth.currentUser?.uid
         if (adminUid == null) {
@@ -120,7 +123,7 @@ class AdminViewModel : ViewModel() {
         )
     }
 
-    // Delete trip (after report resolution)
+    // Elimina un viaje (accion administrativa) y actualiza estado
     fun deleteTripByAdmin(tripId: String) {
         val adminUid = auth.currentUser?.uid
         if (adminUid == null) {
@@ -145,7 +148,7 @@ class AdminViewModel : ViewModel() {
         )
     }
 
-    // Delete comment (after report resolution)
+    // Elimina un comentario (accion administrativa)
     fun deleteCommentByAdmin(tripId: String, commentId: String) {
         val adminUid = auth.currentUser?.uid
         if (adminUid == null) {
@@ -171,7 +174,7 @@ class AdminViewModel : ViewModel() {
         )
     }
 
-    // Block user
+    // Bloquea a un usuario vía repositorio (admin action)
     fun blockUser(userToBlockUid: String, reason: String) {
         val adminUid = auth.currentUser?.uid
         if (adminUid == null) {
@@ -197,6 +200,7 @@ class AdminViewModel : ViewModel() {
         )
     }
 
+    // Elimina el contenido reportado (via deleteTrip/deleteComment) y luego resuelve el reporte
     fun deleteReportedContentAndResolve(report: Report, resolution: String = "Contenido eliminado") {
         val adminUid = auth.currentUser?.uid
         if (adminUid == null) {
@@ -263,6 +267,7 @@ class AdminViewModel : ViewModel() {
         }
     }
 
+    // Bloquea al usuario objetivo del reporte y resuelve el reporte
     fun blockReportedUserAndResolve(report: Report) {
         val adminUid = auth.currentUser?.uid
         val targetUid = report.targetUserUid
@@ -306,7 +311,7 @@ class AdminViewModel : ViewModel() {
         )
     }
 
-    // Unblock user
+    // Desbloquea a un usuario (accion admin)
     fun unblockUser(userToUnblockUid: String) {
         val adminUid = auth.currentUser?.uid
         if (adminUid == null) {
@@ -331,6 +336,7 @@ class AdminViewModel : ViewModel() {
         )
     }
 
+    // Limpia mensajes temporales de éxito/error
     fun clearMessages() {
         if (successMessage.value.isNotEmpty()) {
             successMessage.value = ""

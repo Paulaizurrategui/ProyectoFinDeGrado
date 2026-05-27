@@ -8,9 +8,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
-import androidx.compose.ui.platform.LocalContext
-import android.util.Log
-import android.widget.Toast
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.luminance
@@ -36,6 +33,7 @@ fun LoginScreen( // pantalla de login
     val panelColor = if (isDarkTheme) MaterialTheme.colorScheme.surface else Color.White
     val headerColor = if (isDarkTheme) MaterialTheme.colorScheme.surface else Color(0xFFFFF3E0)
     val headerTextColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurface else Color(0xFFEF6C00)
+    val errorEmailDomainText = stringResource(R.string.error_email_domain_not_allowed)
 
     var email by remember { mutableStateOf("") } // estado email
     var password by remember { mutableStateOf("") } // estado password
@@ -138,7 +136,7 @@ fun LoginScreen( // pantalla de login
                     color = mainTextColor
                 )
                 Text( // subtitulo
-                    text = "¡bienvenid@ de vuelta!",
+                    text = stringResource(R.string.login_welcome_back),
                     style = MaterialTheme.typography.bodyMedium,
                     color = secondaryTextColor,
                     maxLines = 1,
@@ -218,7 +216,7 @@ fun LoginScreen( // pantalla de login
                         onClick = {
                             // valido email antes
                             if (!EmailValidator.isAllowed(email)) {
-                                localErrorText = "introduce un correo válido (ej: @gmail.com)"
+                                localErrorText = errorEmailDomainText
                                 return@TextButton
                             }
                             authViewModel.sendPasswordReset(email.trim()) // envio reset
@@ -232,18 +230,13 @@ fun LoginScreen( // pantalla de login
                 Spacer(modifier = Modifier.height(10.dp))
 
                 val orange = Color(0xFFFF8A00) // color boton
-                val ctx = LocalContext.current
-
                 Button( // boton login
                     onClick = {
-                        Log.d("LoginScreen", "Login button clicked: email=$email")
-                        Toast.makeText(ctx, "Login pressed", Toast.LENGTH_SHORT).show()
-
                         localErrorText = null // limpio error
 
                         // valido email
                         if (!EmailValidator.isAllowed(email)) {
-                            localErrorText = "correo no válido"
+                            localErrorText = errorEmailDomainText
                             return@Button
                         }
 
@@ -271,7 +264,7 @@ fun LoginScreen( // pantalla de login
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "¿no tienes cuenta?", color = secondaryTextColor)
+                    Text(text = stringResource(R.string.login_no_account), color = secondaryTextColor)
                     TextButton(onClick = onGoToRegister) { // ir a registro
                         Text(
                             stringResource(R.string.create_account),

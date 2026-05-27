@@ -54,6 +54,9 @@
     <string name="error_passwords_not_match">Passwords do not match.</string>
     <string name="error_password_min">Password must be at least 6 characters long.</string>
     <string name="error_enter_email_reset">Enter your email to recover your password.</string>
+    <string name="error_email_domain_not_allowed">Email must belong to an allowed domain (e.g., @gmail.com, @hotmail.com, @outlook.com).</string>
+    <string name="login_welcome_back">Welcome back</string>
+    <string name="login_no_account">Don\'t have an account?</string>
 
     <!-- Auth success messages -->
     <string name="reset_email_sent">We have sent you an email to reset your password.</string>
@@ -112,6 +115,10 @@
     <string name="profile_theme_light_dark">Light Mode / Dark Mode</string>
     <string name="profile_theme_toggle_description">Toggle light/dark mode</string>
     <string name="profile_following_count">Following: %1$d</string>
+    <string name="profile_language_title">Language</string>
+    <string name="profile_language_subtitle">Select the app language</string>
+    <string name="profile_language_es">Spanish</string>
+    <string name="profile_language_en">English</string>
 
     <string name="login_required_title">Sign In Required</string>
     <string name="login_required_body">To access this section you need to sign in or create an account.</string>

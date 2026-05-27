@@ -39,6 +39,9 @@ fun RegisterScreen(
     val panelColor = if (isDarkTheme) MaterialTheme.colorScheme.surface else Color.White
     val headerColor = if (isDarkTheme) MaterialTheme.colorScheme.surface else Color(0xFFFFF3E0)
     val headerTextColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurface else Color(0xFFEF6C00)
+    val ageVerificationOver13Text = stringResource(R.string.age_verification_over_13)
+    val ageVerificationErrorText = stringResource(R.string.age_verification_error)
+    val emailDomainErrorText = stringResource(R.string.error_email_domain_not_allowed)
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -284,7 +287,7 @@ fun RegisterScreen(
                         )
                     )
                     Text(
-                        text = "Tengo más de 13 años / I\'m over 13",
+                        text = ageVerificationOver13Text,
                         style = MaterialTheme.typography.bodySmall,
                         color = secondaryTextColor
                     )
@@ -299,14 +302,13 @@ fun RegisterScreen(
 
                         // Validate age
                         if (!isOver13) {
-                            localErrorText = "Debes confirmar que tienes más de 13 años para continuar / You must confirm you are over 13 to continue."
+                            localErrorText = ageVerificationErrorText
                             return@Button
                         }
 
                         // NUEVO: validar dominio permitido
                         if (!EmailValidator.isAllowed(email)) {
-                            localErrorText =
-                                "El correo debe ser de un dominio válido (por ejemplo: @gmail.com, @hotmail.com, @outlook.com)."
+                            localErrorText = emailDomainErrorText
                             return@Button
                         }
 

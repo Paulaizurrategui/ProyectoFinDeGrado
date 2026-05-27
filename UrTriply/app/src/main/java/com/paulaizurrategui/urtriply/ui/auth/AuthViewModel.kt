@@ -27,21 +27,21 @@ class AuthViewModel(
     // registro con firebase auth + creo/actualizo el doc en /users
     fun register(email: String, password: String, isOver13: Boolean, onSuccess: () -> Unit) {
         val cleaned = email.trim() // quito espacios por si pega el email con espacios
-
-        // pongo loading y limpio mensajes
+        // Marco carga y limpio mensajes previos
         _uiState.value = _uiState.value.copy(
             isLoading = true,
             errorResId = null,
             successResId = null
         )
 
+        // Creo usuario con Firebase Auth
         auth.createUserWithEmailAndPassword(cleaned, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     val user = auth.currentUser
                     val uid = user?.uid
 
-                    // si por lo que sea no hay uid, corto
+                    // Si por alguna razón no hay uid, abortamos y mostramos error
                     if (uid == null) {
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
@@ -50,36 +50,36 @@ class AuthViewModel(
                         return@addOnCompleteListener
                     }
 
-                    // displayname inicial: lo saco del email (antes del @)
+                    // Construyo un displayName por defecto desde el email
                     val defaultDisplayName = cleaned.substringBefore("@").ifBlank { "usuario" }
 
-                    // datos del perfil que guardo en firestore
+                    // Map con datos mínimos que guardo en /users (merge para no sobrescribir)
                     val userMap = mapOf(
                         "uid" to uid,
                         "email" to cleaned,
                         "displayName" to defaultDisplayName,
-                        "displayNameLower" to defaultDisplayName.lowercase(), // para busquedas sin mayusculas
-                        "isOver13Confirmed" to isOver13  // edad verificada
+                        "displayNameLower" to defaultDisplayName.lowercase(), // para búsquedas
+                        "isOver13Confirmed" to isOver13
                     )
 
-                    // merge para no pisar campos si ya existian
+                    // Escribo/mergeo el doc del usuario en Firestore
                     db.collection("users")
                         .document(uid)
                         .set(userMap, SetOptions.merge())
                         .addOnSuccessListener {
-                            // dejo el estado limpio y marco login ok
+                            // Registro completo: marco usuario logueado
                             _uiState.value = AuthUiState(isLoggedIn = true)
                             onSuccess()
                         }
                         .addOnFailureListener {
-                            // la cuenta se creo, pero fallo firestore
+                            // Si falla Firestore tras crear la cuenta, muestro error
                             _uiState.value = _uiState.value.copy(
                                 isLoading = false,
                                 errorResId = R.string.generic_error
                             )
                         }
                 } else {
-                    // error de firebase auth (email ya usado, password debil, etc)
+                    // Error en Firebase Auth: mapeo excepción a recurso de string
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         errorResId = FirebaseAuthErrorMapper.toStringRes(task.exception),
@@ -92,19 +92,20 @@ class AuthViewModel(
     // login con firebase auth + aseguro doc minimo en /users
     fun login(email: String, password: String, onSuccess: () -> Unit) {
         val cleaned = email.trim()
-
+        // Marco carga y limpio mensajes
         _uiState.value = _uiState.value.copy(
             isLoading = true,
             errorResId = null,
             successResId = null
         )
 
+        // Intento autenticar con Firebase Auth
         auth.signInWithEmailAndPassword(cleaned, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     val uid = auth.currentUser?.uid
 
-                    // si no hay uid, algo raro paso
+                    // Si no hay uid, algo extraño ocurrió
                     if (uid == null) {
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
@@ -113,7 +114,7 @@ class AuthViewModel(
                         return@addOnCompleteListener
                     }
 
-                    // me aseguro de tener doc en firestore (sin pisar displayname)
+                    // Aseguro que existe un doc mínimo en /users (merge para no sobrescribir)
                     val ensureMap = mapOf(
                         "uid" to uid,
                         "email" to cleaned
@@ -127,7 +128,7 @@ class AuthViewModel(
                             onSuccess()
                         }
                         .addOnFailureListener {
-                            // aunque falle firestore, el login es valido igual
+                            // Si falla Firestore no impide el login
                             _uiState.value = AuthUiState(isLoggedIn = true)
                             onSuccess()
                         }
@@ -159,7 +160,7 @@ class AuthViewModel(
             errorResId = null,
             successResId = null
         )
-
+        // Envío el email de recuperación y actualizo el estado según resultado
         auth.sendPasswordResetEmail(cleaned)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
@@ -191,6 +192,7 @@ class AuthViewModel(
             return
         }
 
+        // Comprueba en Firestore el flag `isOver13Confirmed` en el doc de usuario
         db.collection("users")
             .document(uid)
             .get()
