@@ -3,8 +3,10 @@ package com.paulaizurrategui.urtriply.ui.auth
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import com.google.firebase.auth.FirebaseAuth.AuthStateListener
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.paulaizurrategui.urtriply.data.favorites.FavoritesRepository
 import com.paulaizurrategui.urtriply.data.likes.LikesRepository
 import com.paulaizurrategui.urtriply.domain.model.CommunityFilters
@@ -41,10 +43,32 @@ class CommunityViewModel : ViewModel() {
     // Seguimiento: flow con ids de usuarios que sigo y caché local para cambios
     val followingIdsFlow = kotlinx.coroutines.flow.MutableStateFlow<Set<String>>(emptySet())
     private var lastFollowingIds: Set<String> = emptySet()
+    private var followingListener: ListenerRegistration? = null
+    private var authStateListener: AuthStateListener? = null
 
     // Al iniciar, primero cargo bloqueos y luego escucho la lista de usuarios seguidos
     init {
-        loadBlockedUsers()
+        authStateListener = AuthStateListener { firebaseAuth ->
+            val currentUser = firebaseAuth.currentUser
+            if (currentUser == null) {
+                clearCommunityState()
+                return@AuthStateListener
+            }
+
+            loadBlockedUsers()
+        }
+        auth.addAuthStateListener(authStateListener!!)
+
+        auth.currentUser?.let {
+            loadBlockedUsers()
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        clearFollowingListener()
+        authStateListener?.let { auth.removeAuthStateListener(it) }
+        authStateListener = null
     }
 
     fun toggleFilters() {
@@ -309,9 +333,11 @@ class CommunityViewModel : ViewModel() {
             return
         }
 
+        clearFollowingListener()
+
         // En lugar de escuchar todos los viajes, escuchamos la lista de usuarios que sigo
         // Escucho cambios en la colección /users/{myUid}/following para saber a quién sigo
-        db.collection("users").document(myUid).collection("following")
+        followingListener = db.collection("users").document(myUid).collection("following")
             .addSnapshotListener { snap, e ->
                 if (e != null) {
                     rawPosts = emptyList()
@@ -333,6 +359,24 @@ class CommunityViewModel : ViewModel() {
                 // Cargo los viajes publicados por los autores que sigo
                 loadPublishedTripsFromAuthors(followingIds)
             }
+    }
+
+    private fun clearFollowingListener() {
+        followingListener?.remove()
+        followingListener = null
+    }
+
+    private fun clearCommunityState() {
+        clearFollowingListener()
+        rawPosts = emptyList()
+        likedTripIds = emptySet()
+        favoriteTripIds = emptySet()
+        blockedUserIds = emptySet()
+        usersWhoBlockedMe = emptySet()
+        lastFollowingIds = emptySet()
+        followingIdsFlow.value = emptySet()
+        _posts.value = emptyList()
+        isLoading.value = false
     }
 
     // carga los viajes publicados de una lista de autores (wherein max 10)
@@ -415,7 +459,7 @@ class CommunityViewModel : ViewModel() {
                     all += mapped
                 }
                 .addOnFailureListener {
-                    // Si falla una chunk, continúo con el resto (feed puede quedar incompleto)
+                    errorMessage.value = it.message ?: "Error cargando publicaciones de la comunidad"
                 }
                 .addOnCompleteListener {
                     pending--

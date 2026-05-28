@@ -44,7 +44,14 @@ class FindFriendsViewModel : ViewModel() {
     }
 
     fun searchUsers(query: String) {
-        val currentUid = auth.currentUser?.uid ?: return
+        val currentUid = auth.currentUser?.uid ?: run {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                users = emptyList(),
+                errorMessage = "Inicia sesión para buscar amigos"
+            )
+            return
+        }
         val q = query.trim()
 
         // si esta vacio, limpio la lista

@@ -76,6 +76,15 @@ fun FindFriendsScreen(onBack: () -> Unit) {
             )
 
             Spacer(modifier = Modifier.height(20.dp))
+                    // mostrar errores (ej. no autenticado o fallo en la consulta)
+                    if (!state.errorMessage.isNullOrBlank()) {
+                        Text(
+                            text = state.errorMessage ?: "",
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
 
             if (state.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))

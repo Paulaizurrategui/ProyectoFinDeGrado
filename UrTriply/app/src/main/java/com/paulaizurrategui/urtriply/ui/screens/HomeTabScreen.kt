@@ -189,74 +189,150 @@ fun InicioTabScreen(
     }
 }
 
+enum class HomeActionVariant {
+    Full,
+    Compact,
+    IconOnly
+}
+
 @Composable
 fun HomeActionCard(
     icon: String,
     title: String,
     description: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    variant: HomeActionVariant = HomeActionVariant.Full
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val isDarkTheme = colorScheme.background.luminance() < 0.5f
-
-    ElevatedCard(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp)),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = if (isDarkTheme) colorScheme.surfaceVariant else UrSkySoft
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp),
-        onClick = onClick
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Icon
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        if (isDarkTheme) colorScheme.surface else Color(0xFFE2E8F0)
-                    ),
-                contentAlignment = Alignment.Center
+    when (variant) {
+        HomeActionVariant.IconOnly -> {
+            ElevatedCard(
+                modifier = modifier
+                    .size(72.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = if (isDarkTheme) colorScheme.surfaceVariant else UrSkySoft
+                ),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
+                onClick = onClick
             ) {
-                Text(text = icon, fontSize = 28.sp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isDarkTheme) colorScheme.surface else Color(0xFFE2E8F0)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = icon, fontSize = 26.sp)
+                    }
+                }
             }
+        }
 
-            // Content
-            Column(
-                modifier = Modifier
-                    .weight(1f)
+        HomeActionVariant.Compact -> {
+            ElevatedCard(
+                modifier = modifier
                     .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp)),
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = if (isDarkTheme) colorScheme.surfaceVariant else UrSkySoft
+                ),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp),
+                onClick = onClick
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                    color = colorScheme.onSurface
-                )
+                Row(
+                    modifier = Modifier
+                        .padding(12.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isDarkTheme) colorScheme.surface else Color(0xFFE2E8F0)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = icon, fontSize = 22.sp)
+                    }
 
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colorScheme.onSurfaceVariant
-                )
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                        color = colorScheme.onSurface
+                    )
+                }
             }
+        }
 
-            // Arrow
-            Text(
-                text = "→",
-                style = MaterialTheme.typography.headlineSmall,
-                color = colorScheme.primary
-            )
+        HomeActionVariant.Full -> {
+            ElevatedCard(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp)),
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = if (isDarkTheme) colorScheme.surfaceVariant else UrSkySoft
+                ),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp),
+                onClick = onClick
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Icon
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                if (isDarkTheme) colorScheme.surface else Color(0xFFE2E8F0)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = icon, fontSize = 28.sp)
+                    }
+
+                    // Content
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    ) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                            color = colorScheme.onSurface
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    // Arrow
+                    Text(
+                        text = "→",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = colorScheme.primary
+                    )
+                }
+            }
         }
     }
 }

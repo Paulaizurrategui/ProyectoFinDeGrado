@@ -6,9 +6,22 @@ service cloud.firestore {
     function isAuthenticated() {
       return request.auth != null;
     }
+
+    function isKnownAdmin() {
+      return isAuthenticated() && (
+        request.auth.uid == "REPLACE_WITH_ADMIN_UID" ||
+        request.auth.token.email == "paula.izurrategui.lopez@gregoriofer.com"
+      );
+    }
     
     function isAdmin() {
-      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.esAdmin == true;
+      // Comprueba que el documento de usuario existe antes de leer el flag esAdmin.
+      // Esto evita errores cuando el usuario acaba de registrarse y todavía no
+      // tiene un doc en /users/{uid}.
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).exists() &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.esAdmin == true)
+        || isKnownAdmin();
     }
     
     function isUserOrAdmin(userId) {
@@ -17,8 +30,9 @@ service cloud.firestore {
     
     // ===== COLECCIÓN /users =====
     match /users/{userId} {
-      // Lectura: usuario propio + admin
-      allow read: if isUserOrAdmin(userId);
+      // Lectura: permitir a cualquier usuario autenticado leer usuarios
+      // (necesario para búsquedas de amigos desde la app)
+      allow read: if isAuthenticated();
       
       // Escritura: usuario propio + admin
       allow write: if isUserOrAdmin(userId);
@@ -31,6 +45,33 @@ service cloud.firestore {
         allow read: if isAuthenticated();
         allow write: if isUserOrAdmin(userId);
       }
+
+      // Subcolección /users/{userId}/blocks — cada usuario puede crear/eliminar
+      // documentos en su propio espacio de `blocks` para bloquear/desbloquear.
+      match /blocks/{blockedId} {
+        allow read: if isUserOrAdmin(userId);
+        // Permitimos crear/eliminar un documento de bloqueo si el solicitante
+        // escribe en su propio namespace (`userId == request.auth.uid`) —
+        // o si escribe en el namespace del objetivo pero usando su UID
+        // como id del documento (`blockedId == request.auth.uid`). Esto
+        // cubre ambas estrategias de la app (guardar bloqueo en /users/myUid/blocks/target
+        // o en /users/target/blocks/myUid).
+        allow create: if isAuthenticated() && (request.auth.uid == userId || request.auth.uid == blockedId);
+        allow delete: if isAuthenticated() && (request.auth.uid == userId || request.auth.uid == blockedId);
+      }
+
+      // Permitir que un usuario autenticado actualice únicamente el campo
+      // `blockedByUserIds` en el documento de otro usuario para añadir o quitar
+      // su propio UID (operación usada cuando alguien bloquea a otro).
+      // Requerimos que la operación solo escriba ese campo.
+      // Permitir actualizaciones seguras del campo `blockedByUserIds` mediante
+      // operaciones transform (arrayUnion/arrayRemove). Para evitar denegaciones
+      // con transform operations, permitimos que un usuario autenticado que esté
+      // realizando una escritura que afecte únicamente a `blockedByUserIds`
+      // pueda hacerlo.
+      allow update: if isAdmin() || isUserOrAdmin(userId) || (
+        isAuthenticated() && request.writeFields().hasOnly(['blockedByUserIds'])
+      );
     }
     
     // ===== COLECCIÓN /trips =====
@@ -68,15 +109,18 @@ service cloud.firestore {
       // Subcollección /trips/{tripId}/likes
       match /likes/{uid} {
         allow read: if true; // Públicos
-        allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
-        allow delete: if isAuthenticated() && uid == request.auth.uid;
+        // Permitimos crear/borrar likes si el solicitante es el propio usuario
+        // o si es un admin (para que los administradores puedan moderar y usar la app).
+        allow create: if isAuthenticated() && (request.resource.data.uid == request.auth.uid || isAdmin());
+        allow delete: if isAuthenticated() && (uid == request.auth.uid || isAdmin());
       }
       
       // Subcollección /trips/{tripId}/favorites
       match /favorites/{uid} {
-        allow read: if isAuthenticated() && uid == request.auth.uid;
-        allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
-        allow delete: if isAuthenticated() && uid == request.auth.uid;
+        // Permitir lectura/creación/borrado por el propio usuario o por admin
+        allow read: if isAuthenticated() && (uid == request.auth.uid || isAdmin());
+        allow create: if isAuthenticated() && (request.resource.data.uid == request.auth.uid || isAdmin());
+        allow delete: if isAuthenticated() && (uid == request.auth.uid || isAdmin());
       }
       
       // Subcollección /trips/{tripId}/comments
@@ -92,7 +136,10 @@ service cloud.firestore {
     // Admin puede leer/escribir en cualquier usuario para moderación.
     // También permitimos que el propio usuario lea/escriba su documento.
     match /users/{userId} {
-      allow read, write: if isAdmin() || isUserOrAdmin(userId);
+      // Lectura para usuarios autenticados (ya permitida arriba), escritura
+      // restringida al admin o al propio usuario.
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isUserOrAdmin(userId);
     }
     
     // Admin puede leer todos los trips para moderación (subcolecciones y permisos específicos

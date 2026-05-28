@@ -31,6 +31,7 @@ import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
 import com.paulaizurrategui.urtriply.ui.navigation.MainTabs
 import com.paulaizurrategui.urtriply.ui.navigation.PlanRoutes
 import com.paulaizurrategui.urtriply.ui.navigation.Routes
+import com.paulaizurrategui.urtriply.ui.screensimport.EditProfileScreen
 
 data class BottomTab( // modelo de cada tab
     val route: String, // ruta navegación
@@ -178,7 +179,7 @@ fun MainShellScreen( // pantalla principal con navegación
             }
 
             composable("profile/edit") {
-                EditProfileScreen(onBack = { navController.popBackStack() }) // pantalla editar perfil
+                    EditProfileScreen(onBack = { navController.popBackStack() }) // pantalla editar perfil
             }
 
             composable(

@@ -322,6 +322,8 @@
     <string name="edit_profile_remove_photo">Eliminar foto</string>
     <string name="edit_profile_photo_uploading">Subiendo foto…</string>
     <string name="edit_profile_photo_error">No se pudo subir la foto.</string>
+    <string name="edit_profile_photo_success">Foto subida correctamente.</string>
+    <string name="edit_profile_photo_removed">Foto eliminada.</string>
 
     <!-- Admin -->
     <string name="admin_access_message">No tienes acceso a este panel</string>

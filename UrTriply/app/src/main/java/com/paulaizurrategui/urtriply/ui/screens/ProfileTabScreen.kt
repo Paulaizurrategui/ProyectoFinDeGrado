@@ -39,16 +39,21 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.rememberAsyncImagePainter
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import android.app.Activity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,14 +62,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.os.LocaleListCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.paulaizurrategui.urtriply.R
 import com.paulaizurrategui.urtriply.data.trips.TripStatus
 import com.paulaizurrategui.urtriply.ui.auth.AuthViewModel
 import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
-import java.util.Locale
 
 @Composable
 fun ProfileTabScreen(
@@ -79,6 +81,7 @@ fun ProfileTabScreen(
     val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
     // Theme is loaded once in MainActivity.kt - no need to load it again here
     val user = FirebaseAuth.getInstance().currentUser
+    val context = LocalContext.current
     val email = user?.email ?: "-"
     val displayName = user?.displayName
     val initial = (displayName?.firstOrNull() ?: email.firstOrNull() ?: 'U').uppercaseChar().toString()
@@ -88,11 +91,6 @@ fun ProfileTabScreen(
     val profileFriendsSubtitle = stringResource(R.string.profile_friends_subtitle)
     val profileThemeLightDarkText = stringResource(R.string.profile_theme_light_dark)
     val profileThemeDarkLightText = stringResource(R.string.profile_theme_dark_light)
-    val currentLanguageTag = remember {
-        val tags = AppCompatDelegate.getApplicationLocales().toLanguageTags()
-        if (tags.isNotBlank()) tags else Locale.getDefault().language
-    }
-    var selectedLanguage by remember { mutableStateOf(if (currentLanguageTag.startsWith("en")) "en" else "es") }
 
     val tripsVm = remember { ProfileTripsViewModel() }
     val tripsState by tripsVm.uiState.collectAsState()
@@ -218,19 +216,33 @@ fun ProfileTabScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = initial,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                        // Mostrar foto de perfil si existe, sino inicial
+                        val userPhotoUrl = user?.photoUrl?.toString().orEmpty()
+                        if (userPhotoUrl.isNotBlank()) {
+                            val url = userPhotoUrl
+                            androidx.compose.foundation.Image(
+                                painter = coil.compose.rememberAsyncImagePainter(url),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
                             )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = initial,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
                         }
 
                         Column(modifier = Modifier.weight(1f)) {
@@ -311,45 +323,7 @@ fun ProfileTabScreen(
                 }
             }
 
-            item {
-                SectionTitle(
-                    stringResource(R.string.profile_language_title),
-                    stringResource(R.string.profile_language_subtitle)
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = {
-                            selectedLanguage = "es"
-                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("es"))
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (selectedLanguage == "es") MaterialTheme.colorScheme.primaryContainer else Color.Transparent
-                        )
-                    ) {
-                        Text(stringResource(R.string.profile_language_es))
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            selectedLanguage = "en"
-                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (selectedLanguage == "en") MaterialTheme.colorScheme.primaryContainer else Color.Transparent
-                        )
-                    ) {
-                        Text(stringResource(R.string.profile_language_en))
-                    }
-                }
-            }
+            // Sección de idioma eliminada: la app usa el idioma del sistema.
 
             // NUEVA SECCIÓN: Favoritos
             item { SectionTitle(stringResource(R.string.profile_favorites_title), stringResource(R.string.profile_favorites_subtitle)) }
@@ -638,35 +612,44 @@ private fun TripCard(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 if (showEditAction) {
-                    OutlinedButton(
-                        onClick = onEdit,
-                        enabled = actionsEnabled,
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(imageVector = Icons.Default.Edit, contentDescription = null)
-                        Spacer(Modifier.size(8.dp))
-                        Text(stringResource(R.string.profile_edit_button))
+                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        IconButton(onClick = onEdit, enabled = actionsEnabled) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = stringResource(R.string.profile_edit_button),
+                                        modifier = Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
                 if (onPublish != null && showPublishAction) {
-                    Button(
-                        onClick = onPublish,
-                        enabled = actionsEnabled,
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Icon(imageVector = Icons.Default.Publish, contentDescription = null)
-                        Spacer(Modifier.size(8.dp))
-                        Text(
-                            text = stringResource(R.string.trip_publish),
-                            fontSize = MaterialTheme.typography.labelMedium.fontSize
-                        )
+                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        IconButton(onClick = onPublish, enabled = actionsEnabled) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.Publish,
+                                        contentDescription = stringResource(R.string.trip_publish),
+                                        modifier = Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

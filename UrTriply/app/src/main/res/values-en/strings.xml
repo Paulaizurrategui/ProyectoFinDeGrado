@@ -28,6 +28,8 @@
     <string name="home_quick_access">Quick Access</string>
     <string name="home_profile_title">My Profile</string>
     <string name="home_plan_description">Generate a proposal tailored to your budget</string>
+    <string name="home_manual_trip">Trip Draft</string>
+    <string name="home_manual_trip_description">Create an editable draft with destination, budget, dates and preferences</string>
     <string name="home_community_description">See your friends\' posts</string>
     <string name="home_profile_description">Your trips, likes and saved items</string>
     <string name="home_guest_explore">Explore without an account</string>

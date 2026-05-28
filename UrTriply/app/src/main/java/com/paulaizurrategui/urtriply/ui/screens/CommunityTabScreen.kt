@@ -115,6 +115,7 @@ fun CommunityScreen(
 
     // estado del viewmodel
     val posts by viewModel.posts.collectAsState()
+    val errorMessage by remember { derivedStateOf { viewModel.errorMessage.value } }
     val filters by viewModel.filters
     val isLoading by viewModel.isLoading
     val showFilters by viewModel.showFilters
@@ -149,6 +150,36 @@ fun CommunityScreen(
                     onFiltersChange = { viewModel.updateFilters(it) },
                     onClearFilters = { viewModel.clearFilters() }
                 )
+            }
+
+            // Mensaje de error (visible temporalmente) para depuración y feedback al usuario
+            if (!errorMessage.isNullOrBlank()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = errorMessage ?: "",
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(onClick = { viewModel.errorMessage.value = null }) {
+                                Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = MaterialTheme.colorScheme.onErrorContainer)
+                            }
+                        }
+                    }
+                }
             }
 
             // contenido segun estado

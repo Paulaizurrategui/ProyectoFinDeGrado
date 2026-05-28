@@ -10,6 +10,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 class AdminViewModel : ViewModel() {
+    private companion object {
+        private const val ADMIN_EMAIL_FALLBACK = "paula.izurrategui.lopez@gregoriofer.com"
+    }
+
     // Repositorio de reports y acceso a Firebase
     private val reportRepo = ReportRepository()
     private val auth = FirebaseAuth.getInstance()
@@ -43,7 +47,7 @@ class AdminViewModel : ViewModel() {
             .document(currentUser.uid)
             .get()
             .addOnSuccessListener { doc ->
-                val admin = doc.getBoolean("esAdmin") ?: false
+                val admin = (doc.getBoolean("esAdmin") ?: false) || currentUser.email == ADMIN_EMAIL_FALLBACK
                 isAdmin.value = admin
                 if (admin) {
                     // Solo cargar reports si es admin
