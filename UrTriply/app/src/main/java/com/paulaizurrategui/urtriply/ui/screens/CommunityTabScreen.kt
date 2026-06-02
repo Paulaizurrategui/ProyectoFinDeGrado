@@ -41,6 +41,9 @@ fun CommunityTabScreen(
     onNavigateToFindFriends: () -> Unit = {},
     onNavigateToUserProfile: (String) -> Unit = {}
 ) {
+    // Pantalla contenedor para la pestaña Comunidad
+    // - Verifica la edad (+13) antes de mostrar el feed
+    // - Muestra un loader, un mensaje de restricción o el `CommunityScreen`
     val isCompactWidth = LocalConfiguration.current.screenWidthDp < 360
     val authViewModel = viewModel<com.paulaizurrategui.urtriply.ui.auth.AuthViewModel>()
     var isOver13 by remember { mutableStateOf<Boolean?>(null) }
@@ -53,7 +56,7 @@ fun CommunityTabScreen(
 
     when {
         isOver13 == null -> {
-            // Verificando...
+            // Verificando... muestro loader mientras comprobamos la edad
             UrTriplyGradientScaffold(title = stringResource(R.string.tab_community)) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -61,7 +64,7 @@ fun CommunityTabScreen(
             }
         }
         isOver13 == false -> {
-            // Usuario no confirmó +13 años
+            // Usuario no confirmó +13 años: muestro mensaje explicativo
             UrTriplyGradientScaffold(title = stringResource(R.string.tab_community)) {
                 Box(
                     modifier = Modifier
@@ -88,7 +91,7 @@ fun CommunityTabScreen(
             }
         }
         else -> {
-            // Usuario confirmó +13 años
+            // Usuario confirmó +13 años -> renderizo el feed comunitario
             CommunityScreen(
                 onPostClick = onPostClick,
                 onNavigateToFindFriends = onNavigateToFindFriends,
@@ -111,6 +114,8 @@ fun CommunityScreen(
     onNavigateToFindFriends: () -> Unit = {},
     onNavigateToUserProfile: (String) -> Unit = {}
 ) {
+    // Composable que dibuja todo el feed: cabecera, filtros, lista de posts, estados vacíos
+    // Consume el `CommunityViewModel` para obtener posts, loading, errores y filtros
     val isCompactWidth = LocalConfiguration.current.screenWidthDp < 360
 
     // estado del viewmodel
@@ -133,13 +138,13 @@ fun CommunityScreen(
             )
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // cabecera con logo + filtros
+            // cabecera con logo + botón para abrir panel de filtros
             CommunityHeader(
                 onFilterClick = { viewModel.toggleFilters() },
                 hasActiveFilters = filters.destination.isNotEmpty() || filters.maxBudget != null
             )
 
-            // panel de filtros desplegable
+            // panel de filtros desplegable (AnimatedVisibility para animar apertura)
             AnimatedVisibility(
                 visible = showFilters,
                 enter = expandVertically() + fadeIn(),
@@ -182,7 +187,7 @@ fun CommunityScreen(
                 }
             }
 
-            // contenido segun estado
+            // Contenido principal según estado: loader, vacío o lista de posts
             if (isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -203,6 +208,7 @@ fun CommunityScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Item por cada TravelPost -> tarjeta reutilizable
                     items(posts, key = { it.id }) { post ->
                         TravelPostCard(
                             post = post,
@@ -232,7 +238,7 @@ fun CommunityHeader(
 ) {
     val isCompactWidth = LocalConfiguration.current.screenWidthDp < 360
 
-    // header tipo appbar
+    // Header: appbar custom con logo y botón de filtros
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White,
@@ -241,7 +247,7 @@ fun CommunityHeader(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // logo
+            // logo y nombre de la app (estilizado en un contenedor)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -262,7 +268,7 @@ fun CommunityHeader(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // titulo + boton filtros
+            // título de la sección y botón de filtros (con badge si hay filtros activos)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -281,7 +287,7 @@ fun CommunityHeader(
                     )
                 }
 
-                // boton filtros con badge si hay filtros activos
+                // Botón de filtros con badge si hay filtros activos (visual cue)
                 FilledTonalIconButton(
                     onClick = onFilterClick,
                     colors = IconButtonDefaults.filledTonalIconButtonColors(
@@ -434,12 +440,12 @@ fun TravelPostCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // header: avatar + nombre + fecha + favorito
+            // Header de la tarjeta: avatar (inicial), nombre del autor, fecha y favorito
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // avatar (inicial del autor)
+                // Avatar: inicial del autor dentro de un círculo
                 Box(
                     modifier = Modifier
                         .clip(CircleShape)
@@ -472,7 +478,7 @@ fun TravelPostCard(
                     )
                 }
 
-                // boton favorito
+                // Botón para marcar como favorito (estado visual según `post.isFavorite`)
                 IconButton(onClick = onFavoriteClick) {
                     Icon(
                         imageVector = if (post.isFavorite) Icons.Filled.Bookmark
@@ -485,7 +491,7 @@ fun TravelPostCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // chips del viaje (destino / dias / presupuesto)
+            // Chips del viaje: destino, días y presupuesto (información rápida)
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -549,7 +555,7 @@ fun TravelPostCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // descripcion (limito lineas para que no crezca infinito)
+            // Descripción del post; limitada en líneas para mantener la tarjeta compacta
             Text(
                 text = post.description,
                 style = if (isCompactWidth) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
@@ -564,7 +570,7 @@ fun TravelPostCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // acciones (likes / comentarios / ver detalle)
+            // Acciones: like, abrir comentarios y ver más (navegar al detalle)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

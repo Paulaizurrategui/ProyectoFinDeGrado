@@ -25,6 +25,9 @@ private interface ExchangeRatesApi {
     suspend fun latest(@Path("base") base: String): ExchangeRatesResponse
 }
 
+// Pequeño repo para convertir precios desde otra divisa a EUR.
+// - Usa https://open.er-api.com/ como fuente de rates (endpoints gratuitos)
+// - Si falla la consulta o no existe la tasa, retorna el `amount` sin convertir
 class CurrencyExchangeRepository {
 
     companion object {
@@ -63,12 +66,14 @@ class CurrencyExchangeRepository {
                 val response = api.latest(normalizedSource)
                 val rate = response.rates?.get("EUR")
                 if (rate == null || rate <= 0.0) {
+                    // Si no hay tasa EUR válida, devuelvo el amount original
                     Log.w(TAG, "Missing EUR rate for $normalizedSource")
                     amount
                 } else {
                     amount * rate
                 }
             } catch (e: Throwable) {
+                // En caso de error en la llamada, no quiero romper el flujo; devuelvo amount
                 Log.w(TAG, "Currency conversion failed for $normalizedSource: ${e.message}")
                 amount
             }

@@ -75,6 +75,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.supervisorScope
 import com.paulaizurrategui.urtriply.R
 
+// Preferencias que el usuario puede seleccionar en el formulario.
+// Cada entrada contiene la clave usada internamente y el recurso de texto para la UI.
 private enum class Preference(val labelRes: Int, val key: String) {
     CULTURA(R.string.plan_pref_culture, "cultura"),
     OCIO(R.string.plan_pref_night, "ocio nocturno"),
@@ -83,6 +85,9 @@ private enum class Preference(val labelRes: Int, val key: String) {
 }
 
 private fun destinationToIata(destination: String): String {
+    // Normalizo el nombre de la ciudad y devuelvo un código IATA simple usado
+    // como origen/destino para búsquedas de vuelos. Es un mapeo manual limitado
+    // (solo capitales incluidas en la app); si no coincide, se usa MAD por defecto.
     val value = destination.substringBefore("(").trim().lowercase(Locale.getDefault())
     return when {
         value.contains("parís") || value.contains("paris") -> "PAR"
@@ -129,21 +134,33 @@ fun PlanTabScreen(
         var fechaFinMillis by remember { mutableStateOf<Long?>(null) }
         var prefs by remember { mutableStateOf(setOf<Preference>()) }
 
+        // Notas de diseño: usamos Strings para inputs y luego parseamos (Double/Int)
+        // para validar; las fechas se guardan como millis para compatibilidad con
+        // DatePicker y para enviarlas a los repositorios que requieren formatos.
+
         // --- ui state ---
         var showStartPicker by remember { mutableStateOf(false) }
         var showEndPicker by remember { mutableStateOf(false) }
         var isLoading by remember { mutableStateOf(false) }
         var localError by remember { mutableStateOf<String?>(null) }
 
+        // `localError` se usa para mostrar errores de validación antes de disparar
+        // las búsquedas/llamadas a APIs externas.
+
         val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
         fun formatDate(ms: Long?): String = ms?.let { dateFormat.format(Date(it)) } ?: "-"
 
         val scrollState = rememberScrollState()
 
-        // coroutines (sin crear scope manual)
+        // Coroutines: usamos `rememberCoroutineScope()` para lanzar la generación
+        // de la propuesta sin bloquear la UI. Las llamadas de red se realizan en
+        // Dispatchers.IO y se usan timeouts y reintentos.
         val scope = rememberCoroutineScope()
 
         // repo geocoding (nominatim)
+        // Repositorios que consultan servicios externos (Nominatim, Overpass, Flights)
+        // Se inicializan dentro de la composición con `remember` para mantener
+        // la misma instancia mientras el composable esté vivo.
         val geocodingRepo = remember { GeocodingRepository() }
         val hotelsRepo = remember { HotelsRepository() }
         val activitiesRepo = remember { ActivitiesRepository() }
@@ -463,8 +480,10 @@ fun PlanTabScreen(
                         isLoading = true
 
                         scope.launch {
-                            try {
-                                // 1) genero una base local que solo se usa como fallback
+                                try {
+                                // 1) Generamos una propuesta local rápida que sirve como
+                                // fallback inmediato si las APIs externas fallan o tardan.
+                                // Esto permite mostrar siempre una propuesta útil al usuario.
                                 val fallback = generateLocalProposal(
                                     context = context,
                                     destino = destino,
@@ -475,12 +494,16 @@ fun PlanTabScreen(
                                     prefs = prefs
                                 )
 
-                                // 2) geocoding en IO para no bloquear la UI
+                                // 2) Geocodificación: obtenemos lat/lon para la ciudad
+                                // desde Nominatim en IO para poder realizar búsquedas
+                                // posteriores de hoteles y actividades.
                                 val geo = withContext(Dispatchers.IO) {
                                     geocodingRepo.geocode(queryCity)
                                 }
 
-                                // 3) búsquedas paralelas supervisadas con reintentos/backoff y timeout por llamada
+                                // 3) Búsquedas paralelas (hoteles, actividades, vuelos).
+                                // Cada llamada se ejecuta con `retryWithBackoff` y `withTimeoutOrNull`
+                                // para controlar latencias y realizar reintentos automáticos.
                                 val (hoteles, actividadesReales, vuelosOfertas) = supervisorScope {
                                     val hotelesDeferred = async(Dispatchers.IO) {
                                         if (geo == null) return@async emptyList<Hotel>()
@@ -529,7 +552,8 @@ fun PlanTabScreen(
                                     Triple(hotelesDeferred.await(), actividadesDeferred.await(), vuelosDeferred.await())
                                 }
 
-                                // 4) reconstruyo la propuesta con datos reales cuando existen
+                                // 4) Reconstruyo la propuesta final mezclando datos reales con
+                                // el fallback. Si `geo` es nulo usamos el `fallback` directo.
                                 val finalPlan = if (geo != null) {
                                     val itineraryByDay = withContext(Dispatchers.Default) {
                                         buildItineraryFromActivities(
@@ -557,6 +581,8 @@ fun PlanTabScreen(
                                     fallback
                                 }
 
+                                // Guardamos el resultado en el store temporal para la pantalla
+                                // de resultados y navegamos a ella.
                                 PlanResultStore.lastResult = finalPlan
                                 onNavigateToResult()
                             } catch (e: Throwable) {
@@ -790,7 +816,15 @@ private fun VerticalScrollbar(
 }
 
 /**
- * Generación local de respaldo. Se usa solo cuando no hay datos reales suficientes.
+ * Generación local de respaldo.
+ *
+ * Nota: esta función crea una propuesta estimada cuando las APIs externas
+ * no devuelven suficientes datos. Lo dejo como fallback:
+ * - Calcula reparto de presupuesto (transporte, alojamiento, comidas, actividades)
+ * - Estima días recomendados según presupuesto por persona y preferencias
+ * - Construye un `itineraryByDay` simple con resúmenes y actividades sugeridas
+ *
+ * Uso: llamada desde la UI cuando `generate` no obtuvo resultados reales.
  */
 private fun generateLocalProposal(
     context: android.content.Context,
@@ -901,6 +935,9 @@ private fun buildRealProposal(
     vuelos: List<FlightOffer>,
     itineraryByDay: List<ItineraryDay>
 ): PlanResult {
+    // Ensamblo la propuesta final a partir del fallback y los datos reales
+    // - prefiero elementos "reales" cuando existen, si no, mantengo lo recibido
+    // - calculo presupuestos finales basados en selección óptima (hotel/flight)
     val realHotels = hoteles.filter { it.isReal }
     val realActivities = actividades.filter { it.isReal }
     val realFlights = vuelos.filter { it.isReal }
@@ -968,6 +1005,9 @@ private fun buildItineraryFromActivities(
     actividades: List<SuggestedActivity>,
     fallbackItinerary: List<String>
 ): List<ItineraryDay> {
+    // Construye `ItineraryDay` a partir de actividades reales.
+    // - Agrupa y distribuye actividades por días
+    // - Intenta respetar las preferencias para asignar un "focus" por día
     fun fallbackDays(): List<ItineraryDay> = fallbackItinerary.mapIndexed { index, summary ->
         ItineraryDay(
             dayLabel = context.getString(R.string.plan_result_day_label, index + 1),
@@ -1027,6 +1067,9 @@ private suspend fun <T> retryWithBackoff(
     maxDelay: Long = 5000,
     block: suspend () -> T?
 ): T? {
+    // Retry helper: intenta ejecutar `block` varias veces con backoff exponencial
+    // - `times`: número de intentos
+    // - `initialDelay` y `factor` controlan la espera entre intentos
     var currentDelay = initialDelay
     repeat(times - 1) {
         try {

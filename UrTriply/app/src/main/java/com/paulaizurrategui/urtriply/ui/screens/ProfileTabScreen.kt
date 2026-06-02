@@ -77,6 +77,10 @@ fun ProfileTabScreen(
     onNavigateToFindFriends: () -> Unit,
     onNavigateToAdmin: () -> Unit = {}
 ) {
+    // Pantalla de perfil del usuario
+    // - Muestra información de la cuenta, acciones para editar y listas personales
+    // - Secciones: panel admin (si aplica), perfil, amigos, favoritos, likes, borradores, publicados
+    // - Permite refrescar listas, eliminar elementos y cerrar sesión
     val themeViewModel: com.paulaizurrategui.urtriply.ui.theme.ThemeViewModel = viewModel()
     val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
     // Theme is loaded once in MainActivity.kt - no need to load it again here
@@ -117,6 +121,7 @@ fun ProfileTabScreen(
         favoritesVm.refreshAll()
     }
 
+    // Diálogo de error si hay problemas cargando los trips
     if (tripsState.errorMessage != null) {
         AlertDialog(
             onDismissRequest = { tripsVm.clearError() },
@@ -126,6 +131,7 @@ fun ProfileTabScreen(
         )
     }
 
+    // Confirmación para borrar un viaje (diálogo)
     if (confirmDeleteId != null) {
         AlertDialog(
             onDismissRequest = { confirmDeleteId = null },
@@ -142,6 +148,7 @@ fun ProfileTabScreen(
         )
     }
 
+    // Confirmación para quitar favorito
     if (confirmRemoveFavoriteId != null) {
         AlertDialog(
             onDismissRequest = { confirmRemoveFavoriteId = null },
@@ -158,6 +165,7 @@ fun ProfileTabScreen(
         )
     }
 
+    // Confirmación para quitar like
     if (confirmRemoveLikeId != null) {
         AlertDialog(
             onDismissRequest = { confirmRemoveLikeId = null },
@@ -176,6 +184,7 @@ fun ProfileTabScreen(
 
     UrTriplyGradientScaffold(title = stringResource(R.string.tab_profile)) {
 
+        // Lista principal: tarjetas para cada sección (LazyColumn)
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
@@ -203,6 +212,7 @@ fun ProfileTabScreen(
                     }
                     Spacer(Modifier.height(10.dp))
                 }
+                // Card con información del perfil (foto, email y botón editar)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -281,7 +291,7 @@ fun ProfileTabScreen(
                 }
             }
 
-            // SECCIÓN AMIGOS (con contador)
+            // SECCIÓN AMIGOS (con contador) — muestra número de following y acceso a gestión
             item {
                 SectionTitle(profileFriendsTitle, profileFriendsSubtitle)
 
@@ -325,7 +335,7 @@ fun ProfileTabScreen(
 
             // Sección de idioma eliminada: la app usa el idioma del sistema.
 
-            // NUEVA SECCIÓN: Favoritos
+            // NUEVA SECCIÓN: Favoritos — lista de viajes marcados como favoritos
             item { SectionTitle(stringResource(R.string.profile_favorites_title), stringResource(R.string.profile_favorites_subtitle)) }
             if (favorites.isEmpty() && !favoritesLoading) {
                 item { EmptyStateCard(stringResource(R.string.profile_favorites_empty)) }
@@ -351,7 +361,7 @@ fun ProfileTabScreen(
                 }
             }
 
-            // NUEVA SECCIÓN: Me Gusta
+            // NUEVA SECCIÓN: Me Gusta — lista de viajes a los que el usuario dio like
             item { SectionTitle(stringResource(R.string.profile_likes_title), stringResource(R.string.profile_likes_subtitle)) }
             if (likes.isEmpty() && !likesLoading) {
                 item { EmptyStateCard(stringResource(R.string.profile_likes_empty)) }
@@ -377,6 +387,7 @@ fun ProfileTabScreen(
                 }
             }
 
+            // Sección de borradores
             item { SectionTitle(stringResource(R.string.profile_drafts_title), stringResource(R.string.profile_drafts_subtitle)) }
 
             if (tripsState.drafts.isEmpty()) {
@@ -394,6 +405,7 @@ fun ProfileTabScreen(
                 }
             }
 
+            // Sección de viajes publicados
             item { SectionTitle(stringResource(R.string.profile_published_title), stringResource(R.string.profile_published_subtitle)) }
 
             if (tripsState.published.isEmpty()) {
@@ -411,6 +423,7 @@ fun ProfileTabScreen(
                 }
             }
 
+            // Card de logout: limpia listeners y cierra sesión
             item {
                 Card(
                     modifier = Modifier
@@ -515,6 +528,7 @@ fun ProfileTabScreen(
 @Composable
 private fun SectionTitle(title: String, subtitle: String) {
     Column(modifier = Modifier.fillMaxWidth()) {
+        // Título de sección con subtítulo (reutilizable)
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
@@ -538,6 +552,7 @@ private fun EmptyStateCard(text: String) {
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
+        // Card simple para estados vacíos con texto explicativo
         Text(
             text = text,
             modifier = Modifier.padding(16.dp),
@@ -558,6 +573,8 @@ private fun TripCard(
     showEditAction: Boolean = true,
     showPublishAction: Boolean = true
 ) {
+    // Tarjeta que representa un viaje en listas del perfil (drafts/published/favorites/likes)
+    // - Muestra estado con un chip y acciones de editar/publicar/borrar según contexto
     val chipBg = when (status) {
         TripStatus.DRAFT -> MaterialTheme.colorScheme.secondaryContainer
         TripStatus.PUBLISHED -> MaterialTheme.colorScheme.tertiaryContainer

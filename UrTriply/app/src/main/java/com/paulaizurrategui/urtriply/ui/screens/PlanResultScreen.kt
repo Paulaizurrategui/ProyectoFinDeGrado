@@ -3,7 +3,6 @@ package com.paulaizurrategui.urtriply.ui.screens
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,8 +15,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -63,22 +60,37 @@ fun PlanResultScreen(
     onRequireLogin: () -> Unit,
     onOpenUrl: (String) -> Unit
 ) {
+    // Pantalla principal que muestra el `PlanResult` generado por el asistente.
+    // - `isGuest`: si true, algunas acciones (guardar/publicar) pedirán login antes.
+    // - `onBack`: callback para navegar atrás.
+    // - `onRequireLogin`: callback cuando se necesita que el usuario inicie sesión.
+    // - `onOpenUrl`: abre URLs externas (hoteles, vuelos, actividades).
     val r = PlanResultStore.lastResult
+    // `r` contiene el último PlanResult calculado por el generator
     val context = LocalContext.current
+    // ViewModel que maneja guardado/publicado del plan
     val vm: PlanResultViewModel = viewModel()
+    // ViewModel para gestionar comentarios del trip (si existe tripId)
     val commentVm: CommentViewModel = viewModel()
+    // Estado reactivo del viewmodel del plan
     val uiState by vm.uiState.collectAsState()
+    // Lista de comentarios expuesta por el CommentViewModel
     val comments by commentVm.comments.collectAsState()
+    // Usuario actual (null si invitado)
     val currentUser = FirebaseAuth.getInstance().currentUser
+    // Flag rápido para saber si el plan ya está publicado
     val isPublished = uiState.currentStatus == TripStatus.PUBLISHED
 
-    // Load comments only when we have a valid Firestore trip id
+    // Cargar comentarios solo cuando exista un `tripId` válido en el resultado
+    // Esto evita consultas a Firestore para propuestas que aún son solo locales (no publicadas)
     LaunchedEffect(r?.tripId) {
         r?.tripId?.takeIf { it.isNotBlank() }?.let { validTripId ->
             commentVm.loadCommentsForTrip(validTripId)
         }
     }
 
+    // Mensajes de éxito/error provenientes del ViewModel.
+    // Si `errorMessage` o `successMessage` no son nulos, mostramos un AlertDialog.
     val dialogText = uiState.errorMessage ?: uiState.successMessage
     if (dialogText != null) {
         AlertDialog(
@@ -89,21 +101,24 @@ fun PlanResultScreen(
         )
     }
 
-    // clave: ocultamos header y titulo para que no haya espacio extra arriba
+    // Layout contenedor principal con gradiente y sin header/título para ahorrar espacio arriba
     UrTriplyGradientScaffold(
         title = "",
         showHeader = false,
         showTitle = false
     ) {
+        // Preparar textos para la acción de compartir (subject y chooser title)
         val shareSubject = stringResource(R.string.plan_result_share_subject, r?.destino ?: "")
         val shareChooser = stringResource(R.string.plan_result_share_chooser)
         if (r == null) {
+            // Estado vacío: no hay PlanResult para mostrar (posible error o navegación directa)
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Text(
                     text = stringResource(R.string.plan_result_empty_state),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(Modifier.height(12.dp))
+                // Volver a la pantalla anterior
                 Button(onClick = onBack) { Text(stringResource(R.string.plan_result_back)) }
             }
             return@UrTriplyGradientScaffold
@@ -112,6 +127,7 @@ fun PlanResultScreen(
         val scroll = rememberScrollState()
 
         Scaffold(
+            // Barra superior compacta con botón atrás
             topBar = {
                 Row(
                     modifier = Modifier
@@ -136,6 +152,7 @@ fun PlanResultScreen(
                     Spacer(Modifier.weight(1f))
                 }
             },
+            // Barra inferior con acciones principales: Guardar, Publicar y Compartir
             bottomBar = {
                 Column(
                     modifier = Modifier
@@ -143,107 +160,60 @@ fun PlanResultScreen(
                         .background(MaterialTheme.colorScheme.surface)
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
-                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                        val compactLayout = maxWidth < 360.dp
+                    // Fila con botones Guardar borrador y Publicar
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                if (isGuest) onRequireLogin()
+                                else vm.saveDraft(r)
+                            },
+                            enabled = !uiState.isSaving && !isPublished,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text(
+                                text = when {
+                                    uiState.isSaving -> stringResource(R.string.plan_result_saving)
+                                    isPublished -> stringResource(R.string.plan_result_saved)
+                                    else -> stringResource(R.string.trip_save_draft)
+                                },
+                                maxLines = 1,
+                                fontSize = 12.sp,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
 
-                        if (compactLayout) {
-                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                OutlinedButton(
-                                    onClick = {
-                                        if (isGuest) onRequireLogin()
-                                        else vm.saveDraft(r)
-                                    },
-                                    enabled = !uiState.isSaving && !isPublished,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(16.dp)
-                                ) {
-                                    Text(
-                                        text = when {
-                                            uiState.isSaving -> stringResource(R.string.plan_result_saving)
-                                            isPublished -> stringResource(R.string.plan_result_saved)
-                                            else -> stringResource(R.string.trip_save_draft)
-                                        },
-                                        maxLines = 1,
-                                        fontSize = 13.sp,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-
-                                Button(
-                                    onClick = {
-                                        if (isGuest) onRequireLogin()
-                                        else vm.publish(r)
-                                    },
-                                    enabled = !uiState.isSaving && !isPublished,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(16.dp),
-                                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp)
-                                ) {
-                                    Text(
-                                        when {
-                                            uiState.isSaving -> stringResource(R.string.plan_result_publishing)
-                                            isPublished -> stringResource(R.string.plan_result_published)
-                                            else -> stringResource(R.string.trip_publish)
-                                        },
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        } else {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                OutlinedButton(
-                                    onClick = {
-                                        if (isGuest) onRequireLogin()
-                                        else vm.saveDraft(r)
-                                    },
-                                    enabled = !uiState.isSaving && !isPublished,
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(16.dp)
-                                ) {
-                                    Text(
-                                        text = when {
-                                            uiState.isSaving -> stringResource(R.string.plan_result_saving)
-                                            isPublished -> stringResource(R.string.plan_result_saved)
-                                            else -> stringResource(R.string.trip_save_draft)
-                                        },
-                                        maxLines = 1,
-                                        fontSize = 12.sp,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-
-                                Button(
-                                    onClick = {
-                                        if (isGuest) onRequireLogin()
-                                        else vm.publish(r)
-                                    },
-                                    enabled = !uiState.isSaving && !isPublished,
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(16.dp),
-                                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp)
-                                ) {
-                                    Text(
-                                        when {
-                                            uiState.isSaving -> stringResource(R.string.plan_result_publishing)
-                                            isPublished -> stringResource(R.string.plan_result_published)
-                                            else -> stringResource(R.string.trip_publish)
-                                        },
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
+                        // Botón de publicar: si es invitado se solicita login
+                        Button(
+                            onClick = {
+                                if (isGuest) onRequireLogin()
+                                else vm.publish(r)
+                            },
+                            enabled = !uiState.isSaving && !isPublished,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(16.dp),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp)
+                        ) {
+                            Text(
+                                when {
+                                    uiState.isSaving -> stringResource(R.string.plan_result_publishing)
+                                    isPublished -> stringResource(R.string.plan_result_published)
+                                    else -> stringResource(R.string.trip_publish)
+                                },
+                                fontWeight = FontWeight.Bold
+                                ,maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
 
                     Spacer(Modifier.height(10.dp))
 
+                    // Botón para compartir: genera el texto de la propuesta y lanza
+                    // un Intent chooser para compartir por apps externas.
                     OutlinedButton(
                         onClick = {
                             val shareText = buildShareText(context, r)
@@ -268,6 +238,7 @@ fun PlanResultScreen(
                     .padding(inner)
                     .fillMaxWidth()
             ) {
+                // Contenedor scrollable principal con ancho limitado para pantallas grandes
                 Column(
                     modifier = Modifier
                         .verticalScroll(scroll)
@@ -276,6 +247,7 @@ fun PlanResultScreen(
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Tarjeta principal que contiene los detalles completos del plan
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -291,6 +263,7 @@ fun PlanResultScreen(
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 18.dp)
                         ) {
+                            // Título grande con el destino recomendado
                             Text(
                                 text = stringResource(R.string.plan_result_trip_title, r.destino),
                                 style = MaterialTheme.typography.titleLarge,
@@ -298,38 +271,25 @@ fun PlanResultScreen(
                             )
                             Spacer(Modifier.height(6.dp))
 
-                            if (r.usedFallback || !r.apiHotelesOk || !r.apiActividadesOk || !r.apiVuelosOk) {
-                                ElevatedCard(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = CardDefaults.elevatedCardColors(
-                                        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.55f)
-                                    )
-                                ) {
-                                    Column(modifier = Modifier.padding(14.dp)) {
-                                        Text(
-                                            text = stringResource(R.string.plan_result_warning_title),
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onTertiaryContainer
-                                        )
-                                        Spacer(Modifier.height(4.dp))
-                                        Text(
-                                            text = stringResource(R.string.plan_result_api_fallback),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onTertiaryContainer
-                                        )
-                                    }
-                                }
-                            } else if (r.destinoDisplayName != null && r.lat != null && r.lon != null) {
+                            // Pequeña sección de diagnóstico: si la API devolvió nombre y coordenadas,
+                            // mostramos un texto informativo (útil en desarrollo).
+                            if (r.destinoDisplayName != null && r.lat != null && r.lon != null) {
                                 Text(
                                     text = stringResource(R.string.plan_result_api_ok, r.destinoDisplayName ?: "", r.lat ?: 0.0, r.lon ?: 0.0),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(Modifier.height(6.dp))
+                            } else {
+                                Text(
+                                    text = stringResource(R.string.plan_result_api_fallback),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(Modifier.height(6.dp))
                             }
 
+                            // Duración recomendada del viaje
                             Text(
                                 text = stringResource(R.string.plan_result_duration, r.diasRecomendados),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -346,11 +306,7 @@ fun PlanResultScreen(
                                 )
                             ) {
                                 Text(
-                                    text = if (r.usedFallback || !r.apiHotelesOk || !r.apiActividadesOk || !r.apiVuelosOk) {
-                                        stringResource(R.string.plan_result_pricing_note)
-                                    } else {
-                                        stringResource(R.string.plan_result_real_data)
-                                    },
+                                    text = stringResource(R.string.plan_result_pricing_note),
                                     modifier = Modifier.padding(14.dp),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onTertiaryContainer
@@ -358,21 +314,8 @@ fun PlanResultScreen(
                             }
 
                             Spacer(Modifier.height(12.dp))
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.plan_result_legal_notice),
-                                        modifier = Modifier.padding(12.dp),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                                Spacer(Modifier.height(10.dp))
 
+                            // Sección de itinerario (por días). Puede provenir de la API o del fallback local
                             SectionTitle(stringResource(R.string.plan_result_section_itinerary))
                             Spacer(Modifier.height(8.dp))
                             ItineraryCards(
@@ -383,6 +326,7 @@ fun PlanResultScreen(
 
                             Spacer(Modifier.height(14.dp))
 
+                            // Sección de hoteles: mostramos solo hoteles reales (no sugerencias vacías)
                             SectionTitle(stringResource(R.string.plan_result_section_hotel))
                             Spacer(Modifier.height(8.dp))
                             HotelsBlock(
@@ -393,6 +337,7 @@ fun PlanResultScreen(
 
                             Spacer(Modifier.height(14.dp))
 
+                            // Sección de vuelos: ofertas reales si la API las devolvió
                             SectionTitle(stringResource(R.string.plan_result_section_flights))
                             Spacer(Modifier.height(8.dp))
                             FlightsBlock(
@@ -403,7 +348,8 @@ fun PlanResultScreen(
 
                             Spacer(Modifier.height(14.dp))
 
-                            // Comments section (only if trip is published)
+                            // Sección de comentarios: solo aparece para propuestas publicadas
+                            // porque requiere un `tripId` asociado en Firestore.
                             if (isPublished && r.tripId != null) {
                                 SectionTitle(stringResource(R.string.plan_result_section_comments))
                                 Spacer(Modifier.height(8.dp))
@@ -438,6 +384,8 @@ fun PlanResultScreen(
     }
 }
 
+// Componente pequeño que renderiza el título de una sección dentro del resultado.
+// Usado para: Itinerario, Hoteles, Vuelos, Comentarios, etc.
 @Composable
 private fun SectionTitle(title: String) {
     Text(
@@ -447,6 +395,8 @@ private fun SectionTitle(title: String) {
     )
 }
 
+// Muestra un conjunto de tarjetas con el desglose presupuestario por categoría.
+// Recibe un map `categorias` con etiqueta->importe y formatea según locale.
 @Composable
 private fun BudgetCards(categorias: Map<String, Double>) {
     if (categorias.isEmpty()) {
@@ -507,6 +457,8 @@ private fun BudgetCards(categorias: Map<String, Double>) {
     }
 }
 
+// Presenta el itinerario por días cuando existe (`itineraryByDay`) o
+// muestra el itinerario fallback como lista de strings.
 @Composable
 private fun ItineraryCards(
     itineraryByDay: List<ItineraryDay>,
@@ -575,6 +527,7 @@ private fun ItineraryCards(
     }
 }
 
+// Bloque que lista actividades gratuitas y de pago en forma compacta.
 @Composable
 private fun ActivitiesBlock(
     gratis: List<String>,
@@ -609,13 +562,17 @@ private fun ActivitiesBlock(
     }
 }
 
+// Bloque que muestra tarjetas de hoteles filtrando solo los reales
+// (evita mostrar sugerencias vacías cuando la API no respondió).
 @Composable
 private fun HotelsBlock(
     hoteles: List<Hotel>,
     apiHotelesOk: Boolean,
     onOpenUrl: (String) -> Unit
 ) {
-    if (hoteles.isEmpty()) {
+    val realHotels = hoteles.filter { it.isReal }
+
+    if (realHotels.isEmpty()) {
         Text(
             text = stringResource(R.string.plan_result_no_hotels),
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -624,19 +581,22 @@ private fun HotelsBlock(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        hoteles.forEach { hotel ->
+        realHotels.forEach { hotel ->
             HotelCard(hotel = hotel, onOpenUrl = onOpenUrl)
         }
     }
 }
 
+// Bloque para actividades que provienen de APIs reales (no fallback).
 @Composable
 private fun RealActivitiesBlock(
     activities: List<SuggestedActivity>,
     apiOk: Boolean,
     onOpenUrl: (String) -> Unit
 ) {
-    if (activities.isEmpty()) {
+    val realActivities = activities.filter { it.isReal }
+
+    if (realActivities.isEmpty()) {
         Text(
             text = stringResource(R.string.plan_result_no_activities),
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -645,12 +605,14 @@ private fun RealActivitiesBlock(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        activities.forEach { activity ->
+        realActivities.forEach { activity ->
             ActivityCard(activity = activity, onOpenUrl = onOpenUrl)
         }
     }
 }
 
+// Tarjeta individual que representa una `SuggestedActivity`.
+// Muestra nombre, categoría, precio y link de reserva cuando exista.
 @Composable
 private fun ActivityCard(activity: SuggestedActivity, onOpenUrl: (String) -> Unit) {
     val context = LocalContext.current
@@ -682,7 +644,11 @@ private fun ActivityCard(activity: SuggestedActivity, onOpenUrl: (String) -> Uni
                 color = MaterialTheme.colorScheme.primary
             )
 
-            SourceLabel(isReal = activity.isReal)
+            Text(
+                text = stringResource(R.string.plan_result_real_data),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             val bookingUrl = activity.bookingUrl
             if (!bookingUrl.isNullOrBlank()) {
@@ -696,6 +662,7 @@ private fun ActivityCard(activity: SuggestedActivity, onOpenUrl: (String) -> Uni
     }
 }
 
+// Tarjeta individual para un `Hotel` con precio por noche y link de reserva.
 @Composable
 private fun HotelCard(hotel: Hotel, onOpenUrl: (String) -> Unit) {
     val context = LocalContext.current
@@ -738,15 +705,15 @@ private fun HotelCard(hotel: Hotel, onOpenUrl: (String) -> Unit) {
                 )
             }
 
-            SourceLabel(isReal = hotel.isReal)
+            Text(
+                text = stringResource(R.string.plan_result_real_data),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             if (hotel.totalPrice != null) {
                 Text(
-                    text = if (hotel.isReal) {
-                        stringResource(R.string.plan_result_total_real, hotel.totalPrice ?: 0.0)
-                    } else {
-                        stringResource(R.string.plan_result_total_estimated, hotel.totalPrice ?: 0.0)
-                    },
+                    text = stringResource(R.string.plan_result_total_estimated, hotel.totalPrice ?: 0.0),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -764,6 +731,7 @@ private fun HotelCard(hotel: Hotel, onOpenUrl: (String) -> Unit) {
     }
 }
 
+// Bloque que muestra ofertas de vuelos reales (si las hay).
 @Composable
 private fun FlightsBlock(
     flights: List<com.paulaizurrategui.urtriply.domain.model.FlightOffer>,
@@ -787,6 +755,8 @@ private fun FlightsBlock(
     }
 }
 
+// Tarjeta que muestra detalles de una oferta de vuelo: origen/destino,
+// fechas, duración, precio y enlace de reserva si existe.
 @Composable
 private fun FlightCard(flight: com.paulaizurrategui.urtriply.domain.model.FlightOffer, onOpenUrl: (String) -> Unit) {
     val context = LocalContext.current
@@ -812,7 +782,7 @@ private fun FlightCard(flight: com.paulaizurrategui.urtriply.domain.model.Flight
 
             Text(text = stringResource(R.string.plan_result_flight_price, flight.currency, String.format("%.2f", flight.price)), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
 
-            SourceLabel(isReal = flight.isReal)
+            Text(text = stringResource(R.string.plan_result_real_data), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             val bookingUrl = flight.bookingUrl
             if (!bookingUrl.isNullOrBlank()) {
@@ -822,44 +792,8 @@ private fun FlightCard(flight: com.paulaizurrategui.urtriply.domain.model.Flight
                     Text(stringResource(R.string.plan_result_flight_book))
                 }
             }
-
         }
     }
-}
-
-@Composable
-private fun SourceLabel(isReal: Boolean) {
-    AssistChip(
-        onClick = { },
-        enabled = false,
-        label = {
-            Text(
-                text = if (isReal) {
-                    stringResource(R.string.plan_result_real_data)
-                } else {
-                    stringResource(R.string.plan_result_fallback_data)
-                },
-                style = MaterialTheme.typography.labelMedium
-            )
-        },
-        colors = AssistChipDefaults.assistChipColors(
-            disabledContainerColor = if (isReal) {
-                UrOrange.copy(alpha = 0.12f)
-            } else {
-                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f)
-            },
-            disabledLabelColor = if (isReal) {
-                UrOrange
-            } else {
-                MaterialTheme.colorScheme.onErrorContainer
-            },
-            disabledLeadingIconContentColor = if (isReal) {
-                UrOrange
-            } else {
-                MaterialTheme.colorScheme.onErrorContainer
-            }
-        )
-    )
 }
 
 /**

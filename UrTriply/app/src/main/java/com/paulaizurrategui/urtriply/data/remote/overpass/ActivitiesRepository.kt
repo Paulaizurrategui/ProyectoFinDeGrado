@@ -18,6 +18,13 @@ import java.util.concurrent.TimeUnit
 import okhttp3.Request
 import com.squareup.moshi.Types
 
+// Repositorio responsable de buscar actividades/POIs alrededor de unas coordenadas.
+// Estrategia:
+// 1) Si existe API key de Google Places, la uso primero (mejor calidad comercial).
+// 2) Intento varios mirrors de Overpass con timeouts cortos por endpoint y
+//    un timeout total moderado para no bloquear la UX.
+// 3) Si Overpass falla o no devuelve actividades útiles, intento Wikipedia
+//    geosearch como último recurso. Si todo falla, devuelvo un fallback local.
 class ActivitiesRepository {
     companion object {
         private const val TAG = "ActivitiesRepository"
@@ -75,6 +82,7 @@ class ActivitiesRepository {
     private data class WikiGeoItem(val pageid: Long?, val title: String?, val lat: Double?, val lon: Double?)
 
     private suspend fun fetchWikipediaActivities(lat: Double, lon: Double, prefs: Set<String>, radiusKm: Float): List<SuggestedActivity> {
+        // Intento recuperar POIs desde Wikipedia (geosearch), útil como último recurso
         try {
             val radiusMeters = (radiusKm * 1000).toInt()
             val lang = Locale.getDefault().language.takeIf { it.isNotBlank() } ?: "en"
@@ -89,6 +97,7 @@ class ActivitiesRepository {
             val parsed = adapter.fromJson(body) ?: return emptyList()
             val items = parsed.query?.geosearch.orEmpty()
 
+            // Filtro por preferencias (si existen) mapeando categorías aproximadas
             val preferredCategories = prefs.map { it.lowercase(Locale.getDefault()) }.toSet()
 
             val activities = items.mapNotNullIndexed { index, item ->
@@ -120,6 +129,7 @@ class ActivitiesRepository {
 
     // small helpers
     private fun guessCategoryFromTitle(title: String): String {
+        // Heurística básica para derivar una categoría desde el título de la página
         val t = title.lowercase(Locale.getDefault())
         return when {
             t.contains("museum") || t.contains("museo") -> "cultura"
@@ -149,6 +159,12 @@ class ActivitiesRepository {
         prefs: Set<String>,
         radiusKm: Float = 5f
     ): List<SuggestedActivity> {
+        // Función principal de búsqueda de actividades.
+        // Prioridades:
+        // 1) Google Places (si hay API key) — datos comerciales y ricos
+        // 2) Overpass (varios mirrors, timeouts por endpoint y timeout total)
+        // 3) Wikipedia geosearch como último recurso
+        // 4) Fallback local si todo lo anterior falla
         // Si hay clave de Google Places, consultamos primero para datos comerciales fiables
         if (BuildConfig.GOOGLE_PLACES_API_KEY.isNotBlank()) {
             try {
@@ -162,6 +178,7 @@ class ActivitiesRepository {
                 Log.w(TAG, "⚠️ Error consultando Google Places: ${e.message}")
             }
         }
+        // Calculo de bounding box aproximado similar al repositorio de hoteles
         val deltaLat = radiusKm / 111f
         val deltaLon = radiusKm / (111f * kotlin.math.cos(Math.toRadians(lat)).toFloat())
 
@@ -202,6 +219,7 @@ class ActivitiesRepository {
                     val elements = response.elements.orEmpty()
                     Log.d(TAG, "📋 API devolvió ${elements.size} candidatos en $endpoint")
 
+                    // Mapear elementos de Overpass a SuggestedActivity filtrando por prefs
                     val activities = elements
                         .filter { it.type == "node" && it.lat != null && it.lon != null }
                         .mapIndexedNotNull { index, element ->

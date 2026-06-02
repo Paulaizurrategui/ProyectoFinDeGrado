@@ -15,13 +15,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 class CommunityViewModel : ViewModel() {
+    // ViewModel que gestiona el feed de la comunidad (posts)
+    // - Escucha a quién sigo y carga los viajes publicados por esos autores
+    // - Gestiona likes y favoritos con actualizaciones optimistas y rollback
+    // - Maneja bloqueos de usuarios para filtrar el feed localmente
     // Instancias y repositorios Firebase
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
     private val likesRepo = LikesRepository()
     private val favoritesRepo = FavoritesRepository()
 
-    // Estado expuesto a la UI: posts ya filtrados
+    // Estado expuesto a la UI: posts ya filtrados (aplicando filtros y bloqueos)
     private val _posts = MutableStateFlow<List<TravelPost>>(emptyList())
     val posts: StateFlow<List<TravelPost>> = _posts
 
@@ -31,7 +35,7 @@ class CommunityViewModel : ViewModel() {
     val showFilters: MutableState<Boolean> = mutableStateOf(false)
     val errorMessage: MutableState<String?> = mutableStateOf(null)
 
-    // Datos internos: rawPosts contiene el feed sin filtrar; liked/favorite ids
+    // Datos internos: `rawPosts` contiene el feed sin filtrar; liked/favorite ids
     private var rawPosts: List<TravelPost> = emptyList()
     private var likedTripIds: Set<String> = emptySet()
     private var favoriteTripIds: Set<String> = emptySet()
@@ -46,7 +50,7 @@ class CommunityViewModel : ViewModel() {
     private var followingListener: ListenerRegistration? = null
     private var authStateListener: AuthStateListener? = null
 
-    // Al iniciar, primero cargo bloqueos y luego escucho la lista de usuarios seguidos
+    // Al iniciar, subscribo un listener de auth y cargo bloqueos para filtrar el feed
     init {
         authStateListener = AuthStateListener { firebaseAuth ->
             val currentUser = firebaseAuth.currentUser
@@ -59,6 +63,7 @@ class CommunityViewModel : ViewModel() {
         }
         auth.addAuthStateListener(authStateListener!!)
 
+        // Si ya hay usuario, arranco inmediatamente la carga de bloqueos
         auth.currentUser?.let {
             loadBlockedUsers()
         }
@@ -100,7 +105,7 @@ class CommunityViewModel : ViewModel() {
         db.collection("users").document(myUid).collection("blocks")
             .document(userToBlockUid)
             .set(blockData)
-            .addOnSuccessListener {
+                .addOnSuccessListener {
                 // También actualizo el array `blockedByUserIds` del usuario objetivo
                 db.collection("users").document(userToBlockUid)
                     .update(mapOf(
@@ -163,7 +168,8 @@ class CommunityViewModel : ViewModel() {
         val previousPosts = _posts.value
         val previousRawPosts = rawPosts
 
-        // Optimistic update: actualizo UI inmediatamente para mejor UX
+        // Optimistic update: actualizo UI inmediatamente para mejor UX.
+        // Si la persistencia falla, hago rollback a los estados previos.
         val updated = _posts.value.map { p ->
             if (p.id != postId) p
             else p.copy(
@@ -230,7 +236,7 @@ class CommunityViewModel : ViewModel() {
         val previousPosts = _posts.value
         val previousRawPosts = rawPosts
 
-        // Optimistic UI update para favoritos
+        // Optimistic UI update para favoritos (igual que likes)
         val updated = _posts.value.map { p ->
             if (p.id != postId) p else p.copy(isFavorite = !p.isFavorite)
         }
@@ -273,7 +279,7 @@ class CommunityViewModel : ViewModel() {
         }
     }
 
-    // carga todos los bloqueos del usuario actual
+    // Carga todos los bloqueos del usuario actual (los que yo hice)
     private fun loadBlockedUsers() {
         val myUid = auth.currentUser?.uid ?: run {
             // si no hay usuario, no hay bloqueos
@@ -297,16 +303,15 @@ class CommunityViewModel : ViewModel() {
             }
     }
 
-    // carga usuarios que me han bloqueado (query en /users/{otherUid}/blocks/{myUid})
+    // Carga usuarios que me han bloqueado (intento leer campo `blockedByUserIds`)
     private fun loadUsersWhoBlockedMe() {
         val myUid = auth.currentUser?.uid ?: run {
             observeFollowingAndLoadFeed()
             return
         }
 
-        // Para saber quién me bloqueó, debo buscar todos los usuarios y revisar si me tienen en su blocks
-        // Sin embargo, esto es ineficiente. Alternativa: guardar en /users/{myUid}/blockedBy
-        // Por ahora, voy a asumir que ese campo existe y lo consulto
+        // Nota: escanear todos los usuarios sería ineficiente. Prefiero leer
+        // un campo `blockedByUserIds` dentro del propio documento del usuario.
 
         // Intento leer el campo `blockedByUserIds` del usuario actual. Es más eficiente
         // que escanear todos los usuarios para ver quién me tiene en su lista de bloques.
@@ -325,7 +330,8 @@ class CommunityViewModel : ViewModel() {
             }
     }
 
-    // escucha cambios globales en /trips para recargar el feed
+    // Observa la colección `following` del usuario para saber a quién sigo,
+    // y carga los viajes publicados por esos autores.
     private fun observeFollowingAndLoadFeed() {
         val myUid = auth.currentUser?.uid ?: run {
             rawPosts = emptyList()
@@ -350,6 +356,7 @@ class CommunityViewModel : ViewModel() {
                 val followingSet = followingIds.toSet()
                 // Si no hay cambios en la lista de seguimiento, no recargo el feed
                 if (followingSet == lastFollowingIds) {
+                    // No hay cambios en la lista de seguimiento -> no recargo feed
                     followingIdsFlow.value = followingSet
                     return@addSnapshotListener
                 }

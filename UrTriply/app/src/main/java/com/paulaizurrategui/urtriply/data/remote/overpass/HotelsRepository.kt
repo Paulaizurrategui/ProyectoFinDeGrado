@@ -12,6 +12,10 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+// Repositorio que consulta Overpass (OpenStreetMap) para buscar alojamientos.
+// - Construye una query bbox a partir de lat/lon y radius
+// - Intenta llamar a la API (con 2 intentos) y parsear nodos como hoteles
+// - Si falla o no devuelve resultados, devuelve una lista fallback estimada
 class HotelsRepository {
 
     companion object {
@@ -64,7 +68,8 @@ class HotelsRepository {
         radiusKm: Float = 5f
     ): List<Hotel> {
         // Calcular bounding box desde coords center + radius
-        // 1 grado ≈ 111 km, así que radiusKm/111 = grados
+        // - Aproximación: 1 grado ≈ 111 km
+        // - deltaLon se corrige por el coseno de la latitud
         val deltaLat = radiusKm / 111f
         val deltaLon = radiusKm / (111f * kotlin.math.cos(Math.toRadians(lat.toDouble())).toFloat())
 
@@ -82,17 +87,19 @@ class HotelsRepository {
 
         var lastError: Throwable? = null
 
-        // Reintentar hasta 2 veces
+        // Reintentar hasta 2 veces para mejorar resiliencia ante errores transitorios
         repeat(2) { attempt ->
             try {
                 Log.d(TAG, "Searching hotels (attempt ${attempt + 1}/2) around ($lat, $lon)")
                 Log.d(TAG, "Bbox: south=$south, west=$west, north=$north, east=$east")
 
+                // Llamada al API y parseo de nodos válidos
                 val response = api.queryHotels(query)
                 Log.d(TAG, "API Response: ${response.elements?.size ?: 0} hotels found")
 
                 val numNights = calculateNights(checkInDate, checkOutDate)
 
+                // Filtrar nodes con coords, limitar a 5 y mapear a `Hotel`
                 val hotels = response.elements
                     ?.filter { it.type == "node" && it.lat != null && it.lon != null }
                     ?.take(5)  // Tomar solo los primeros 5
@@ -114,6 +121,7 @@ class HotelsRepository {
                     ?.sortedByDescending { it.rating }
                     ?: emptyList()
 
+                // Si la API no devolvió hoteles, uso una lista fallback local
                 if (hotels.isEmpty()) {
                     Log.w(TAG, "No hotels returned by API, using fallback list")
                     return buildFallbackHotels(lat, lon, checkInDate, checkOutDate)

@@ -1,5 +1,10 @@
 package com.paulaizurrategui.urtriply.ui.screens
 
+// Pantalla pública de usuario: muestra información básica del `UserDoc`
+// y una lista de viajes publicados por ese usuario.
+// - `PublicProfileViewModel` consulta Firestore para obtener el user y sus viajes.
+// - La UI muestra estados: carga, error y contenido.
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -73,6 +78,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.util.Locale
 
+// Estado expuesto por `PublicProfileViewModel` a la composable.
+// Contiene flags de carga/errores, datos del usuario y viajes publicados.
 data class PublicProfileUiState(
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
@@ -80,6 +87,9 @@ data class PublicProfileUiState(
     val publishedTrips: List<TravelPost> = emptyList()
 )
 
+// ViewModel que carga el perfil público y sus viajes publicados desde Firestore.
+// - `loadProfile()` obtiene el documento del usuario y desencadena la carga de viajes.
+// - `loadPublishedTrips()` obtiene hasta 20 viajes publicados por el autor ordenados por fecha.
 class PublicProfileViewModel(
     private val userId: String,
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
@@ -88,15 +98,19 @@ class PublicProfileViewModel(
     val uiState: StateFlow<PublicProfileUiState> = _uiState
 
     init {
+        // Al crear el ViewModel, iniciamos la carga del perfil
         loadProfile()
     }
 
     fun loadProfile() {
+        // Indicamos inicio de carga y limpiamos errores previos
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
+        // Petición a Firestore para leer el documento del usuario
         db.collection("users").document(userId)
             .get()
             .addOnSuccessListener { doc ->
+                // Mapear campos del documento a `UserDoc` con fallback
                 val user = UserDoc(
                     uid = doc.id,
                     email = doc.getString("email") ?: "",
@@ -107,10 +121,12 @@ class PublicProfileViewModel(
                     esAdmin = doc.getBoolean("esAdmin") ?: false
                 )
 
+                // Cargar los viajes publicados del usuario y actualizar el estado
                 loadPublishedTrips(user)
                 _uiState.value = _uiState.value.copy(user = user)
             }
             .addOnFailureListener { e ->
+                // En fallo, dejamos el estado en error y cancelamos la carga
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     errorMessage = e.message ?: localizedFallback("No se pudo cargar el perfil público", "Could not load the public profile")
@@ -119,6 +135,7 @@ class PublicProfileViewModel(
     }
 
     private fun loadPublishedTrips(user: UserDoc) {
+        // Consulta Firestore para trips publicados por este autor
         db.collection("trips")
             .whereEqualTo("authorUid", user.uid)
             .whereEqualTo("status", "PUBLISHED")
@@ -126,6 +143,7 @@ class PublicProfileViewModel(
             .limit(20)
             .get()
             .addOnSuccessListener { snap ->
+                // Mapear documentos a `TravelPost` con los campos relevantes
                 val trips = snap.documents.map { doc ->
                     TravelPost(
                         id = doc.id,
@@ -146,6 +164,7 @@ class PublicProfileViewModel(
                     )
                 }
 
+                // Actualizar estado con la lista de viajes y marcar carga finalizada
                 _uiState.value = _uiState.value.copy(
                     publishedTrips = trips,
                     isLoading = false,
@@ -153,6 +172,7 @@ class PublicProfileViewModel(
                 )
             }
             .addOnFailureListener { e ->
+                // En fallo, informar en el estado
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     errorMessage = e.message ?: localizedFallback("No se pudieron cargar los viajes", "Could not load trips")
@@ -160,6 +180,7 @@ class PublicProfileViewModel(
             }
     }
 
+    // Devuelve mensaje localizado según el idioma del dispositivo
     private fun localizedFallback(spanish: String, english: String): String {
         return if (Locale.getDefault().language.startsWith("es")) spanish else english
     }
@@ -171,8 +192,10 @@ fun PublicProfileScreen(
     onBack: () -> Unit,
     viewModel: PublicProfileViewModel = remember(userId) { PublicProfileViewModel(userId) }
 ) {
+    // Estado reactivo del ViewModel
     val uiState by viewModel.uiState.collectAsState()
 
+    // Scaffold con gradiente propio de la app
     UrTriplyGradientScaffold(title = stringResource(R.string.public_profile_title), onBack = onBack) {
         when {
             uiState.isLoading -> {
@@ -257,6 +280,7 @@ fun PublicProfileScreen(
                                     }
                                 }
 
+                                // Chips informativos: verificado, rol admin y tema
                                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     AssistChip(
                                         onClick = {},
@@ -278,6 +302,7 @@ fun PublicProfileScreen(
                                     )
                                 }
 
+                                // Panel con campos del perfil (nombre, email, foto, edad)
                                 Surface(
                                     shape = RoundedCornerShape(16.dp),
                                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -309,6 +334,7 @@ fun PublicProfileScreen(
                         }
                     }
 
+                    // Sección de viajes publicados: lista o estado vacío
                     if (uiState.publishedTrips.isEmpty()) {
                         item {
                             OutlinedCard(
@@ -333,6 +359,7 @@ fun PublicProfileScreen(
 
 @Composable
 private fun ProfileFieldRow(label: String, value: String) {
+    // Fila simple que muestra una etiqueta y su valor correspondiente
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value.ifBlank { "-" }, fontWeight = FontWeight.Medium)
@@ -341,6 +368,7 @@ private fun ProfileFieldRow(label: String, value: String) {
 
 @Composable
 private fun PublicProfileTripCard(trip: TravelPost) {
+    // Tarjeta compacta que muestra la información básica de un `TravelPost`
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),

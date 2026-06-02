@@ -12,6 +12,9 @@ import okhttp3.logging.HttpLoggingInterceptor
 import java.net.URLEncoder
 import java.util.Locale
 
+// Cliente ligero para usar Google Places (Nearby Search + Place Details).
+// Lo uso cuando tengo `BuildConfig.GOOGLE_PLACES_API_KEY` para obtener
+// POIs comerciales más fiables que Overpass/Wikipedia.
 class GooglePlacesRepository(
     private val apiKey: String
 ) {
@@ -39,6 +42,7 @@ class GooglePlacesRepository(
     private data class PlaceDetails(val website: String?, val url: String?, val name: String?, val international_phone_number: String?, val geometry: Geometry?)
 
     suspend fun searchNearbyAttractions(lat: Double, lon: Double, radiusMeters: Int = 5000, keyword: String? = null): List<SuggestedActivity> {
+        // Si no hay apiKey, no intento la búsqueda (caller puede usar fallback)
         if (apiKey.isBlank()) return emptyList()
         try {
             val encodedKeyword = keyword?.let { URLEncoder.encode(it, Charsets.UTF_8.name()) }
@@ -56,6 +60,7 @@ class GooglePlacesRepository(
             val parsed = adapter.fromJson(body) ?: return emptyList()
 
             val results = parsed.results.orEmpty()
+            // Mapear resultados de Places a SuggestedActivity (precio desconocido)
             val list = results.mapNotNull { r ->
                 val pid = r.place_id ?: return@mapNotNull null
                 val name = r.name ?: return@mapNotNull null
@@ -82,6 +87,7 @@ class GooglePlacesRepository(
     }
 
     private suspend fun getPlaceDetails(placeId: String): PlaceDetailsResponse? {
+        // Request a Place Details para obtener website/url/phone si lo necesito
         if (apiKey.isBlank()) return null
         try {
             val url = "${BASE_URL}details/json?key=$apiKey&place_id=$placeId&fields=name,website,url,international_phone_number,geometry"

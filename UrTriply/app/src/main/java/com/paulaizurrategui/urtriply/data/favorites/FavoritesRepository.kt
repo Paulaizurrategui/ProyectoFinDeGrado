@@ -9,12 +9,16 @@ class FavoritesRepository(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
 
+    // Repositorio para gestionar favoritos de viajes.
+    // Estructura similar a LikesRepository: subcolección `favorites` y contador en el doc padre.
+
     fun addFavorite(
         tripId: String,
         uid: String,
         onSuccess: () -> Unit,
         onError: (Exception) -> Unit
     ) {
+        // Datos básicos del favorito
         val favoriteData = mapOf(
             "uid" to uid,
             "timestamp" to Timestamp.now()
@@ -30,9 +34,11 @@ class FavoritesRepository(
                     .document(tripId)
                     .update("favorites", FieldValue.increment(1))
                     .addOnSuccessListener {
+                        // Incremento del contador de favoritos (log)
                         Log.d("FavoritesRepository", "Favorite added")
                     }
                     .addOnFailureListener { e ->
+                        // Si el update del contador falla, lo registramos pero el doc ya existe
                         Log.e("FavoritesRepository", "Failed to increment counter", e)
                     }
                 onSuccess()
@@ -55,6 +61,7 @@ class FavoritesRepository(
             .document(uid)
             .delete()
             .addOnSuccessListener {
+                // Eliminado el documento de favorito; intento decrementar el contador
                 db.collection("trips")
                     .document(tripId)
                     .update("favorites", FieldValue.increment(-1))
@@ -84,6 +91,7 @@ class FavoritesRepository(
             .document(uid)
             .get()
             .addOnSuccessListener { doc ->
+                // Devuelvo si el doc de favorito existe
                 onResult(doc.exists())
             }
             .addOnFailureListener { e ->

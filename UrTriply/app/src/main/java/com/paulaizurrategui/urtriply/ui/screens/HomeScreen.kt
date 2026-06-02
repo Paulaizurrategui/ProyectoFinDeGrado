@@ -27,23 +27,29 @@ fun HomeScreen(
     authViewModel: AuthViewModel, // ViewModel de auth para poder hacer logout desde esta pantalla
     onLogout: () -> Unit // Callback de navegación cuando se cierra sesión (volver a Welcome, etc.)
 ) {
-    val email = FirebaseAuth.getInstance().currentUser?.email ?: "usuario" // Lee el email del usuario logueado (fallback "usuario")
+    // Obtengo email del usuario actual; uso "usuario" si no está disponible
+    val email = FirebaseAuth.getInstance().currentUser?.email ?: "usuario"
 
+    // Gradiente de fondo para la pantalla (vertical)
     val bg = Brush.verticalGradient(
-        0f to Color(0xFFD98A3D), // coral suave
-        1f to Color(0xFF6FA9C9)  // celeste grisáceo
+        0f to Color(0xFFD98A3D), // tono cálido arriba
+        1f to Color(0xFF6FA9C9)  // tono frío abajo
     )
-    val orange = Color(0xFFFF8A00) // Color principal de botones (se mantiene para compatibilidad)
 
-    var showSoonDialog by remember { mutableStateOf(false) } // Controla si se muestra el diálogo "Próximamente"
+    // Color naranja usado en la UI (definido explícitamente aquí)
+    val orange = Color(0xFFFF8A00)
 
-    if (showSoonDialog) { // Dialog placeholder para botones que aún no tienen funcionalidad
+    // Estado local para mostrar un diálogo de "próximamente" en accesos rápidos
+    var showSoonDialog by remember { mutableStateOf(false) }
+
+    // Diálogo simple que informa de funcionalidades no implementadas aún
+    if (showSoonDialog) {
         AlertDialog(
-            onDismissRequest = { showSoonDialog = false }, // Cierra dialog tocando fuera o con back
-            title = { Text(stringResource(R.string.soon_title)) }, // Título del dialog
-            text = { Text(stringResource(R.string.soon_body)) }, // Body "próximamente"
+            onDismissRequest = { showSoonDialog = false },
+            title = { Text(stringResource(R.string.soon_title)) },
+            text = { Text(stringResource(R.string.soon_body)) },
             confirmButton = {
-                TextButton(onClick = { showSoonDialog = false }) { // Botón OK para cerrar
+                TextButton(onClick = { showSoonDialog = false }) {
                     Text(stringResource(R.string.dialog_ok))
                 }
             }
@@ -57,7 +63,7 @@ fun HomeScreen(
                 .background(bg)
                 .padding(horizontal = 16.dp)
         ) {
-            // Header compacto ~220dp
+            // Header con saludo y nombre del usuario (~220dp de altura)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -68,7 +74,7 @@ fun HomeScreen(
                 contentAlignment = Alignment.CenterStart
             ) {
                 Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
-                    // Logo (si existe drawable/ic_launcher_foreground se puede mostrar)
+                    // Fila superior con emoji/logo y nombre de la app
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(text = stringResource(R.string.home_emoji_plane), style = MaterialTheme.typography.titleLarge)
                         Spacer(modifier = Modifier.width(8.dp))
@@ -82,7 +88,7 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Saludo compacto: nombre + email pequeño
+                    // Saludo compacto: nombre (capitalizado) y email en texto pequeño
                     Text(
                         text = stringResource(R.string.home_greeting, email.substringBefore('@').replaceFirstChar { it.uppercaseChar() }),
                         style = MaterialTheme.typography.titleSmall,
@@ -122,6 +128,8 @@ fun HomeScreen(
                 // Helper to build a compact card
                 @Composable
                 fun QuickCard(title: String, subtitle: String, primary: Boolean = false, onClick: () -> Unit) {
+                    // Composable local que construye una tarjeta compacta reutilizable
+                    // `primary` marca la tarjeta principal (tamaño/elección visual)
                     val interactionSource = remember { MutableInteractionSource() }
                     val isPressed by interactionSource.collectIsPressedAsState()
                     val scale by animateFloatAsState(targetValue = if (isPressed) 0.98f else 1f)
@@ -137,8 +145,9 @@ fun HomeScreen(
                         colors = CardDefaults.cardColors(containerColor = if (primary) Color(0xFFE8F8FF) else Color(0xFFF3FAFD)),
                         elevation = CardDefaults.cardElevation(defaultElevation = if (primary) 12.dp else 4.dp)
                     ) {
+                        // Row principal: icono, textos y flecha
                         Row(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            // Placeholder icon circle
+                            // Icono placeholder dentro de una tarjeta blanca redondeada
                             Card(
                                 modifier = Modifier.size(44.dp),
                                 shape = RoundedCornerShape(10.dp),
@@ -152,13 +161,14 @@ fun HomeScreen(
 
                             Spacer(modifier = Modifier.width(12.dp))
 
+                            // Texto: título y subtítulo
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(text = title, fontWeight = FontWeight.SemiBold)
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = Color(0xFF6B7280))
                             }
 
-                            // Arrow
+                            // Indicador de acción (flecha)
                             Text(text = "→", color = Color(0xFF0F172A))
                         }
                     }
@@ -199,6 +209,7 @@ fun HomeScreen(
                         authViewModel.logout()
                         onLogout()
                     },
+                    // Botón ocupa todo el ancho y altura estándar
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))

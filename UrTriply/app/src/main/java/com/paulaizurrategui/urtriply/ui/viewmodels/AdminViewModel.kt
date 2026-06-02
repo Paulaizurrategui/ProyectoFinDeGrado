@@ -14,6 +14,10 @@ class AdminViewModel : ViewModel() {
         private const val ADMIN_EMAIL_FALLBACK = "paula.izurrategui.lopez@gregoriofer.com"
     }
 
+    // ViewModel para funcionalidades administrativas.
+    // - Comprueba si el usuario actual es admin y, si lo es, escucha reportes abiertos
+    // - Permite resolver/desestimar reportes y ejecutar acciones sobre contenido y usuarios
+    // - Usa ReportRepository para todas las operaciones admin/Firestore
     // Repositorio de reports y acceso a Firebase
     private val reportRepo = ReportRepository()
     private val auth = FirebaseAuth.getInstance()
@@ -127,7 +131,7 @@ class AdminViewModel : ViewModel() {
         )
     }
 
-    // Elimina un viaje (accion administrativa) y actualiza estado
+    // Elimina un viaje (acción administrativa) y actualiza estado
     fun deleteTripByAdmin(tripId: String) {
         val adminUid = auth.currentUser?.uid
         if (adminUid == null) {
@@ -152,7 +156,7 @@ class AdminViewModel : ViewModel() {
         )
     }
 
-    // Elimina un comentario (accion administrativa)
+    // Elimina un comentario (acción administrativa)
     fun deleteCommentByAdmin(tripId: String, commentId: String) {
         val adminUid = auth.currentUser?.uid
         if (adminUid == null) {
@@ -178,7 +182,7 @@ class AdminViewModel : ViewModel() {
         )
     }
 
-    // Bloquea a un usuario vía repositorio (admin action)
+    // Bloquea a un usuario vía repositorio (acción admin)
     fun blockUser(userToBlockUid: String, reason: String) {
         val adminUid = auth.currentUser?.uid
         if (adminUid == null) {
@@ -315,7 +319,7 @@ class AdminViewModel : ViewModel() {
         )
     }
 
-    // Desbloquea a un usuario (accion admin)
+    // Desbloquea a un usuario (acción admin)
     fun unblockUser(userToUnblockUid: String) {
         val adminUid = auth.currentUser?.uid
         if (adminUid == null) {

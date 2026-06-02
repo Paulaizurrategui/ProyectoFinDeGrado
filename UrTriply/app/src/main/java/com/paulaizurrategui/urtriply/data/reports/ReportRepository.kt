@@ -8,6 +8,14 @@ import com.paulaizurrategui.urtriply.domain.model.ReportStatus
 class ReportRepository {
     private val db = FirebaseFirestore.getInstance()
 
+    // Repositorio responsable de gestionar reportes y acciones administrativas.
+    // Funcionalidades principales:
+    // - Enviar reportes (trip o comment)
+    // - Escuchar reportes abiertos (admin)
+    // - Resolver/desestimar reportes
+    // - Borrar trips/comentarios marcados por admins
+    // - Bloquear/desbloquear usuarios (admin)
+
     // Submit a report (trip or comment)
     fun submitReport(
         targetType: String,  // "TRIP" or "COMMENT"
@@ -22,6 +30,7 @@ class ReportRepository {
         onSuccess: (reportId: String) -> Unit,
         onError: (Exception) -> Unit
     ) {
+        // Construyo el documento del reporte con metadatos y estado OPEN
         val report = mapOf(
             "targetType" to targetType,
             "targetId" to targetId,
@@ -59,6 +68,7 @@ class ReportRepository {
                     return@addSnapshotListener
                 }
 
+                // Mapear snapshots a lista de `Report` ordenada por fecha
                 val reports = snap?.documents?.mapNotNull { doc ->
                     Report(
                         id = doc.id,
@@ -88,6 +98,7 @@ class ReportRepository {
         onSuccess: () -> Unit,
         onError: (Exception) -> Unit
     ) {
+        // Marco el reporte como RESOLVED con metadatos del admin
         db.collection("reports")
             .document(reportId)
             .update(mapOf(
@@ -111,6 +122,7 @@ class ReportRepository {
         onSuccess: () -> Unit,
         onError: (Exception) -> Unit
     ) {
+        // Marco el reporte como DISMISSED y guardo la razón
         db.collection("reports")
             .document(reportId)
             .update(mapOf(
@@ -133,6 +145,7 @@ class ReportRepository {
         onSuccess: () -> Unit,
         onError: (Exception) -> Unit
     ) {
+        // Marco el viaje como `deleted` y registro metadata admin
         db.collection("trips")
             .document(tripId)
             .update(mapOf(
@@ -156,6 +169,7 @@ class ReportRepository {
         onSuccess: () -> Unit,
         onError: (Exception) -> Unit
     ) {
+        // Marco el comentario como `deleted` dentro de la subcolección del trip
         db.collection("trips")
             .document(tripId)
             .collection("comments")

@@ -27,7 +27,7 @@ class GeocodingRepository {
         }
 
         val client = OkHttpClient.Builder()
-            // nominatim pide identificacion en user-agent
+            // Nominatim requiere identificador en User-Agent; lo incluyo para obedecer política
             .addInterceptor { chain ->
                 val req = chain.request().newBuilder()
                     .header("User-Agent", "urtriply/1.0 (android)")
@@ -53,14 +53,17 @@ class GeocodingRepository {
 
     suspend fun geocode(query: String): GeocodingResult? {
         var lastError: Throwable? = null
-        
-        // Reintentar hasta 3 veces en caso de error
+
+        // Intento geocodificar con hasta 3 reintentos para mejorar resiliencia
+        // - Log geo attempts para debugging
+        // - Si no hay resultados o parsing fallido, reintento
         repeat(3) { attempt ->
             try {
                 Log.d(TAG, "Geocoding attempt ${attempt + 1}/3: $query")
                 val results = api.search(query = query)
                 Log.d(TAG, "API Response: ${results.size} results")
                 
+                // Tomo el primer resultado (Nominatim ordena por relevancia)
                 val first = results.firstOrNull()
                 if (first == null) {
                     Log.w(TAG, "No results for: $query")
@@ -69,14 +72,16 @@ class GeocodingRepository {
                 
                 Log.d(TAG, "First result: displayName=${first.displayName}, lat=${first.lat}, lon=${first.lon}")
                 
+                // Parseo de coordenadas defensivo (puede venir como string)
                 val lat = first.lat?.toDoubleOrNull()
                 val lon = first.lon?.toDoubleOrNull()
-                
+
                 if (lat == null || lon == null) {
                     Log.w(TAG, "Failed to parse coords - lat: $lat, lon: $lon")
                     return@repeat
                 }
                 
+                // Resultado final: displayName (fallback al query) + coords
                 val result = GeocodingResult(
                     displayName = first.displayName ?: query,
                     lat = lat,
@@ -93,6 +98,7 @@ class GeocodingRepository {
             }
         }
         
+        // Si agoté intentos, retorno null para que el caller use fallback
         Log.e(TAG, " FAILED after 3 attempts for '$query'", lastError)
         return null
     }

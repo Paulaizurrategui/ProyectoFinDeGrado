@@ -43,6 +43,10 @@ fun CommentSection(
     onReportComment: ((Comment) -> Unit)? = null,
     onBlockUser: ((String) -> Unit)? = null
 ) {
+    // Sección de comentarios reutilizable
+    // - Muestra el contador de comentarios
+    // - Permite añadir un comentario si el usuario está logueado
+    // - Lista comentarios existentes con opciones para borrar/reportar/bloquear
     // Estado local para el texto del nuevo comentario
     var newCommentText by remember { mutableStateOf("") }
 
@@ -161,6 +165,7 @@ fun CommentCard(
     onReport: (() -> Unit)? = null,
     onBlock: ((String) -> Unit)? = null
 ) {
+    // Card individual que renderiza un comentario y sus acciones
     // Estado local para mostrar el diálogo de confirmación de borrado
     var showDeleteConfirm by remember { mutableStateOf(false) }
 

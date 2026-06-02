@@ -17,6 +17,12 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
+// Repositorio para buscar ofertas de vuelos usando Travelpayouts como fuente
+// principal. Estrategia:
+// 1) Intentar rutas por fechas exactas
+// 2) Intentar ofertas especiales
+// 3) Intentar matrices semanales / cercanas para encontrar tarifas alternativas
+// 4) Si todo falla, construir ofertas fallback estimadas para no romper la UX
 class FlightsRepository() {
     companion object {
         private const val TAG = "FlightsRepository"
@@ -102,7 +108,8 @@ class FlightsRepository() {
                 Log.w(TAG, "Travelpayouts nearby places failed: ${e.message}")
             }
 
-            // 4) Fallback local: si no hay vuelos reales, devolvemos ofertas estimadas para no romper la propuesta.
+            // 4) Fallback local: si no hay vuelos reales, devolvemos ofertas estimadas
+            // para que la propuesta tenga sentido aunque no haya datos reales.
             Log.w(TAG, "No real flight offers found for $originCode -> $destinationCode, using fallback offers")
             buildFallbackFlights(originCode, destinationCode, departureDate, returnDate, limit)
         }
@@ -133,6 +140,7 @@ class FlightsRepository() {
                     market = "es"
                 )
 
+                // Si la API indica un error, no insisto más en este camino
                 if (resp.success != true) {
                     Log.w(TAG, "Travelpayouts error: ${resp.error}")
                     return@withContext emptyList()
@@ -148,6 +156,7 @@ class FlightsRepository() {
                     val price = flight.price ?: return@mapNotNullIndexed null
                     val airline = flight.airline ?: "Unknown"
                     val link = flight.link?.let { "https://www.aviasales.com$it" }
+                    // Convertir a EUR usando el repo de divisas para consistencia
                     val convertedPrice = convertPriceToEur(price, "EUR")
                     FlightOffer(
                         id = "tp_date_$index",
@@ -184,6 +193,7 @@ class FlightsRepository() {
                     token = token
                 )
 
+                // Validación de respuesta y mapeo a `FlightOffer`
                 if (resp.success != true) {
                     Log.w(TAG, "Travelpayouts special offers error: ${resp.error}")
                     return@withContext emptyList()
@@ -314,6 +324,7 @@ class FlightsRepository() {
         val raw = value.trim().uppercase(Locale.getDefault())
         if (raw.length == 3 && raw.all { it.isLetter() }) return raw
 
+        // Normalizo entradas libres a códigos de 3 letras o heurística simple
         return when {
             raw.contains("PAR") || raw.contains("PARÍ") || raw.contains("PARIS") -> "PAR"
             raw.contains("LON") || raw.contains("LOND") -> "LON"
@@ -343,6 +354,7 @@ class FlightsRepository() {
             } catch (_: Throwable) {
             }
         }
+        // Devuelvo la fecha en formato ISO que espera la API, si no, devuelvo el valor original
         return value
     }
 
@@ -419,6 +431,7 @@ class FlightsRepository() {
         val originSeed = abs(origin.filter(Char::isLetter).uppercase(Locale.getDefault()).hashCode())
         val destinationSeed = abs(destination.filter(Char::isLetter).uppercase(Locale.getDefault()).hashCode())
         val combined = abs(originSeed xor destinationSeed)
+        // Estimador heurístico para precio base según ruta (semillas de strings)
         return 1.0 + (combined % 5) * 0.35
     }
 
@@ -426,6 +439,7 @@ class FlightsRepository() {
         val originSeed = abs(origin.filter(Char::isLetter).uppercase(Locale.getDefault()).hashCode())
         val destinationSeed = abs(destination.filter(Char::isLetter).uppercase(Locale.getDefault()).hashCode())
         val combined = abs(originSeed + destinationSeed)
+        // Estimador heurístico de duración en minutos para fallback
         return 90 + (combined % 7) * 65
     }
 }

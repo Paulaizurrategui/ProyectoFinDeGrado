@@ -9,6 +9,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 class CommentViewModel : ViewModel() {
+    // ViewModel para gestionar comentarios de un viaje
+    // - Expone `comments` como StateFlow para que la UI observe cambios
+    // - Provee métodos: `loadCommentsForTrip`, `addComment`, `deleteComment`, `updateComment`
+    // - Usa `CommentRepository` para las operaciones de red/Firestore
     // Repositorio de comentarios y autenticación
     private val commentRepo = CommentRepository()
     private val auth = FirebaseAuth.getInstance()

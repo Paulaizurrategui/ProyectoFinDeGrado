@@ -14,6 +14,10 @@ data class SimpleTripData(
 )
 
 class ProfileFavoritesViewModel : ViewModel() {
+    // ViewModel que expone listas sencillas de trips para Favoritos y Likes
+    // - Usa collectionGroup para escuchar las subcolecciones `favorites` y `likes`
+    // - Mantiene listeners para actualizaciones en tiempo real y permite limpiarlos
+    // - Provee métodos para eliminar favoritos/likes con actualización optimista
     // Instancias de Firebase para autenticación y Firestore
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
@@ -129,7 +133,7 @@ class ProfileFavoritesViewModel : ViewModel() {
         loadLikes()
     }
 
-    // Remove optimisticamente un like y realiza la petición a Firestore. Si falla,
+    // Remove optimistamente un like y realiza la petición a Firestore. Si falla,
     // se restaura el estado previo y se recarga desde Firestore.
     fun removeLike(tripId: String) {
         val uid = auth.currentUser?.uid ?: return

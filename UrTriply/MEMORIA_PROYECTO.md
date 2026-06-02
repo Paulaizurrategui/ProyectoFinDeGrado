@@ -13,10 +13,10 @@
 - **Tutora**: Macarena Cuenca Carbajo
 - **Curso**: 2025-2026
 - **Centro**: Centro de Enseñanza Concertada "Gregorio Fernández"
-- **Período de Desarrollo**: 17 de marzo - 13 de mayo de 2026 (2 meses)
+- **Período de Desarrollo**: 17 de marzo - 4 de junio de 2026 (cierre ampliado)
 - **Total de Commits**: 51
 - **Versión**: 1.0
- - **Período de Desarrollo**: 17 de marzo - 26 de mayo de 2026 (2+ meses)
+ - **Período de Desarrollo**: 17 de marzo - 4 de junio de 2026 (2+ meses)
  - **Total de Commits**: 59 (incluye commits posteriores a la entrega)
  - **Versión**: 1.1
 
@@ -44,32 +44,32 @@
 La aplicación genera propuestas de viaje completas y realistas basadas en:
 - Presupuesto total disponible
 - Número de viajeros
-- Rango de fechas flexible
+**Cálculo de Horas**: 235 horas totales aproximadamente (equivalente a ≈58.75 días de trabajo × 4h/día)
 - Preferencias personales (cultura, ocio nocturno, naturaleza, gastronomía)
 
-El resultado es un itinerario detallado, distribución presupuestaria por categorías (transporte, alojamiento, comidas, actividades) y recomendaciones de actividades reales filtradas por preferencias del usuario.
+**Horas Dedicadas**: 44h (aprox. 11 días × 4h/día)
 
 Además, **UrTriply incorpora una dimensión social**: usuarios registrados pueden publicar sus viajes, interactuar con otros mediante likes, comentarios y favoritos, creando una comunidad colaborativa donde compartir experiencias y obtener inspiración de otros viajeros.
-
+**Horas Dedicadas**: 60h (aprox. 15 días × 4h/día)
 ### 1.2. Justificación de la Necesidad
 
-**Problemas identificados:**
-
+-- **Duración**: aprox. 18 días de trabajo puntual en días con commits
+-- **Horas Dedicadas**: 71h (aprox. 18 días × 4h/día)
 1. **Presupuestación Inexacta**: Herramientas tradicionales (Booking, Skyscanner, Tripadvisor) obligan a consultar múltiples plataformas sin visión integrada del presupuesto total.
 
 2. **Falta de Flexibilidad Temporal**: Muchos planificadores exigen fechas exactas. UrTriply permite un rango y optimiza automáticamente por mejor precio.
 
 3. **Paralización por Indecisión**: Usuarios con presupuesto limitado no saben si su dinero alcanza. Necesitan validación rápida.
-
-4. **Aislamiento de Experiencias**: No existe una comunidad de viajeros con presupuesto similar compartiendo propuestas reales.
-
-5. **Integración Fragmentada**: Requiere saltar entre webs de vuelos, hoteles y actividades, incrementando fricción y tiempo.
-
-### 1.3. Propuesta de Valor Diferencial
-
-UrTriply se diferencia por:
-
-- **Generación Automática Inteligente**: Ajusta automáticamente duración del viaje, categorías presupuestarias y actividades según disponibilidad real.
+| **Planificación y Análisis** | 16 | 6.8% |
+| **Setup y Configuración** | 20 | 8.5% |
+| **Frontend (Compose)** | 44 | 18.7% |
+| **Backend (Firestore/APIs)** | 60 | 25.5% |
+| **Integración de APIs** | 36 | 15.3% |
+| **Testing y Debugging** | 24 | 10.2% |
+| **Documentación** | 8 | 3.4% |
+| **Deploy y Optimización** | 8 | 3.4% |
+| **Post-entrega (correcciones y pulido final)** | 19 | 8.1% |
+| **TOTAL** | **235h** | **100%** |
 - **Datos Reales + Fallback Elegante**: Integra 5+ APIs externas para precios reales (TravelPayouts, Overpass, Google Places, Wikipedia) con datos estimados transparentes si algo falla.
 - **Comunidad Integrada**: No es solo un planificador; permite publicar, interactuar, reportar contenido y moderar.
 - **UX Simplificada**: Todo en 4 pasos: seleccionar destino → ingresar parámetros → generar → compartir/publicar.
@@ -332,13 +332,11 @@ androidx.test.espresso:espresso-core:3.5.1
 
 ### 5.1. Períodos de Desarrollo
 
-**Período Total**: 17 de marzo - 13 de mayo de 2026 (58 días calendario)
+**Período Total**: 17 de marzo - 4 de junio de 2026 (80 días calendario)
 
 **Dedicación**: 4 horas diarias en horario de tarde (flexible según disponibilidad)
 
-**Cálculo de Horas**: ~50 días de trabajo efectivo (hasta 13 may) × 4 horas/día = **~200 horas**.
-Trabajo adicional (14 may - 26 may): 7 días con commits relevantes × 4 h/día = **28 horas**.
-**Total acumulado aproximado**: **~228 horas**
+**Cálculo de Horas**: 235 horas totales aproximadamente
 
 #### **Fase 1: Planificación y Diseño (17 mar - 31 mar)**
 - **Duración**: 2 semanas
@@ -372,7 +370,7 @@ Trabajo adicional (14 may - 26 may): 7 días con commits relevantes × 4 h/día 
   - Cálculo de presupuesto y distribución
   - Generación de itinerario
 - **Commits**: 12
-- **Horas Dedicadas**: 40h (10 días × 4h/día)
+- **Horas Dedicadas**: 44h (aprox. 11 días × 4h/día)
 
 #### **Fase 4: Comunidad Social (26 abr - 7 may)**
 - **Duración**: 1.5 semanas
@@ -384,7 +382,7 @@ Trabajo adicional (14 may - 26 may): 7 días con commits relevantes × 4 h/día 
   - Panel de moderación admin
   - Búsqueda de amigos
 - **Commits**: 14
-- **Horas Dedicadas**: 56h (14 días × 4h/día)
+- **Horas Dedicadas**: 60h (aprox. 15 días × 4h/día)
 
 #### **Fase 5: Pulido y Correcciones (8 may - 13 may)**
 - **Duración**: 1 semana
@@ -398,31 +396,31 @@ Trabajo adicional (14 may - 26 may): 7 días con commits relevantes × 4 h/día 
 - **Commits**: 9
 - **Horas Dedicadas**: 24h (6 días × 4h/día)
 
-#### **Fase 6: Post-entrega — Correcciones y pulido final (14 may - 26 may)**
+#### **Fase 6: Correcciones y pulido final (14 may - 4 jun)**
 
-- **Duración**: 2 semanas (trabajo puntual en días con commits)
+- **Duración**: aprox. 17.75 días de trabajo puntual en días con commits
 - **Actividades**:
    - Retoques finales de UI y mejora de pantallas
    - Optimización de tiempos de generación y ajuste del botón compartir
    - Correcciones menores y actualización de recursos (logo, textos)
    - Actualización de la memoria y documentación tras la entrega
-- **Commits**: 8 (commits entre 2026-05-14 y 2026-05-26)
-- **Horas Dedicadas**: 28h (7 días × 4h/día)
+- **Commits**: 8 (commits entre 2026-05-14 y 2026-06-04)
+- **Horas Dedicadas**: 71h (≈17.75 días × 4h/día)
 
 ### 5.2. Horas por Categoría
 
 | Actividad | Horas | % |
 |-----------|-------:|---:|
-| **Planificación y Análisis** | 16 | 8% |
-| **Setup y Configuración** | 20 | 10% |
-| **Frontend (Compose)** | 44 | 22% |
-| **Backend (Firestore/APIs)** | 56 | 28% |
-| **Integración de APIs** | 28 | 14% |
-| **Testing y Debugging** | 20 | 10% |
-| **Documentación** | 8 | 4% |
-| **Deploy y Optimización** | 8 | 4% |
-| **Post-entrega (correcciones y pulido final)** | 28 | 12% |
-| **TOTAL** | **228h** | **100%** |
+| **Planificación y Análisis** | 16 | 6.8% |
+| **Setup y Configuración** | 20 | 8.5% |
+| **Frontend (Compose)** | 44 | 18.7% |
+| **Backend (Firestore/APIs)** | 60 | 25.5% |
+| **Integración de APIs** | 36 | 15.3% |
+| **Testing y Debugging** | 24 | 10.2% |
+| **Documentación** | 8 | 3.4% |
+| **Deploy y Optimización** | 8 | 3.4% |
+| **Post-entrega (correcciones y pulido final)** | 19 | 8.1% |
+| **TOTAL** | **235h** | **100%** |
 
 ### 5.3. Hitos Clave (Entregas Parciales)
 
@@ -721,7 +719,7 @@ A nivel académico, el proyecto integró múltiples competencias del ciclo DAM: 
 - Código fuente: https://github.com/[usuario]/UrTriply
 - Rama main: Código en producción
 - Rama develop: Rama de integración
-- Commits: 51 desde iniciación (17 mar 2026)
+- Commits: 51 desde iniciación (17 mar 2026; trabajo extendido hasta 4 jun 2026)
 
 ---
 
@@ -784,7 +782,59 @@ USUARIO (N) ─────────── (N) VIAJE (FAVORITOS)
 
 [Ver sección 5.2 - Tabla de Horas por Categoría]
 
-### Anexo E: Notas sobre Uso de IA
+### Anexo E: Guía de uso de la aplicación
+
+Esta guía resume los pasos básicos para utilizar UrTriply.
+
+#### 1. Acceso inicial
+
+1. Abre la aplicación.
+2. Si ya tienes cuenta, pulsa en **Iniciar sesión**.
+3. Si es tu primera vez, pulsa en **Registrarse** y completa el formulario.
+4. Confirma que cumples la condición de edad requerida para usar la app.
+
+#### 2. Página principal
+
+1. Tras iniciar sesión, accede a la pantalla principal.
+2. Desde aquí puedes ver un resumen de tu actividad y acceder a las secciones principales.
+3. Usa la barra de navegación inferior para moverte entre las pestañas de la app.
+
+#### 3. Crear un viaje
+
+1. Entra en la pestaña de planificación.
+2. Indica el destino, fechas, número de viajeros y presupuesto aproximado.
+3. Pulsa en **Generar viaje**.
+4. La aplicación mostrará una propuesta con vuelos, alojamiento, actividades e itinerario.
+5. Revisa el reparto del presupuesto y ajusta los datos si lo necesitas.
+
+#### 4. Ver detalles y compartir
+
+1. Abre el resultado del viaje generado.
+2. Consulta cada bloque de información: vuelos, hoteles, actividades y presupuesto.
+3. Usa la opción de compartir para enviar la propuesta a otras personas.
+4. Si un enlace de reserva está disponible, se abrirá dentro de la aplicación.
+
+#### 5. Comunidad y publicaciones
+
+1. Entra en la pestaña de comunidad para ver viajes publicados por otros usuarios.
+2. Puedes dar like, guardar como favorito y leer comentarios.
+3. En la pantalla de detalle de una publicación puedes revisar toda la información del viaje.
+4. Si tienes permisos de administración, también podrás moderar contenido.
+
+#### 6. Perfil y ajustes
+
+1. Accede a tu perfil para ver y editar tus datos personales.
+2. Desde el perfil puedes consultar favoritos, publicaciones y preferencias.
+3. Si la aplicación lo permite, podrás activar o desactivar opciones como el modo oscuro.
+
+#### 7. Consejos de uso
+
+1. Usa una conexión a internet estable para cargar correctamente los datos externos.
+2. Si algún enlace no abre, vuelve a intentarlo o revisa la conexión.
+3. Comprueba siempre los precios y la información antes de confirmar una reserva.
+4. Mantén la aplicación actualizada para evitar errores y mejorar el rendimiento.
+
+### Anexo F: Notas sobre Uso de IA
 
 Durante el desarrollo de este proyecto, se utilizó **GitHub Copilot** como apoyo para:
 - Generación de código boilerplate (Data classes, componentes Compose repetitivos)
@@ -802,7 +852,7 @@ El uso fue responsable y ético, como especifica la política del centro.
 
 ---
 
-**Fecha de Entrega**: 13 de mayo de 2026
+**Fecha de Entrega**: 4 de junio de 2026
 
 **Alumna**: Paula Izurrategui
 

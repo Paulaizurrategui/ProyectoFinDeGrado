@@ -89,6 +89,10 @@ fun PostDetailScreen(
     onBack: () -> Unit,
     onOpenUrl: (String) -> Unit
 ) {
+    // Pantalla de detalle de un post de la comunidad
+    // - Carga el documento `trips/{postId}` desde Firestore
+    // - Muestra itinerario, resumen, comentarios y acciones (report, block)
+    // - Maneja múltiples diálogos (report trip, report comment, block user)
     val isCompactWidth = LocalConfiguration.current.screenWidthDp < 360
     val context = LocalContext.current
     val reportReasonSpam = stringResource(R.string.post_detail_report_reason_spam)
@@ -128,6 +132,7 @@ fun PostDetailScreen(
     var blockMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(postId) {
+        // Cargo el documento del viaje y sus comentarios; gestiono errores y estado loading
         db.collection("trips").document(postId).get()
             .addOnSuccessListener { doc ->
                 try {
@@ -196,6 +201,7 @@ fun PostDetailScreen(
             )
         }
     ) { padding ->
+        // Contenido principal: loader, error o detalle del viaje
         when {
             isLoading -> {
                 Box(
@@ -208,6 +214,7 @@ fun PostDetailScreen(
                 }
             }
 
+            // Caso de error al cargar el documento: muestro mensaje y botón atrás
             errorMessage != null -> {
                 Box(
                     modifier = Modifier
@@ -231,6 +238,7 @@ fun PostDetailScreen(
                 }
             }
 
+            // Caso éxito: renderizo todos los bloques del post dentro de LazyColumn
             tripData != null -> {
                 val trip = tripData!!
                 val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
@@ -242,6 +250,7 @@ fun PostDetailScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Encabezado del post: tarjeta con fondo degradado y chips informativos
                     item {
                         Card(
                             shape = RoundedCornerShape(28.dp),
@@ -298,6 +307,7 @@ fun PostDetailScreen(
                         }
                     }
 
+                    // Sección resumen: fechas, origen, estado
                     item {
                         Card(
                             shape = RoundedCornerShape(24.dp),
@@ -320,6 +330,7 @@ fun PostDetailScreen(
                         }
                     }
 
+                    // Sección itinerario: muestra `itineraryByDay` si existe, o texto alternativo
                     item {
                         Card(
                             shape = RoundedCornerShape(24.dp),
@@ -390,6 +401,7 @@ fun PostDetailScreen(
                         }
                     }
 
+                    // Sección de comentarios: incluye `CommentSection` y acciones asociadas
                     item {
                         Card(
                             shape = RoundedCornerShape(24.dp),
@@ -438,6 +450,7 @@ fun PostDetailScreen(
     }
 
     if (showReportDialog) {
+        // Diálogo para reportar el post (selección de razón y campo de detalle)
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showReportDialog = false },
             title = {
@@ -536,6 +549,7 @@ fun PostDetailScreen(
     }
 
     if (showReportCommentDialog && selectedCommentToReport != null) {
+        // Diálogo para reportar un comentario específico
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showReportCommentDialog = false },
             title = {
@@ -637,6 +651,7 @@ fun PostDetailScreen(
 
     // Block user dialog (used for post author or comment author)
     if (showBlockDialog && blockTargetUid != null) {
+        // Diálogo para bloquear un usuario: envía bloqueo via `CommunityViewModel.blockUser`
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showBlockDialog = false },
             title = {
@@ -706,6 +721,7 @@ fun PostDetailScreen(
 
 @Composable
 private fun DetailChip(icon: ImageVector, text: String, isCompactWidth: Boolean) {
+    // Pequeño chip informativo usado en el header del detalle (presupuesto/días/usuarios)
     Surface(
         shape = RoundedCornerShape(50),
         color = Color.White.copy(alpha = 0.18f)
@@ -729,6 +745,7 @@ private fun DetailChip(icon: ImageVector, text: String, isCompactWidth: Boolean)
 
 @Composable
 private fun SummaryRow(label: String, value: String, icon: ImageVector) {
+    // Fila resumen con icono + etiqueta + valor (reutilizable en la sección resumen)
     Surface(
         shape = RoundedCornerShape(18.dp),
         color = UrSkySoft

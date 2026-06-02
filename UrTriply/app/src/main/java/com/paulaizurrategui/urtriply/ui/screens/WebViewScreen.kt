@@ -29,38 +29,50 @@ fun WebViewScreen(
     url: String,
     onBack: () -> Unit
 ) {
+    // Estado local que muestra un indicador mientras la página se carga
     var isLoading by remember { mutableStateOf(true) }
 
+    // Maneja back hardware para navegar atrás usando el callback proporcionado
     BackHandler(onBack = onBack)
 
+    // Scaffold con gradiente propio de la app y título
     UrTriplyGradientScaffold(title = androidx.compose.ui.res.stringResource(R.string.webview_title), onBack = onBack) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (url.isBlank()) {
+                // Texto para estado sin URL
                 Text(stringResource(R.string.webview_no_url), modifier = Modifier.align(Alignment.Center))
             } else {
+                // Asegurar esquema http/https; si falta, añadimos https por defecto
                 val finalUrl = remember(url) {
                     if (url.startsWith("http://") || url.startsWith("https://")) url else "https://$url"
                 }
 
+                // Composable que integra un WebView nativo dentro de Compose
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
                     factory = { context ->
                         WebView(context).apply {
+                            // Ajustes básicos para permitir JS y almacenamiento local
                             settings.javaScriptEnabled = true
                             settings.domStorageEnabled = true
                             settings.mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+                            // Cliente para controlar eventos de la página
                             webViewClient = object : WebViewClient() {
                                 override fun onPageFinished(view: WebView?, finishedUrl: String?) {
+                                    // Página cargada: ocultamos el loader
                                     isLoading = false
                                 }
                                 override fun onReceivedError(view: WebView?, errorCode: Int, description: String?, failingUrl: String?) {
+                                    // En error de carga también escondemos el loader
                                     isLoading = false
                                 }
                             }
+                            // Iniciar carga de la URL final
                             loadUrl(finalUrl)
                         }
                     },
                     update = { webView ->
+                        // Si cambia la URL externa, recargamos el WebView
                         if (webView.url != finalUrl) {
                             webView.loadUrl(finalUrl)
                         }
@@ -68,6 +80,7 @@ fun WebViewScreen(
                 )
             }
 
+            // Indicador de carga centralizado mientras `isLoading` es true
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)

@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -25,10 +24,9 @@ fun WelcomeScreen(
     onGoRegister: () -> Unit,
     onContinueGuest: () -> Unit
 ) {
-    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val mainTextColor = MaterialTheme.colorScheme.onSurface
-    val secondaryTextColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurfaceVariant else UrTextMuted
-
+    // Pantalla de bienvenida / entrada de la app.
+    // - Muestra un slogan y botones de acción distintos según `isLoggedIn`.
+    // - Callbacks: navegar a Home, Login, Register o continuar como invitado.
     UrTriplyGradientScaffold(
         title = "",
         showHeader = true,
@@ -40,16 +38,18 @@ fun WelcomeScreen(
         ) {
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Texto con el eslogan/claim de la app (máx. 2 líneas)
             Text(
                 text = stringResource(R.string.slogan),
                 style = MaterialTheme.typography.bodyLarge,
-                color = secondaryTextColor,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(18.dp))
 
+            // Si el usuario está autenticado: botón principal va a Home
             if (isLoggedIn) {
                 Button(
                     onClick = onGoHome,
@@ -70,6 +70,7 @@ fun WelcomeScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
+                // Botón secundario para continuar como invitado
                 OutlinedButton(
                     onClick = onContinueGuest,
                     modifier = Modifier
@@ -80,7 +81,6 @@ fun WelcomeScreen(
                     Text(
                         stringResource(R.string.welcome_guest),
                         fontWeight = FontWeight.Bold,
-                        color = mainTextColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -115,7 +115,6 @@ fun WelcomeScreen(
                     Text(
                         stringResource(R.string.welcome_register),
                         fontWeight = FontWeight.Bold,
-                        color = mainTextColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -123,6 +122,7 @@ fun WelcomeScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
+                // Enlace de texto alternativo para continuar como invitado
                 TextButton(onClick = onContinueGuest) {
                     Text(
                         stringResource(R.string.welcome_guest),
@@ -134,10 +134,11 @@ fun WelcomeScreen(
 
             Spacer(modifier = Modifier.height(6.dp))
 
+            // Nota explicativa sobre limitaciones o comportamiento del modo invitado
             Text(
                 text = stringResource(R.string.welcome_guest_note),
                 style = MaterialTheme.typography.bodySmall,
-                color = secondaryTextColor
+                color = UrTextMuted
             )
         }
     }

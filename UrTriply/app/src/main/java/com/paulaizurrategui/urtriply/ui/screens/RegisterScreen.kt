@@ -1,5 +1,10 @@
 package com.paulaizurrategui.urtriply.ui.screens
 
+// Pantalla de registro de usuario.
+// - Presenta campos de email/contraseña y validaciones locales (edad, dominio permitido, long. contraseña).
+// - Interactúa con `AuthViewModel` para realizar el registro y mostrar estados (loading/error).
+// - No realiza navegación por sí misma; recibe callbacks para cambio de pantalla.
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +37,7 @@ fun RegisterScreen(
     onGoToLogin: () -> Unit,
     onRegisterSuccess: () -> Unit
 ) {
+    // Estado reactivo proporcionado por el AuthViewModel (carga/errores/éxito)
     val uiState by authViewModel.uiState.collectAsState()
     val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val mainTextColor = MaterialTheme.colorScheme.onSurface
@@ -64,7 +70,7 @@ fun RegisterScreen(
         else -> null
     }
 
-    // NUEVO: Dialog para errores con texto
+    // Dialog local para errores definidos en `localErrorText` (prioritario)
     if (localErrorText != null) {
         AlertDialog(
             onDismissRequest = {
@@ -81,6 +87,7 @@ fun RegisterScreen(
         )
     }
 
+    // Dialogs basados en resource ids provenientes del ViewModel (error o éxito)
     if (dialogResId != null && dialogTitleResId != null) {
         AlertDialog(
             onDismissRequest = {
@@ -100,6 +107,7 @@ fun RegisterScreen(
         )
     }
 
+    // Fondo con degradado que varía según tema (claro/oscuro)
     val bg = if (isDarkTheme) {
         Brush.verticalGradient(
             0f to MaterialTheme.colorScheme.background,
@@ -115,6 +123,7 @@ fun RegisterScreen(
     }
     val orange = Color(0xFFFF8A00)
 
+    // Contenedor principal centrado que contiene la tarjeta de registro
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -134,6 +143,7 @@ fun RegisterScreen(
                 modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Header de la tarjeta con el nombre de la app
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -271,7 +281,7 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Age verification checkbox
+                // Checkbox de verificación de edad: se requiere tener más de 13 años
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -295,6 +305,11 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Botón de registro: valida localmente y llama a `authViewModel.register`
+                // Validaciones locales:
+                // - checkbox de edad (isOver13)
+                // - dominio de email permitido (EmailValidator)
+                // - passwords coincidentes y longitud mínima
                 Button(
                     onClick = {
                         localErrorResId = null
@@ -321,6 +336,8 @@ fun RegisterScreen(
                             return@Button
                         }
 
+                        // Llamada al ViewModel para realizar el registro. `onRegisterSuccess` se
+                        // ejecutará cuando el proceso termine correctamente.
                         authViewModel.register(email.trim(), password, isOver13, onRegisterSuccess)
                     },
                     modifier = Modifier
