@@ -72,11 +72,9 @@ fun MainShellScreen( // pantalla principal con navegación
     }
 
     Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        // Eliminados los WindowInsets(0,0,0,0) para que respete las barras del sistema
         bottomBar = {
-            NavigationBar(
-                windowInsets = WindowInsets(0, 0, 0, 0)
-            ) {
+            NavigationBar {
                 tabs.forEach { tab ->
                     val selected = currentRoute == tab.route
                     NavigationBarItem(
@@ -179,7 +177,7 @@ fun MainShellScreen( // pantalla principal con navegación
             }
 
             composable("profile/edit") {
-                    EditProfileScreen(onBack = { navController.popBackStack() }) // pantalla editar perfil
+                EditProfileScreen(onBack = { navController.popBackStack() }) // pantalla editar perfil
             }
 
             composable(
