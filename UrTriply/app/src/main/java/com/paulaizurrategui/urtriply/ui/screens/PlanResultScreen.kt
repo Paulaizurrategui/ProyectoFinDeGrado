@@ -49,6 +49,7 @@ import com.paulaizurrategui.urtriply.domain.model.Hotel
 import com.paulaizurrategui.urtriply.domain.model.SuggestedActivity
 import com.paulaizurrategui.urtriply.ui.components.UrTriplyGradientScaffold
 import com.paulaizurrategui.urtriply.ui.theme.UrOrange
+import java.net.URLEncoder
 import java.text.NumberFormat
 import com.paulaizurrategui.urtriply.R
 import androidx.compose.runtime.remember as rememberRuntime
@@ -271,6 +272,25 @@ fun PlanResultScreen(
                             )
                             Spacer(Modifier.height(6.dp))
 
+                            if (r.usedFallback) {
+                                ElevatedCard(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.elevatedCardColors(
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
+                                    )
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.plan_result_offline_badge),
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                }
+                                Spacer(Modifier.height(8.dp))
+                            }
+
                             // Pequeña sección de diagnóstico: si la API devolvió nombre y coordenadas,
                             // mostramos un texto informativo (útil en desarrollo).
                             if (r.destinoDisplayName != null && r.lat != null && r.lon != null) {
@@ -323,7 +343,6 @@ fun PlanResultScreen(
                                 itinerario = r.itinerario,
                                 onOpenUrl = onOpenUrl
                             )
-
                             Spacer(Modifier.height(14.dp))
 
                             // Sección de hoteles: mostramos solo hoteles reales (no sugerencias vacías)
@@ -570,9 +589,7 @@ private fun HotelsBlock(
     apiHotelesOk: Boolean,
     onOpenUrl: (String) -> Unit
 ) {
-    val realHotels = hoteles.filter { it.isReal }
-
-    if (realHotels.isEmpty()) {
+    if (hoteles.isEmpty()) {
         Text(
             text = stringResource(R.string.plan_result_no_hotels),
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -581,7 +598,7 @@ private fun HotelsBlock(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        realHotels.forEach { hotel ->
+        hoteles.forEach { hotel ->
             HotelCard(hotel = hotel, onOpenUrl = onOpenUrl)
         }
     }
@@ -699,19 +716,28 @@ private fun HotelCard(hotel: Hotel, onOpenUrl: (String) -> Unit) {
                 }
 
                 Text(
-                    text = stringResource(R.string.plan_result_price_per_night, String.format("%.0f", hotel.pricePerNight)),
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    text = if (hotel.isReal) {
+                        stringResource(R.string.plan_result_price_check_provider)
+                    } else {
+                        stringResource(R.string.plan_result_price_per_night, String.format("%.0f", hotel.pricePerNight))
+                    },
+                    style = if (hotel.isReal) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyMedium,
+                    fontSize = if (hotel.isReal) 10.sp else 14.sp,
+                    fontWeight = if (hotel.isReal) FontWeight.SemiBold else FontWeight.Bold,
+                    color = if (hotel.isReal) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
             Text(
-                text = stringResource(R.string.plan_result_real_data),
+                text = if (hotel.isReal) stringResource(R.string.plan_result_real_data)
+                else stringResource(R.string.plan_result_fallback_data),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            if (hotel.totalPrice != null) {
+            if (!hotel.isReal && hotel.totalPrice != null) {
                 Text(
                     text = stringResource(R.string.plan_result_total_estimated, hotel.totalPrice ?: 0.0),
                     style = MaterialTheme.typography.bodySmall,
@@ -738,9 +764,7 @@ private fun FlightsBlock(
     apiOk: Boolean,
     onOpenUrl: (String) -> Unit
 ) {
-    val realFlights = flights.filter { it.isReal }
-
-    if (realFlights.isEmpty()) {
+    if (flights.isEmpty()) {
         Text(
             text = stringResource(R.string.plan_result_no_flights),
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -749,7 +773,7 @@ private fun FlightsBlock(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        realFlights.forEach { flight ->
+        flights.forEach { flight ->
             FlightCard(flight, onOpenUrl = onOpenUrl)
         }
     }
@@ -760,6 +784,7 @@ private fun FlightsBlock(
 @Composable
 private fun FlightCard(flight: com.paulaizurrategui.urtriply.domain.model.FlightOffer, onOpenUrl: (String) -> Unit) {
     val context = LocalContext.current
+    val localeTag = LocalLocale.current.toLanguageTag()
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -784,7 +809,7 @@ private fun FlightCard(flight: com.paulaizurrategui.urtriply.domain.model.Flight
 
             Text(text = stringResource(R.string.plan_result_real_data), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-            val bookingUrl = flight.bookingUrl
+            val bookingUrl = resolveFlightBookingUrl(flight, localeTag)
             if (!bookingUrl.isNullOrBlank()) {
                 TextButton(onClick = {
                     onOpenUrl(bookingUrl)
@@ -794,6 +819,57 @@ private fun FlightCard(flight: com.paulaizurrategui.urtriply.domain.model.Flight
             }
         }
     }
+}
+
+private fun resolveFlightBookingUrl(
+    flight: com.paulaizurrategui.urtriply.domain.model.FlightOffer,
+    localeTag: String
+): String? {
+    if (flight.isReal && !flight.bookingUrl.isNullOrBlank()) return flight.bookingUrl
+
+    val normalizedDeparture = normalizeFlightDate(flight.departureDate)
+    val normalizedReturn = normalizeFlightDate(flight.returnDate)
+    val language = normalizeLanguageForFlights(localeTag)
+
+    // If dates are not parseable, keep provider URL when available.
+    if (normalizedDeparture == null) return flight.bookingUrl
+
+    val originCode = flight.origin.trim().uppercase().take(3)
+    val destinationCode = flight.destination.trim().uppercase().take(3)
+    if (originCode.length < 3 || destinationCode.length < 3) return flight.bookingUrl
+
+    val query = if (normalizedReturn != null) {
+        "Flights from $originCode to $destinationCode on $normalizedDeparture return $normalizedReturn"
+    } else {
+        "Flights from $originCode to $destinationCode on $normalizedDeparture"
+    }
+
+    return "https://www.google.com/travel/flights?hl=$language&q=" + URLEncoder.encode(query, Charsets.UTF_8.name())
+}
+
+private fun normalizeLanguageForFlights(localeTag: String): String {
+    val lang = localeTag.substringBefore('-').lowercase().ifBlank { "es" }
+    return when (lang) {
+        "es", "en" -> lang
+        else -> "es"
+    }
+}
+
+private fun normalizeFlightDate(rawDate: String?): String? {
+    val value = rawDate?.trim().orEmpty()
+    if (value.isBlank()) return null
+
+    // ISO or ISO-like values: 2026-07-18 or 2026-07-18T11:00:00Z
+    Regex("""\d{4}-\d{2}-\d{2}""").find(value)?.let { return it.value }
+
+    // dd/MM/yyyy -> yyyy-MM-dd
+    val slash = Regex("""(\d{2})/(\d{2})/(\d{4})""").find(value)
+    if (slash != null) {
+        val (day, month, year) = slash.destructured
+        return "$year-$month-$day"
+    }
+
+    return null
 }
 
 /**

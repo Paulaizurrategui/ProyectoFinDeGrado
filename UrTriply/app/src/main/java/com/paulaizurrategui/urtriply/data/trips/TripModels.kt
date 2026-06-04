@@ -12,6 +12,7 @@ data class TripDoc(
     // autor (uid y email)
     val authorUid: String = "",
     val authorEmail: String? = null,
+    val authorName: String = "usuario",
 
     // datos del formulario
     val destino: String = "",
@@ -40,10 +41,12 @@ fun tripDocFromPlanResult(
     plan: PlanResult,
     authorUid: String,
     authorEmail: String?,
+    authorName: String,
     status: TripStatus
 ): TripDoc = TripDoc(
     authorUid = authorUid,
     authorEmail = authorEmail,
+    authorName = authorName,
     destino = plan.destino,
     presupuestoTotal = plan.presupuestoTotal,
     viajeros = plan.viajeros,

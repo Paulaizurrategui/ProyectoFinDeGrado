@@ -32,30 +32,59 @@ class TripsRepository(
         onSuccess: (tripId: String) -> Unit,
         onError: (Throwable) -> Unit
     ) {
-        // Preparo el documento a guardar (mapeo desde PlanResult a TripDoc)
-        // Solo incluyo los campos necesarios para reabrir/mostrar la propuesta.
-        val baseDoc = tripDocFromPlanResult(plan, authorUid, authorEmail, status)
-        val doc = baseDoc.copy(
-            createdAt = Timestamp.now(),
-            publishedAt = if (status == TripStatus.PUBLISHED) Timestamp.now() else null
-        )
+        resolveAuthorName(authorUid, authorEmail) { resolvedName ->
+            // Preparo el documento a guardar (mapeo desde PlanResult a TripDoc)
+            // Solo incluyo los campos necesarios para reabrir/mostrar la propuesta.
+            val baseDoc = tripDocFromPlanResult(
+                plan = plan,
+                authorUid = authorUid,
+                authorEmail = authorEmail,
+                authorName = resolvedName,
+                status = status
+            )
+            val doc = baseDoc.copy(
+                createdAt = Timestamp.now(),
+                publishedAt = if (status == TripStatus.PUBLISHED) Timestamp.now() else null
+            )
 
-        // Escritura única: `add` crea el documento con id automático.
-        // - Si tiene éxito, guardo actividades en subcolección y retorno el id.
-        // - Si falla, propago el error vía `onError`.
-        trips.add(doc)
-            .addOnSuccessListener { ref ->
-                // Log y persistencia de actividades relacionadas
-                Log.d("TripsRepository", "saved trip id=${ref.id} status=${doc.status}")
-                // Guardo las actividades sugeridas en la sub-colección 'activities'
-                // (se hace por separado para mantener la inserción del doc padre simple)
-                saveTripActivities(ref.id, plan.actividadesReales)
-                // Devuelvo el id generado para que el llamador pueda referenciar el trip
-                onSuccess(ref.id)
+            // Escritura única: `add` crea el documento con id automático.
+            // - Si tiene éxito, guardo actividades en subcolección y retorno el id.
+            // - Si falla, propago el error vía `onError`.
+            trips.add(doc)
+                .addOnSuccessListener { ref ->
+                    // Log y persistencia de actividades relacionadas
+                    Log.d("TripsRepository", "saved trip id=${ref.id} status=${doc.status}")
+                    // Guardo las actividades sugeridas en la sub-colección 'activities'
+                    // (se hace por separado para mantener la inserción del doc padre simple)
+                    saveTripActivities(ref.id, plan.actividadesReales)
+                    // Devuelvo el id generado para que el llamador pueda referenciar el trip
+                    onSuccess(ref.id)
+                }
+                .addOnFailureListener { e ->
+                    Log.e("TripsRepository", "save failed", e)
+                    onError(e)
+                }
+        }
+    }
+
+    private fun resolveAuthorName(
+        authorUid: String,
+        authorEmail: String?,
+        onResult: (String) -> Unit
+    ) {
+        db.collection("users").document(authorUid).get()
+            .addOnSuccessListener { userDoc ->
+                val displayName = userDoc.getString("displayName").orEmpty().trim()
+                val resolved = if (displayName.isNotBlank()) {
+                    displayName
+                } else {
+                    authorEmail?.substringBefore("@").orEmpty().ifBlank { "usuario" }
+                }
+                onResult(resolved)
             }
-            .addOnFailureListener { e ->
-                Log.e("TripsRepository", "save failed", e)
-                onError(e)
+            .addOnFailureListener {
+                val fallback = authorEmail?.substringBefore("@").orEmpty().ifBlank { "usuario" }
+                onResult(fallback)
             }
     }
 

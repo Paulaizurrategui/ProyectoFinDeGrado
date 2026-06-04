@@ -115,7 +115,7 @@ class ActivitiesRepository {
                     lon = lonItem,
                     price = 0.0,
                     isFree = true,
-                    bookingUrl = "https://en.wikipedia.org/wiki/${URLEncoder.encode(title, Charsets.UTF_8.name())}",
+                    bookingUrl = buildSearchUrl(title),
                     isReal = true
                 )
             }.distinctBy { it.name }

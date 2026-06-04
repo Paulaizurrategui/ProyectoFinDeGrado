@@ -1,5 +1,8 @@
 package com.paulaizurrategui.urtriply.ui.screens
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -479,11 +482,7 @@ fun PlanTabScreen(
 
                         isLoading = true
 
-                        scope.launch {
-                                try {
-                                // 1) Generamos una propuesta local rápida que sirve como
-                                // fallback inmediato si las APIs externas fallan o tardan.
-                                // Esto permite mostrar siempre una propuesta útil al usuario.
+                            scope.launch {
                                 val fallback = generateLocalProposal(
                                     context = context,
                                     destino = destino,
@@ -494,12 +493,24 @@ fun PlanTabScreen(
                                     prefs = prefs
                                 )
 
-                                // 2) Geocodificación: obtenemos lat/lon para la ciudad
-                                // desde Nominatim en IO para poder realizar búsquedas
-                                // posteriores de hoteles y actividades.
-                                val geo = withContext(Dispatchers.IO) {
-                                    geocodingRepo.geocode(queryCity)
-                                }
+                                try {
+
+                                    // Si no hay conexión usamos directamente el fallback
+                                    if (!hasInternetConnection(context)) {
+                                        Log.i(
+                                            "PlanTabScreen",
+                                            "Sin conexión a Internet. Usando fallback local."
+                                        )
+
+                                        PlanResultStore.lastResult = fallback
+                                        onNavigateToResult()
+                                        return@launch
+                                    }
+
+                                    // 2) Geocodificación
+                                    val geo = withContext(Dispatchers.IO) {
+                                        geocodingRepo.geocode(queryCity)
+                                    }
 
                                 // 3) Búsquedas paralelas (hoteles, actividades, vuelos).
                                 // Cada llamada se ejecuta con `retryWithBackoff` y `withTimeoutOrNull`
@@ -585,9 +596,15 @@ fun PlanTabScreen(
                                 // de resultados y navegamos a ella.
                                 PlanResultStore.lastResult = finalPlan
                                 onNavigateToResult()
-                            } catch (e: Throwable) {
-                                Log.e("PlanTabScreen", "Error generating proposal", e)
-                            } finally {
+                                } catch (e: Throwable) {
+                                    Log.e("PlanTabScreen", "Error generating proposal", e)
+
+                                    // Si cualquier API falla de forma inesperada,
+                                    // mostramos igualmente la propuesta local.
+                                    PlanResultStore.lastResult = fallback
+                                    onNavigateToResult()
+
+                                } finally {
                                 isLoading = false
                             }
                         }
@@ -840,7 +857,6 @@ private fun generateLocalProposal(
     val comidas = presupuestoTotal * 0.20
     val actividades = presupuestoTotal * 0.10
 
-    // estimación basada en presupuesto por persona y rango de fechas
     val presupuestoPorPersona = presupuestoTotal / maxOf(1, viajeros)
     val diasPorPresupuesto = when {
         presupuestoPorPersona < 250 -> 2
@@ -873,17 +889,16 @@ private fun generateLocalProposal(
         .coerceIn(2, 10)
 
     val itineraryByDay = (1..diasRecomendados).map { day ->
-        val focus = when {
-            prefs.contains(Preference.CULTURA) && day % 2 == 1 -> context.getString(R.string.plan_local_focus_culture)
-            prefs.contains(Preference.NATURALEZA) && day % 3 == 0 -> context.getString(R.string.plan_local_focus_nature)
-            prefs.contains(Preference.GASTRONOMIA) -> context.getString(R.string.plan_local_focus_food)
-            prefs.contains(Preference.OCIO) -> context.getString(R.string.plan_local_focus_night)
-            else -> context.getString(R.string.plan_local_focus_free)
-        }
-        val summary = context.getString(R.string.plan_local_itinerary_day, day, focus, destino)
+        val focus = fallbackFocusForDay(context, prefs, day)
+        val fallbackActivities = buildFallbackItineraryActivities(context, prefs, day)
+        val summary = appendFallbackActivitiesToSummary(
+            summary = context.getString(R.string.plan_local_itinerary_day, day, focus, destino),
+            activities = fallbackActivities
+        )
         ItineraryDay(
             dayLabel = context.getString(R.string.plan_result_day_label, day),
-            summary = summary
+            summary = summary,
+            activities = fallbackActivities
         )
     }
 
@@ -918,11 +933,162 @@ private fun generateLocalProposal(
         itineraryByDay = itineraryByDay,
         actividadesGratis = actividadesGratis,
         actividadesPago = actividadesPago,
+        hoteles = buildFallbackHotels(countTripNights(fechaInicioMillis, fechaFinMillis)),
+        vuelos = buildFallbackFlights(
+            origin = "MAD",
+            destination = destinationToIata(destino),
+            departureDate = formatIsoDate(fechaInicioMillis),
+            returnDate = formatIsoDate(fechaFinMillis)
+        ),
         usedFallback = true
-        // los nuevos campos (destinodisplayname/lat/lon) quedan null por defecto
     )
 }
 
+private fun fallbackFocusForDay(
+    context: Context,
+    prefs: Set<Preference>,
+    day: Int
+): String {
+    val rotation = preferredFallbackRotation(prefs)
+    val primary = rotation[(day - 1) % rotation.size]
+    return when (primary) {
+        Preference.CULTURA -> context.getString(R.string.plan_local_focus_culture)
+        Preference.NATURALEZA -> context.getString(R.string.plan_local_focus_nature)
+        Preference.GASTRONOMIA -> context.getString(R.string.plan_local_focus_food)
+        Preference.OCIO -> context.getString(R.string.plan_local_focus_night)
+    }
+}
+
+private fun buildFallbackItineraryActivities(
+    context: Context,
+    prefs: Set<Preference>,
+    day: Int
+): List<ItineraryActivityLink> {
+    val rotation = preferredFallbackRotation(prefs)
+    val primary = rotation[(day - 1) % rotation.size]
+    val secondary = rotation[day % rotation.size]
+
+    fun namesFor(pref: Preference): List<String> = when (pref) {
+        Preference.CULTURA -> listOf(
+            context.getString(R.string.plan_local_free_walking_tour),
+            context.getString(R.string.plan_local_museum_entry)
+        )
+        Preference.NATURALEZA -> listOf(
+            context.getString(R.string.plan_local_urban_park),
+            context.getString(R.string.plan_local_day_trip)
+        )
+        Preference.GASTRONOMIA -> listOf(
+            context.getString(R.string.plan_local_market),
+            context.getString(R.string.plan_local_food_tour)
+        )
+        Preference.OCIO -> listOf(
+            context.getString(R.string.plan_local_nightlife_neighborhood),
+            context.getString(R.string.plan_local_club)
+        )
+    }
+
+    val activityNames = (namesFor(primary) + namesFor(secondary)).distinct().take(3)
+
+    return activityNames.map { name ->
+        ItineraryActivityLink(
+            name = name,
+            bookingUrl = "https://www.google.com/search?q=" + java.net.URLEncoder.encode(name, Charsets.UTF_8.name())
+        )
+    }
+}
+
+private fun preferredFallbackRotation(prefs: Set<Preference>): List<Preference> {
+    // Prioridad visual: cultura > gastronomia > naturaleza > ocio.
+    // Si no hay preferencias marcadas, rotamos todas para mantener variedad.
+    val ordered = listOf(
+        Preference.CULTURA,
+        Preference.GASTRONOMIA,
+        Preference.NATURALEZA,
+        Preference.OCIO
+    )
+    val selected = ordered.filter { prefs.contains(it) }
+    return if (selected.isNotEmpty()) selected else ordered
+}
+
+private fun appendFallbackActivitiesToSummary(
+    summary: String,
+    activities: List<ItineraryActivityLink>
+): String {
+    val names = activities.map { it.name }.distinct().take(2)
+    if (names.isEmpty()) return summary
+    return "$summary · ${names.joinToString(separator = " • ")}"
+}
+
+private fun formatIsoDate(dateMillis: Long?): String {
+    return dateMillis?.let {
+        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(it))
+    } ?: ""
+}
+
+private fun buildFallbackHotels(numNights: Int): List<Hotel> {
+    return listOf(
+        Hotel(
+            id = "fallback_hotel_1",
+            name = "Hotel céntrico estimado",
+            lat = 0.0,
+            lon = 0.0,
+            stars = 3,
+            rating = 3.8,
+            pricePerNight = 95.0,
+            totalPrice = 95.0 * numNights,
+            bookingUrl = null,
+            isReal = false
+        ),
+        Hotel(
+            id = "fallback_hotel_2",
+            name = "Alojamiento recomendado",
+            lat = 0.0,
+            lon = 0.0,
+            stars = 4,
+            rating = 4.2,
+            pricePerNight = 125.0,
+            totalPrice = 125.0 * numNights,
+            bookingUrl = null,
+            isReal = false
+        )
+    )
+}
+
+private fun buildFallbackFlights(
+    origin: String,
+    destination: String,
+    departureDate: String,
+    returnDate: String?
+): List<FlightOffer> {
+    return listOf(
+        FlightOffer(
+            id = "fallback_flight_1",
+            origin = origin,
+            destination = destination,
+            departureDate = departureDate,
+            returnDate = returnDate,
+            price = 120.0,
+            currency = "EUR",
+            durationMinutes = 120,
+            carrier = "Fallback Air",
+            bookingUrl = null,
+            isReal = false
+        ),
+        FlightOffer(
+            id = "fallback_flight_2",
+            origin = origin,
+            destination = destination,
+            departureDate = departureDate,
+            returnDate = returnDate,
+            price = 150.0,
+            currency = "EUR",
+            durationMinutes = 140,
+            carrier = "Fallback Connect",
+            bookingUrl = null,
+            isReal = false
+        )
+    )
+}
 private fun buildRealProposal(
     context: android.content.Context,
     fallback: PlanResult,
@@ -957,6 +1123,25 @@ private fun buildRealProposal(
         .sortedWith(compareBy<SuggestedActivity> { it.price }.thenBy { it.name })
         .take(maxOf(1, itineraryByDay.size))
 
+    // Garantiza contenido en UI incluso si alguna fuente llega vacía.
+    val safeHotels = hotelSource.ifEmpty { fallback.hoteles }
+    val safeFlights = flightSource.ifEmpty { fallback.vuelos }
+    val safeItineraryByDay = itineraryByDay.ifEmpty { fallback.itineraryByDay }
+    val safeItinerario = if (safeItineraryByDay.isNotEmpty()) {
+        safeItineraryByDay.map { it.summary }
+    } else {
+        fallback.itinerario
+    }
+    val safeFreeActivities = activitySource
+        .filter { it.isFree }
+        .map { it.name }
+        .distinct()
+        .ifEmpty { fallback.actividadesGratis }
+    val safePaidActivities = paidActivities
+        .map { it.name }
+        .distinct()
+        .ifEmpty { fallback.actividadesPago }
+
     val transportBudget = selectedFlight?.price ?: fallback.presupuestoCategorias[
         context.getString(R.string.plan_local_budget_transport)
     ] ?: 0.0
@@ -976,22 +1161,24 @@ private fun buildRealProposal(
         destinoDisplayName = destinoDisplayName,
         lat = lat,
         lon = lon,
-        hoteles = hotelSource,
-        hotelMesSeleccionado = selectedHotel,
+        hoteles = safeHotels,
+        hotelMesSeleccionado = selectedHotel ?: safeHotels.minByOrNull {
+            it.totalPrice ?: (it.pricePerNight * tripNights.toDouble())
+        },
         apiHotelesOk = realHotels.isNotEmpty(),
         actividadesReales = activitySource,
         apiActividadesOk = realActivities.isNotEmpty(),
-        itinerario = itineraryByDay.map { it.summary },
-        itineraryByDay = itineraryByDay,
-        actividadesGratis = activitySource.filter { it.isFree }.map { it.name }.distinct(),
-        actividadesPago = paidActivities.map { it.name }.distinct(),
+        itinerario = safeItinerario,
+        itineraryByDay = safeItineraryByDay,
+        actividadesGratis = safeFreeActivities,
+        actividadesPago = safePaidActivities,
         presupuestoCategorias = linkedMapOf(
             context.getString(R.string.plan_local_budget_transport) to transportBudget,
             context.getString(R.string.plan_local_budget_lodging) to lodgingBudget,
             context.getString(R.string.plan_local_budget_meals) to mealsBudget,
             context.getString(R.string.plan_local_budget_activities) to activitiesBudget
         ),
-        vuelos = flightSource,
+        vuelos = safeFlights,
         apiVuelosOk = realFlights.isNotEmpty(),
         usedFallback = !(realHotels.isNotEmpty() && realActivities.isNotEmpty() && realFlights.isNotEmpty())
     )
@@ -1008,11 +1195,25 @@ private fun buildItineraryFromActivities(
     // Construye `ItineraryDay` a partir de actividades reales.
     // - Agrupa y distribuye actividades por días
     // - Intenta respetar las preferencias para asignar un "focus" por día
-    fun fallbackDays(): List<ItineraryDay> = fallbackItinerary.mapIndexed { index, summary ->
-        ItineraryDay(
-            dayLabel = context.getString(R.string.plan_result_day_label, index + 1),
-            summary = summary
-        )
+    fun fallbackDays(): List<ItineraryDay> {
+        val baseSummaries = if (fallbackItinerary.isNotEmpty()) {
+            fallbackItinerary
+        } else {
+            (1..maxOf(1, diasRecomendados)).map { day ->
+                val focus = fallbackFocusForDay(context, prefs, day)
+                context.getString(R.string.plan_local_itinerary_day, day, focus, destino)
+            }
+        }
+
+        return baseSummaries.mapIndexed { index, summary ->
+            val day = index + 1
+            val fallbackActivities = buildFallbackItineraryActivities(context, prefs, day)
+            ItineraryDay(
+                dayLabel = context.getString(R.string.plan_result_day_label, day),
+                summary = appendFallbackActivitiesToSummary(summary, fallbackActivities),
+                activities = fallbackActivities
+            )
+        }
     }
 
     if (diasRecomendados <= 0) return fallbackDays()
@@ -1030,33 +1231,50 @@ private fun buildItineraryFromActivities(
 
     return (1..diasRecomendados).map { day ->
         val dayActivities = chunks.getOrNull(day - 1).orEmpty()
+        val fallbackActivities = buildFallbackItineraryActivities(context, prefs, day)
+        val realActivities = dayActivities.map {
+            ItineraryActivityLink(
+                name = it.name,
+                bookingUrl = it.bookingUrl
+            )
+        }
+        val resolvedActivities = (realActivities + fallbackActivities)
+            .distinctBy { it.name }
+            .take(3)
+            .ifEmpty { fallbackActivities }
+
         val focus = when {
-            prefs.contains(Preference.CULTURA) && dayActivities.any { it.category.contains("museum", true) || it.category.contains("culture", true) || it.category.contains("historic", true) } -> context.getString(R.string.plan_local_focus_culture)
-            prefs.contains(Preference.NATURALEZA) && dayActivities.any { it.category.contains("park", true) || it.category.contains("nature", true) || it.category.contains("view", true) } -> context.getString(R.string.plan_local_focus_nature)
-            prefs.contains(Preference.GASTRONOMIA) && dayActivities.any { it.category.contains("food", true) || it.category.contains("gastr", true) || it.category.contains("market", true) } -> context.getString(R.string.plan_local_focus_food)
-            prefs.contains(Preference.OCIO) && dayActivities.any { it.category.contains("night", true) || it.category.contains("entertain", true) || it.category.contains("club", true) } -> context.getString(R.string.plan_local_focus_night)
-            else -> context.getString(R.string.plan_local_focus_free)
+            dayActivities.isNotEmpty() && prefs.contains(Preference.CULTURA) && dayActivities.any { it.category.contains("museum", true) || it.category.contains("culture", true) || it.category.contains("historic", true) } -> context.getString(R.string.plan_local_focus_culture)
+            dayActivities.isNotEmpty() && prefs.contains(Preference.NATURALEZA) && dayActivities.any { it.category.contains("park", true) || it.category.contains("nature", true) || it.category.contains("view", true) } -> context.getString(R.string.plan_local_focus_nature)
+            dayActivities.isNotEmpty() && prefs.contains(Preference.GASTRONOMIA) && dayActivities.any { it.category.contains("food", true) || it.category.contains("gastr", true) || it.category.contains("market", true) } -> context.getString(R.string.plan_local_focus_food)
+            dayActivities.isNotEmpty() && prefs.contains(Preference.OCIO) && dayActivities.any { it.category.contains("night", true) || it.category.contains("entertain", true) || it.category.contains("club", true) } -> context.getString(R.string.plan_local_focus_night)
+            else -> fallbackFocusForDay(context, prefs, day)
         }
 
-        val activitiesText = if (dayActivities.isNotEmpty()) {
-            dayActivities.joinToString(separator = " • ") { it.name }
-        } else {
-            context.getString(R.string.plan_local_activity_free_suggestion)
-        }
+        val activitiesText = resolvedActivities
+            .map { it.name }
+            .ifEmpty { listOf(context.getString(R.string.plan_local_activity_free_suggestion)) }
+            .joinToString(separator = " • ")
 
         ItineraryDay(
             dayLabel = context.getString(R.string.plan_result_day_label, day),
             summary = context.getString(R.string.plan_local_itinerary_day_activities, day, focus, destino, activitiesText),
-            activities = dayActivities.map {
-                ItineraryActivityLink(
-                    name = it.name,
-                    bookingUrl = it.bookingUrl
-                )
-            }
+            activities = resolvedActivities
         )
     }
 }
+private fun hasInternetConnection(context: Context): Boolean {
+    val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
+    val network = connectivityManager.activeNetwork ?: return false
+
+    val capabilities =
+        connectivityManager.getNetworkCapabilities(network) ?: return false
+
+    return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+}
 /**
  * Retry with exponential backoff. Returns null if all attempts fail.
  */

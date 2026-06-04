@@ -479,6 +479,7 @@
     <string name="plan_result_publishing">Publicando...</string>
     <string name="plan_result_published">Ya publicado</string>
     <string name="plan_result_trip_title">Viaje a %1$s</string>
+    <string name="plan_result_offline_badge">Modo offline: mostrando datos de respaldo (fallback)</string>
     <string name="plan_result_api_ok">api ok: %1$s (%2$.6f, %3$.6f)</string>
     <string name="plan_result_api_fallback">Algunos datos no han podido obtenerse de las APIs, así que se han usado valores de respaldo estimados.</string>
     <string name="plan_result_duration">Duración recomendada: %1$d días</string>
@@ -497,6 +498,7 @@
     <string name="plan_result_no_flights">No hay ofertas de vuelo reales para este destino.</string>
     <string name="plan_result_real_data">Datos reales</string>
     <string name="plan_result_fallback_data">Resultado de fallback</string>
+    <string name="plan_result_price_check_provider">Precio real en proveedor</string>
     <string name="plan_result_price_per_night">€%1$s / noche</string>
     <string name="plan_result_link">Ver enlace</string>
     <string name="plan_result_reservation_link">Ver enlace de reserva</string>

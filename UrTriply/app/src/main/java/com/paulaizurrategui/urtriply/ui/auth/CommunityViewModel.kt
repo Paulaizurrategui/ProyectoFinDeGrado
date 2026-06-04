@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth.AuthStateListener
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.paulaizurrategui.urtriply.data.favorites.FavoritesRepository
@@ -401,6 +402,14 @@ class CommunityViewModel : ViewModel() {
         val chunks = authorUids.chunked(10)
         val all = mutableListOf<TravelPost>()
         var pending = chunks.size
+        val completeChunk: () -> Unit = {
+            pending--
+            if (pending == 0) {
+                // Elimino duplicados y cargo estados de interacción del usuario
+                rawPosts = all.distinctBy { it.id }
+                loadUserInteractionStates()
+            }
+        }
 
         chunks.forEach { chunk ->
                 db.collection("trips")
@@ -410,70 +419,113 @@ class CommunityViewModel : ViewModel() {
                 .limit(20)
                 .get()
                 .addOnSuccessListener { snap ->
-                    val mapped = snap.documents.mapNotNull { doc ->
-                        val isDeleted = doc.getBoolean("deleted") ?: false
-                        if (isDeleted) {
-                            return@mapNotNull null
+                    val docs = snap.documents
+                    val missingAuthorUids = docs.mapNotNull { doc ->
+                        val uid = doc.getString("authorUid") ?: return@mapNotNull null
+                        val storedName = doc.getString("authorName").orEmpty().trim()
+                        if (storedName.isBlank() || storedName.equals("usuario", true)) uid else null
+                    }.toSet()
+
+                    resolveAuthorNames(missingAuthorUids) { namesByUid ->
+                        val mapped = docs.mapNotNull { doc ->
+                            val isDeleted = doc.getBoolean("deleted") ?: false
+                            if (isDeleted) {
+                                return@mapNotNull null
+                            }
+
+                            // Filtrado por bloqueos: ignoro posts de autores bloqueados
+                            val authorUid = doc.getString("authorUid") ?: return@mapNotNull null
+                            if (authorUid in blockedUserIds) return@mapNotNull null
+                            if (authorUid in usersWhoBlockedMe) return@mapNotNull null
+
+                            // Campos principales con compatibilidad de nombres
+                            val destination = doc.getString("destination")
+                                ?: doc.getString("destino")
+                                ?: return@mapNotNull null
+
+                            val days = (doc.getLong("days")
+                                ?: doc.getLong("diasRecomendados")
+                                ?: 0L).toInt()
+
+                            val budget = doc.getDouble("budget")
+                                ?: doc.getDouble("presupuestoTotal")
+                                ?: doc.getLong("budget")?.toDouble()
+                                ?: doc.getLong("presupuestoTotal")?.toDouble()
+                                ?: 0.0
+
+                            // Campos restantes con valores por defecto para robustez
+                            val currency = doc.getString("currency") ?: "€"
+                            val storedName = doc.getString("authorName").orEmpty().trim()
+                            val authorName = when {
+                                storedName.isNotBlank() && !storedName.equals("usuario", true) -> storedName
+                                namesByUid[authorUid].isNullOrBlank().not() -> namesByUid[authorUid] ?: "usuario"
+                                else -> "usuario"
+                            }
+                            val authorAvatar = doc.getString("authorAvatar")
+                            val date = doc.getString("date") ?: ""
+                            val description = doc.getString("description") ?: ""
+                            val imageUrl = doc.getString("imageUrl")
+
+                            TravelPost(
+                                id = doc.id,
+                                authorUid = authorUid,
+                                destination = destination,
+                                days = days,
+                                budget = budget,
+                                currency = currency,
+                                authorName = authorName,
+                                authorAvatar = authorAvatar,
+                                date = date,
+                                description = description,
+                                imageUrl = imageUrl,
+                                likes = (doc.getLong("likes") ?: 0L).toInt(),
+                                comments = (doc.getLong("comments") ?: 0L).toInt(),
+                                isLiked = doc.getBoolean("isLiked") ?: false,
+                                isFavorite = doc.getBoolean("isFavorite") ?: false
+                            )
                         }
 
-                        // Filtrado por bloqueos: ignoro posts de autores bloqueados
-                        val authorUid = doc.getString("authorUid") ?: return@mapNotNull null
-                        if (authorUid in blockedUserIds) return@mapNotNull null
-                        if (authorUid in usersWhoBlockedMe) return@mapNotNull null
-
-                        // Campos principales con compatibilidad de nombres
-                        val destination = doc.getString("destination")
-                            ?: doc.getString("destino")
-                            ?: return@mapNotNull null
-
-                        val days = (doc.getLong("days")
-                            ?: doc.getLong("diasRecomendados")
-                            ?: 0L).toInt()
-
-                        val budget = doc.getDouble("budget")
-                            ?: doc.getDouble("presupuestoTotal")
-                            ?: doc.getLong("budget")?.toDouble()
-                            ?: doc.getLong("presupuestoTotal")?.toDouble()
-                            ?: 0.0
-
-                        // Campos restantes con valores por defecto para robustez
-                        val currency = doc.getString("currency") ?: "€"
-                        val authorName = doc.getString("authorName") ?: "usuario"
-                        val authorAvatar = doc.getString("authorAvatar")
-                        val date = doc.getString("date") ?: ""
-                        val description = doc.getString("description") ?: ""
-                        val imageUrl = doc.getString("imageUrl")
-
-                        TravelPost(
-                            id = doc.id,
-                            authorUid = authorUid,
-                            destination = destination,
-                            days = days,
-                            budget = budget,
-                            currency = currency,
-                            authorName = authorName,
-                            authorAvatar = authorAvatar,
-                            date = date,
-                            description = description,
-                            imageUrl = imageUrl,
-                            likes = (doc.getLong("likes") ?: 0L).toInt(),
-                            comments = (doc.getLong("comments") ?: 0L).toInt(),
-                            isLiked = doc.getBoolean("isLiked") ?: false,
-                            isFavorite = doc.getBoolean("isFavorite") ?: false
-                        )
+                        all += mapped
+                        completeChunk()
                     }
-
-                    all += mapped
                 }
                 .addOnFailureListener {
                     errorMessage.value = it.message ?: "Error cargando publicaciones de la comunidad"
+                    completeChunk()
+                }
+        }
+    }
+
+    private fun resolveAuthorNames(
+        authorUids: Set<String>,
+        onResult: (Map<String, String>) -> Unit
+    ) {
+        if (authorUids.isEmpty()) {
+            onResult(emptyMap())
+            return
+        }
+
+        val chunks = authorUids.toList().chunked(10)
+        val resolved = mutableMapOf<String, String>()
+        var pending = chunks.size
+
+        chunks.forEach { chunk ->
+            db.collection("users")
+                .whereIn(FieldPath.documentId(), chunk)
+                .get()
+                .addOnSuccessListener { snap ->
+                    snap.documents.forEach { userDoc ->
+                        val uid = userDoc.id
+                        val displayName = userDoc.getString("displayName").orEmpty().trim()
+                        if (displayName.isNotBlank()) {
+                            resolved[uid] = displayName
+                        }
+                    }
                 }
                 .addOnCompleteListener {
                     pending--
                     if (pending == 0) {
-                        // Elimino duplicados y cargo estados de interacción del usuario
-                        rawPosts = all.distinctBy { it.id }
-                        loadUserInteractionStates()
+                        onResult(resolved)
                     }
                 }
         }
